@@ -14,6 +14,7 @@ const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 
 const cameraBtn = document.getElementById("cameraBtn");
+const cameraSwitchBtn = document.getElementById("cameraSwitchBtn");
 const captureBtn = document.getElementById("captureBtn");
 const cameraStatus = document.getElementById("cameraStatus");
 const darkModeBtn = document.getElementById("darkModeBtn");
@@ -23,6 +24,7 @@ const previewWrapper = document.querySelector(".preview-wrapper");
 
 let uploadedImage = null;
 let stream = null;
+let currentFacingMode = "environment";
 
 function applyDarkModeUI() {
     if (!darkModeBtn) return;
@@ -68,9 +70,7 @@ imageUpload.addEventListener("change", function () {
 
 /* Open Camera */
 
-if (cameraBtn) {
-cameraBtn.addEventListener("click", async () => {
-
+async function openCamera() {
     try {
 
         const mediaDevices = navigator.mediaDevices;
@@ -86,26 +86,18 @@ cameraBtn.addEventListener("click", async () => {
             return;
         }
 
-        const rearCameraConstraint = {
-            video: {
-                facingMode: { ideal: "environment" }
-            },
-            audio: false
-        };
-
-        const frontCameraConstraint = {
-            video: {
-                facingMode: { ideal: "user" }
-            },
-            audio: false
-        };
-
-        try {
-            stream = await mediaDevices.getUserMedia(rearCameraConstraint);
-        } catch (rearError) {
-            stream = await mediaDevices.getUserMedia(frontCameraConstraint);
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
         }
 
+        const cameraConstraint = {
+            video: {
+                facingMode: { ideal: currentFacingMode }
+            },
+            audio: false
+        };
+
+        stream = await mediaDevices.getUserMedia(cameraConstraint);
         video.srcObject = stream;
 
         if (cameraWrapper) {
@@ -118,7 +110,7 @@ cameraBtn.addEventListener("click", async () => {
 
         if (cameraStatus) {
             cameraStatus.textContent =
-                "Camera ready. Click Capture Photo.";
+                `Camera ready (${currentFacingMode === "user" ? "front" : "rear"}). Click Capture Photo.`;
         }
 
     } catch (error) {
@@ -145,6 +137,18 @@ cameraBtn.addEventListener("click", async () => {
         cameraStatus.textContent = msg;
         alert(msg);
     }
+}
+
+if (cameraBtn) {
+cameraBtn.addEventListener("click", () => {
+    openCamera();
+});
+}
+
+if (cameraSwitchBtn) {
+cameraSwitchBtn.addEventListener("click", () => {
+    currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+    openCamera();
 });
 }
 
