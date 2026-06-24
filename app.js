@@ -154,29 +154,37 @@ function detectFaceLikeRegion(imageElement) {
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
 
+    const centerX = width * 0.5;
+    const centerY = height * 0.5;
+    const searchWidth = Math.floor(width * 0.7);
+    const searchHeight = Math.floor(height * 0.8);
+    const startX = Math.floor(centerX - searchWidth / 2);
+    const startY = Math.floor(centerY - searchHeight / 2);
+
     let minX = width;
     let minY = height;
     let maxX = 0;
     let maxY = 0;
     let skinPixelCount = 0;
 
-    for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
+    for (let y = startY; y < startY + searchHeight; y++) {
+        for (let x = startX; x < startX + searchWidth; x++) {
+            const i = (y * width + x) * 4;
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
 
-        if (isSkinColor(r, g, b)) {
-            const x = (i / 4) % width;
-            const y = Math.floor(i / 4 / width);
-            skinPixelCount++;
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
+            if (isSkinColor(r, g, b)) {
+                skinPixelCount++;
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            }
         }
     }
 
-    if (skinPixelCount < 600) {
+    if (skinPixelCount < 220) {
         return [];
     }
 
@@ -186,17 +194,7 @@ function detectFaceLikeRegion(imageElement) {
     const areaRatio = bboxArea / (width * height);
     const aspectRatio = bboxWidth / bboxHeight;
 
-    if (areaRatio < 0.03 || aspectRatio < 0.45 || aspectRatio > 1.8) {
-        return [];
-    }
-
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-
-    if (
-        Math.abs(centerX - width / 2) > width * 0.28 ||
-        Math.abs(centerY - height / 2) > height * 0.3
-    ) {
+    if (areaRatio < 0.012 || aspectRatio < 0.35 || aspectRatio > 2.2) {
         return [];
     }
 
@@ -214,14 +212,15 @@ function isSkinColor(r, g, b) {
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
     const delta = max - min;
+    const isRedDominant = r > g && r > b;
+    const isNotTooDark = r > 40 && g > 20 && b > 15;
+    const isNotTooLight = r < 255 && g < 255 && b < 255;
 
     return (
-        r > 95 &&
-        g > 40 &&
-        b > 20 &&
-        r > g &&
-        r > b &&
-        delta > 15
+        isNotTooDark &&
+        isNotTooLight &&
+        isRedDominant &&
+        delta > 8
     );
 }
 
