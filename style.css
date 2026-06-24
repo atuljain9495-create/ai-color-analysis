@@ -237,6 +237,39 @@ button:hover{
     color: var(--muted-color);
 }
 
+#seasonalType {
+    margin-top: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--muted-color);
+}
+
+.validation-message {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(79, 70, 229, 0.08);
+    color: var(--text-color);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.validation-message.error {
+    background: rgba(180, 35, 24, 0.12);
+    color: #b42318;
+}
+
+.validation-message.success {
+    background: rgba(16, 185, 129, 0.12);
+    color: #047857;
+}
+
+.recommendation-heading {
+    font-weight: 700;
+    margin-top: 10px;
+    list-style: none;
+}
+
 .preview-section{
     display:flex;
     justify-content:center;
