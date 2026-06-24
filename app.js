@@ -24,8 +24,27 @@ const previewWrapper = document.querySelector(".preview-wrapper");
 let uploadedImage = null;
 let stream = null;
 
+function applyDarkModeUI() {
+    if (!darkModeBtn) return;
+
+    const isDark = document.body.classList.contains("dark-mode");
+    darkModeBtn.textContent = isDark ? "☀️" : "🌙";
+    darkModeBtn.setAttribute(
+        "aria-label",
+        isDark ? "Switch to light mode" : "Switch to dark mode"
+    );
+}
+
+const savedDarkMode = localStorage.getItem("darkMode");
+if (savedDarkMode === "true") {
+    document.body.classList.add("dark-mode");
+}
+
+applyDarkModeUI();
+
 /* Upload Image */
 
+if (imageUpload) {
 imageUpload.addEventListener("change", function () {
 
     const file = this.files[0];
@@ -45,9 +64,11 @@ imageUpload.addEventListener("change", function () {
 
     reader.readAsDataURL(file);
 });
+}
 
 /* Open Camera */
 
+if (cameraBtn) {
 cameraBtn.addEventListener("click", async () => {
 
     try {
@@ -87,9 +108,13 @@ cameraBtn.addEventListener("click", async () => {
 
         video.srcObject = stream;
 
-        cameraWrapper.style.display = "flex";
+        if (cameraWrapper) {
+            cameraWrapper.style.display = "flex";
+        }
         video.style.display = "block";
-        captureBtn.style.display = "inline-block";
+        if (captureBtn) {
+            captureBtn.style.display = "inline-block";
+        }
 
         if (cameraStatus) {
             cameraStatus.textContent =
@@ -121,9 +146,11 @@ cameraBtn.addEventListener("click", async () => {
         alert(msg);
     }
 });
+}
 
 /* Capture Photo */
 
+if (captureBtn) {
 captureBtn.addEventListener("click", () => {
 
     if (!video.videoWidth || !video.videoHeight) {
@@ -146,9 +173,13 @@ captureBtn.addEventListener("click", () => {
 
     uploadedImage = canvas.toDataURL("image/png");
 
-    previewImage.src = uploadedImage;
-    previewWrapper.style.display = "flex";
-    previewImage.style.display = "block";
+    if (previewImage) {
+        previewImage.src = uploadedImage;
+        previewImage.style.display = "block";
+    }
+    if (previewWrapper) {
+        previewWrapper.style.display = "flex";
+    }
     cameraStatus.textContent = "Photo captured successfully.";
 
     if (stream) {
@@ -157,20 +188,26 @@ captureBtn.addEventListener("click", () => {
     }
 
     video.style.display = "none";
-    captureBtn.style.display = "none";
+    if (captureBtn) {
+        captureBtn.style.display = "none";
+    }
 });
+}
 
 /* Dark Mode */
 
+if (darkModeBtn) {
 darkModeBtn.addEventListener("click", () => {
     document.body.classList.toggle("dark-mode");
     const isDark = document.body.classList.contains("dark-mode");
-    darkModeBtn.textContent = isDark ? "☀️" : "🌙";
-    darkModeBtn.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
+    localStorage.setItem("darkMode", isDark ? "true" : "false");
+    applyDarkModeUI();
 });
+}
 
 /* Analyze Button */
 
+if (analyzeBtn) {
 analyzeBtn.addEventListener("click", () => {
 
     if (!uploadedImage) {
@@ -186,6 +223,7 @@ analyzeBtn.addEventListener("click", () => {
 
     analyzeSkinTone(uploadedImage);
 });
+}
 
 /* Analyze Skin */
 
