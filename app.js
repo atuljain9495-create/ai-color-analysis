@@ -118,12 +118,11 @@ async function detectFaces(imageElement) {
             return detection ? [detection] : [];
         } catch (error) {
             console.warn("Face API detection failed:", error);
-            return [];
         }
     }
 
     if (!faceDetector) {
-        return [];
+        return detectFaceLikeRegion(imageElement);
     }
 
     try {
@@ -133,8 +132,97 @@ async function detectFaces(imageElement) {
         return faces;
     } catch (error) {
         console.warn("FaceDetector failed:", error);
+        return detectFaceLikeRegion(imageElement);
+    }
+}
+
+function detectFaceLikeRegion(imageElement) {
+    const width = imageElement.naturalWidth || imageElement.width;
+    const height = imageElement.naturalHeight || imageElement.height;
+
+    if (!width || !height) {
         return [];
     }
+
+    const tempCanvas = document.createElement("canvas");
+    const ctx = tempCanvas.getContext("2d", { willReadFrequently: true });
+
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    ctx.drawImage(imageElement, 0, 0, width, height);
+
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    let minX = width;
+    let minY = height;
+    let maxX = 0;
+    let maxY = 0;
+    let skinPixelCount = 0;
+
+    for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        if (isSkinColor(r, g, b)) {
+            const x = (i / 4) % width;
+            const y = Math.floor(i / 4 / width);
+            skinPixelCount++;
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+        }
+    }
+
+    if (skinPixelCount < 600) {
+        return [];
+    }
+
+    const bboxWidth = maxX - minX + 1;
+    const bboxHeight = maxY - minY + 1;
+    const bboxArea = bboxWidth * bboxHeight;
+    const areaRatio = bboxArea / (width * height);
+    const aspectRatio = bboxWidth / bboxHeight;
+
+    if (areaRatio < 0.03 || aspectRatio < 0.45 || aspectRatio > 1.8) {
+        return [];
+    }
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    if (
+        Math.abs(centerX - width / 2) > width * 0.28 ||
+        Math.abs(centerY - height / 2) > height * 0.3
+    ) {
+        return [];
+    }
+
+    return [{
+        boundingBox: {
+            x: minX,
+            y: minY,
+            width: bboxWidth,
+            height: bboxHeight
+        }
+    }];
+}
+
+function isSkinColor(r, g, b) {
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+
+    return (
+        r > 95 &&
+        g > 40 &&
+        b > 20 &&
+        r > g &&
+        r > b &&
+        delta > 15
+    );
 }
 
 function getAverageBrightness(data) {
