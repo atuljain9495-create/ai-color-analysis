@@ -30,7 +30,7 @@ let currentFacingMode = "environment";
 let faceDetector = null;
 let faceApiReady = false;
 let faceApiFailed = false;
-const FACE_API_MODEL_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights";
+const FACE_API_MODEL_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights/";
 
 function applyDarkModeUI() {
     if (!darkModeBtn) return;
@@ -113,29 +113,37 @@ async function detectFaces(imageElement) {
         try {
             const detection = await window.faceapi.detectSingleFace(
                 imageElement,
-                new window.faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })
+                new window.faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.2 })
             );
-            return detection ? [detection] : [];
+
+            if (detection) {
+                return [detection];
+            }
+
+            const allFaces = await window.faceapi.detectAllFaces(
+                imageElement,
+                new window.faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.15 })
+            );
+            return allFaces || [];
         } catch (error) {
             console.warn("Face API detection failed:", error);
         }
     }
 
-    if (!faceDetector) {
-        throw new Error(
-            "Face detection model not loaded. Please refresh the page and try again."
-        );
+    if (typeof window.FaceDetector !== "undefined") {
+        try {
+            const bitmap = await createImageBitmap(imageElement);
+            const faces = await faceDetector.detect(bitmap);
+            bitmap.close && bitmap.close();
+            return faces || [];
+        } catch (error) {
+            console.warn("FaceDetector failed:", error);
+        }
     }
 
-    try {
-        const bitmap = await createImageBitmap(imageElement);
-        const faces = await faceDetector.detect(bitmap);
-        bitmap.close && bitmap.close();
-        return faces;
-    } catch (error) {
-        console.warn("FaceDetector failed:", error);
-        return detectFaceLikeRegion(imageElement);
-    }
+    throw new Error(
+        "Face detection model not loaded. Please refresh the page and try again."
+    );
 }
 
 function detectFaceLikeRegion() {
@@ -244,7 +252,7 @@ async function validatePhoto(imageSrc) {
 
     const faceAreaRatio = (faceBox.width * faceBox.height) / (img.width * img.height);
 
-    if (faceAreaRatio < 0.05) {
+    if (faceAreaRatio < 0.01) {
         throw new Error("Face too small. Please upload a closer photo with your face clearly visible.");
     }
 
