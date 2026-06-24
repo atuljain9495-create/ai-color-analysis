@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Color Analysis | Discover Your Skin Tone & Best Colors</title>
+
+    <meta name="description" content="Upload your photo and instantly discover your skin tone, undertone, color palette, and personalized fashion recommendations using AI.">
+
+    <meta name="keywords" content="skin tone detector, color analysis, AI color analysis, fashion colors, undertone detector">
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
+</head>
+<body>
+<header>
+    <div class="logo">
+        <h1>AI Color Analysis</h1>
+    </div>
+
+    <div class="header-actions">
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="blog.html">Blog</a>
+            <a href="About.html">About</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+        <button id="darkModeBtn" type="button" aria-label="Toggle dark mode">🌙</button>
+    </div>
+</header>
+
+<section class="hero">
+
+    <h2>Discover Your Perfect Colors Using AI</h2>
+
+    <p>
+        Upload a photo and instantly get your skin tone,
+        undertone, seasonal palette, and style recommendations.
+    </p>
+
+</section>
+
+<section class="upload-section">
+
+    <div class="card">
+
+        <h3>Upload Your Photo</h3>
+
+        <input type="file" id="imageUpload" accept="image/*">
+
+        <button id="analyzeBtn">
+            Analyze Skin Tone
+        </button>
+        <button id="cameraBtn" type="button">
+            Open Camera
+        </button>
+
+        <p id="cameraStatus" class="camera-status"></p>
+
+        <div class="camera-wrapper">
+            <video
+                id="video"
+                autoplay
+                playsinline
+                muted
+            ></video>
+        </div>
+
+        <div class="capture-actions">
+            <button id="captureBtn">
+                Capture Photo
+            </button>
+        </div>
+        <div id="palette"></div>
+    </div>
+
+</section>
+
+<section class="preview-section">
+    <div class="preview-wrapper">
+        <img id="previewImage" alt="Preview">
+    </div>
+</section>
+
+<section class="results">
+
+    <div class="result-card">
+
+        <h2>Your Results</h2>
+
+        <div id="skinTone">
+            Waiting for analysis...
+        </div>
+
+        <div id="hexColor"></div>
+
+        <div id="undertone"></div>
+
+        <div id="confidenceScore"></div>
+
+    </div>
+
+</section>
+
+<section class="recommendations">
+
+    <div class="recommend-card">
+
+        <h3>Recommended Clothing Colors</h3>
+
+        <ul id="clothingColors"></ul>
+
+    </div>
+
+    <div class="recommend-card">
+
+        <h3>Recommended Hair Colors</h3>
+
+        <ul id="hairColors"></ul>
+
+    </div>
+
+    <div class="recommend-card">
+
+        <h3>Recommended Jewelry</h3>
+
+        <ul id="jewelryColors"></ul>
+
+    </div>
+
+</section>
+
+<section class="adsense-placeholder">
+
+    <h3>Advertisement</h3>
+
+    <div class="ad-box">
+        Google AdSense Banner Here
+    </div>
+
+</section>
+
+<footer>
+
+    <p>
+        © 2026 AI Color Analysis
+    </p>
+
+</footer>
+<canvas id="canvas" style="display:none;"></canvas>
+<script src="app.js"></script>
+
+</body>
+</html>
