@@ -122,7 +122,9 @@ async function detectFaces(imageElement) {
     }
 
     if (!faceDetector) {
-        return detectFaceLikeRegion(imageElement);
+        throw new Error(
+            "Face detection model not loaded. Please refresh the page and try again."
+        );
     }
 
     try {
@@ -136,92 +138,10 @@ async function detectFaces(imageElement) {
     }
 }
 
-function detectFaceLikeRegion(imageElement) {
-    const width = imageElement.naturalWidth || imageElement.width;
-    const height = imageElement.naturalHeight || imageElement.height;
-
-    if (!width || !height) {
-        return [];
-    }
-
-    const tempCanvas = document.createElement("canvas");
-    const ctx = tempCanvas.getContext("2d", { willReadFrequently: true });
-
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-    ctx.drawImage(imageElement, 0, 0, width, height);
-
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-
-    const centerX = width * 0.5;
-    const centerY = height * 0.5;
-    const searchWidth = Math.floor(width * 0.7);
-    const searchHeight = Math.floor(height * 0.8);
-    const startX = Math.floor(centerX - searchWidth / 2);
-    const startY = Math.floor(centerY - searchHeight / 2);
-
-    let minX = width;
-    let minY = height;
-    let maxX = 0;
-    let maxY = 0;
-    let skinPixelCount = 0;
-
-    for (let y = startY; y < startY + searchHeight; y++) {
-        for (let x = startX; x < startX + searchWidth; x++) {
-            const i = (y * width + x) * 4;
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-
-            if (isSkinColor(r, g, b)) {
-                skinPixelCount++;
-                minX = Math.min(minX, x);
-                minY = Math.min(minY, y);
-                maxX = Math.max(maxX, x);
-                maxY = Math.max(maxY, y);
-            }
-        }
-    }
-
-    if (skinPixelCount < 220) {
-        return [];
-    }
-
-    const bboxWidth = maxX - minX + 1;
-    const bboxHeight = maxY - minY + 1;
-    const bboxArea = bboxWidth * bboxHeight;
-    const areaRatio = bboxArea / (width * height);
-    const aspectRatio = bboxWidth / bboxHeight;
-
-    if (areaRatio < 0.012 || aspectRatio < 0.35 || aspectRatio > 2.2) {
-        return [];
-    }
-
-    return [{
-        boundingBox: {
-            x: minX,
-            y: minY,
-            width: bboxWidth,
-            height: bboxHeight
-        }
-    }];
-}
-
-function isSkinColor(r, g, b) {
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const delta = max - min;
-    const isRedDominant = r > g && r > b;
-    const isNotTooDark = r > 40 && g > 20 && b > 15;
-    const isNotTooLight = r < 255 && g < 255 && b < 255;
-
-    return (
-        isNotTooDark &&
-        isNotTooLight &&
-        isRedDominant &&
-        delta > 8
-    );
+function detectFaceLikeRegion() {
+    // Disable fake face detection fallback.
+    // Only real face detection is allowed.
+    return [];
 }
 
 function getAverageBrightness(data) {
