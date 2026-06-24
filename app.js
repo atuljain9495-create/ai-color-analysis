@@ -28,6 +28,9 @@ let uploadedImage = null;
 let stream = null;
 let currentFacingMode = "environment";
 let faceDetector = null;
+let faceApiReady = false;
+let faceApiFailed = false;
+const FACE_API_MODEL_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights";
 
 function applyDarkModeUI() {
     if (!darkModeBtn) return;
@@ -79,6 +82,21 @@ function loadImageFromSource(imageSrc) {
 }
 
 async function initFaceDetector() {
+    if (faceApiReady || faceApiFailed) {
+        return;
+    }
+
+    if (typeof window.faceapi !== "undefined" && window.faceapi.nets && window.faceapi.nets.tinyFaceDetector) {
+        try {
+            await window.faceapi.nets.tinyFaceDetector.load(FACE_API_MODEL_URL);
+            faceApiReady = true;
+            return;
+        } catch (error) {
+            console.warn("Face API models failed to load:", error);
+            faceApiFailed = true;
+        }
+    }
+
     if (faceDetector || typeof window.FaceDetector === "undefined") {
         return;
     }
@@ -91,6 +109,19 @@ async function initFaceDetector() {
 }
 
 async function detectFaces(imageElement) {
+    if (typeof window.faceapi !== "undefined" && faceApiReady) {
+        try {
+            const detection = await window.faceapi.detectSingleFace(
+                imageElement,
+                new window.faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })
+            );
+            return detection ? [detection] : [];
+        } catch (error) {
+            console.warn("Face API detection failed:", error);
+            return [];
+        }
+    }
+
     if (!faceDetector) {
         return [];
     }
@@ -101,7 +132,7 @@ async function detectFaces(imageElement) {
         bitmap.close && bitmap.close();
         return faces;
     } catch (error) {
-        console.warn("Face detection failed:", error);
+        console.warn("FaceDetector failed:", error);
         return [];
     }
 }
@@ -198,7 +229,12 @@ async function validatePhoto(imageSrc) {
     }
 
     const face = faces[0];
-    const faceBox = face.boundingBox;
+    const faceBox = face.boundingBox || face.detection?.box || null;
+
+    if (!faceBox) {
+        throw new Error("No human face detected. Please upload a clear photo showing your face.");
+    }
+
     const faceAreaRatio = (faceBox.width * faceBox.height) / (img.width * img.height);
 
     if (faceAreaRatio < 0.05) {
