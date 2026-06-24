@@ -203,12 +203,24 @@ button:hover{
     margin-left: 8px;
     padding: 12px 14px;
     border-radius: 10px;
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 48px;
+    min-height: 48px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
+    background: #111827;
+    border: 2px solid #4f46e5;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.camera-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
 }
 
 .camera-status{
@@ -355,6 +367,19 @@ footer{
         flex-direction:column;
         gap:12px;
         padding:14px 4%;
+    }
+
+    .camera-controls{
+        flex-direction:column;
+        gap:10px;
+    }
+
+    .camera-controls button{
+        width:100%;
+    }
+
+    .camera-switch-btn{
+        width:100%;
     }
 
     .header-actions{
