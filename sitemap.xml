@@ -9,33 +9,95 @@
         <priority>1.00</priority>
     </url>
     <url>
-        <loc>https://aicoloranalysis.online/index.html</loc>
+        <loc>https://aicoloranalysis.online/blog.html</loc>
         <lastmod>2026-06-25</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.80</priority>
     </url>
     <url>
-        <loc>https://aicoloranalysis.online/index.html</loc>
+        <loc>https://aicoloranalysis.online/About.html</loc>
         <lastmod>2026-06-25</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.50</priority>
     </url>
     <url>
-        <loc>hhttps://aicoloranalysis.online/index.html</loc>
+        <loc>https://aicoloranalysis.online/contact.html</loc>
         <lastmod>2026-06-25</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.50</priority>
     </url>
 
+    <!-- The 10 SEO Optimized Standalone Blog Pages -->
+    <url>
+        <loc>https://aicoloranalysis.online/blog-skin-undertone.html</loc>
+        <lastmod>2026-06-25</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.70</priority>
+    </url>
+    <url>
+        <loc>https://aicoloranalysis.online/blog-warm-undertones.html</loc>
+        <lastmod>2026-06-25</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.70</priority>
+    </url>
+    <url>
+        <loc>https://aicoloranalysis.online/blog-cool-undertones.html</loc>
+        <lastmod>2026-06-25</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.70</priority>
+    </url>
+    <url>
+        <loc>https://aicoloranalysis.online/blog-seasonal-analysis-explained.html</loc>
+        <lastmod>2026-06-25</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.70</priority>
+    </url>
+    <url>
+        <loc>https://aicoloranalysis.online/blog-how-ai-color-analysis-works.html</loc>
+        <lastmod>2026-06-25</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.70</priority>
+    </url>
+    <url>
+        <loc>https://aicoloranalysis.online/blog-hair-color-skin-tones.html</loc>
+        <lastmod>2026-06-25</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.70</priority>
+    </url>
+    <url>
+        <loc>https://aicoloranalysis.online/blog-gold-vs-silver-jewelry.html</loc>
+        <lastmod>2026-06-25</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.70</priority>
+    </url>
+    <url>
+        <loc>https://aicoloranalysis.online/blog-common-color-mistakes.html</loc>
+        <lastmod>2026-06-25</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.70</priority>
+    </url>
+    <url>
+        <loc>https://aicoloranalysis.online/blog-why-lighting-matters.html</loc>
+        <lastmod>2026-06-25</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.70</priority>
+    </url>
+    <url>
+        <loc>https://aicoloranalysis.online/blog-building-a-color-wardrobe.html</loc>
+        <lastmod>2026-06-25</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.70</priority>
+    </url>
+
     <!-- Platform Legal Requirements -->
     <url>
-        <loc>https://aicoloranalysis.online/index.html</loc>
+        <loc>https://aicoloranalysis.online/privacy.html</loc>
         <lastmod>2026-06-25</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.30</priority>
     </url>
     <url>
-        <loc>https://aicoloranalysis.online/index.html</loc>
+        <loc>https://aicoloranalysis.online/terms.html</loc>
         <lastmod>2026-06-25</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.30</priority>
