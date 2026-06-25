@@ -50,7 +50,22 @@
     </p>
 
 </section>
-
+<!-- PHOTO PRIVACY NOTICE COMPONENT -->
+<div class="privacy-notice-box">
+    <div class="privacy-header">
+        <span class="privacy-icon">🔒</span>
+        <h3>Photo Privacy & Data Security Notice</h3>
+    </div>
+    <p class="privacy-text">
+        Your privacy is our highest priority. This tool uses advanced local client-side computer vision algorithms to evaluate your skin metrics.
+    </p>
+    <ul class="privacy-points">
+        <li><strong>On-Device Processing:</strong> Your image is processed entirely inside your own web browser.</li>
+        <li><strong>No Server Uploads:</strong> Your face data, biometric pixels, and photos are never transmitted, saved, or stored on any server.</li>
+        <li><strong>100% Temporary:</strong> The moment you refresh or close this browser tab, all image memory cache is completely wiped out instantly.</li>
+    </ul>
+    <span class="privacy-tag">✓ Fully compliant with modern data protection standards</span>
+</div>
 <section class="upload-section">
 
     <div class="card">
@@ -147,13 +162,52 @@
     </div>
 
 </section>
+<!-- INTERACTIVE FAQ SECTION -->
+<div class="faq-container">
+    <div class="faq-hero">
+        <h2>Frequently Asked Questions</h2>
+        <p>Everything you need to know about our AI Color Analysis technology.</p>
+    </div>
 
+    <div class="faq-list">
+        <details class="faq-item" open>
+            <summary class="faq-question">How accurate is the AI Color Analysis?</summary>
+            <div class="faq-answer">
+                <p>Our app achieves high accuracy by using client-side computer vision models to track your facial structure and analyze active pixel balances across your cheeks and forehead. To get the most accurate result, make sure you are in natural, indirect daylight and aren't wearing makeup or tinted glasses.</p>
+            </div>
+        </details>
+
+        <details class="faq-item">
+            <summary class="faq-question">Are my photos or selfies saved on a server?</summary>
+            <div class="faq-answer">
+                <p>No, absolutely not. All image extraction, face mapping, and color sampling happens directly inside your web browser's temporary memory (client-side processing). Your photos are never uploaded to our servers, and all cached data is permanently erased the instant you reload or close the page.</p>
+            </div>
+        </details>
+
+        <details class="faq-item">
+            <summary class="faq-question">What is the difference between skin tone and undertone?</summary>
+            <div class="faq-answer">
+                <p>Your surface skin tone is the color you see on the surface (like fair, medium, tan, or deep), which can change with sun exposure or seasons. Your undertone is the subtle, permanent biological color signature underneath your skin (Warm, Cool, or Neutral) that never changes.</p>
+            </div>
+        </details>
+
+        <details class="faq-item">
+            <summary class="faq-question">Why does the analyzer say "Unable to isolate clear skin pixels"?</summary>
+            <div class="faq-answer">
+                <p>This message appears if your lighting is too dark, washed out, or if there are deep shadows falling across your face. It can also happen if your face is positioned too far away from the camera. Move closer to a clear window or brighten your room's lighting and try again!</p>
+            </div>
+        </details>
+
+        <details class="faq-item">
+            <summary class="faq-question">How should I use my seasonal color results?</summary>
+            <div class="faq-answer">
+                <p>You can use your personalized seasonal profile (like Deep Winter or Warm Spring) to easily pick out clothing colors, hair dyes, makeup shades, and metallic jewelry choices that naturally complement your face, helping you look your best effortlessly.</p>
+            </div>
+        </details>
+    </div>
+</div>
 <footer>
-
-    <p>
-        © 2026 AI Color Analysis
-    </p>
-
+    <p>© 2026 AI Color Analysis | <a href="privacy.html" style="color:inherit; text-decoration:none;">Privacy Policy</a> | <a href="terms.html" style="color:inherit; text-decoration:none;">Terms of Service</a></p>
 </footer>
 <canvas id="canvas" style="display:none;"></canvas>
 <script src="app.js"></script>
