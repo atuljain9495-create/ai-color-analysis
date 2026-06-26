@@ -876,6 +876,16 @@ body.dark-mode .legal-content p strong,
 body.dark-mode .legal-content span {
     color: #ffffff !important;
 }
+/* E-commerce Affiliate Section Styling */
+body.dark-mode #shoppingSection h3 {
+    color: #ffffff !important;
+}
+body.dark-mode .recommend-card h4 {
+    color: #ffffff !important;
+}
+body.dark-mode .recommend-card a {
+    color: #a78bfa !important;
+}
 /* ==========================================================================
    GLOBAL LONG-FORM POST READABILITY FIX (FOR THE SINGLE ARTICLE PAGES)
    ========================================================================== */
