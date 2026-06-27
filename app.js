@@ -482,7 +482,7 @@ function buildSliderCards(prefix) {
             </div>
 
             <div class="shop-links">
-                <a class="shop-link amazon" href="https://www.amazon.com/s?k=${targetSearch}" target="_blank" rel="noopener noreferrer">Amazon</a>
+                <a class="shop-link amazon" href="https://www.amazon.com/s?k=${targetSearch}&tag=aicolor-20" target="_blank" rel="noopener noreferrer">Amazon</a>
                 <a class="shop-link asos"   href="https://www.asos.com/search/?q=${targetSearch}" target="_blank" rel="noopener noreferrer">ASOS</a>
                 <a class="shop-link hm"     href="https://www2.hm.com/en_us/search-results.html?q=${targetSearch}" target="_blank" rel="noopener noreferrer">H&amp;M</a>
             </div>

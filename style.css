@@ -1034,3 +1034,40 @@ body.dark-mode .post-container h3 {
     color: #ffffff !important;
     box-shadow: 0 4px 10px rgba(220, 38, 38, 0.2);
 }
+/* ── Mobile Responsive Header Optimization ── */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 12px;
+                padding: 15px 10px;
+                text-align: center;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                gap: 12px;
+                width: 100%;
+                align-items: center;
+            }
+
+            nav {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 20px; /* Gives healthy spacing between Home, Blog, About, Contact */
+                flex-wrap: wrap; /* Prevents text overflow on extra small mobile screens */
+                width: 100%;
+            }
+
+            nav a {
+                padding: 6px 10px;
+                font-size: 0.95rem;
+                font-weight: 600;
+                display: inline-block;
+            }
+
+            #darkModeBtn {
+                margin-top: 2px; /* Keeps the toggle button clean and neatly separated */
+                padding: 6px 12px;
+            }
+        }
