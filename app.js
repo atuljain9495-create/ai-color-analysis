@@ -34,6 +34,9 @@ let faceApiReady      = false;
 let faceApiFailed     = false;
 let ageGenderReady    = false;
 
+// Global memory state tracking arrays for individual card color slider positions
+let itemsToShopMatrix = [];
+
 const FACE_API_MODEL_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights/";
 
 function applyDarkModeUI() {
@@ -303,18 +306,35 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         const detectedAge=validationResult.age||null;
         const genderProb=validationResult.genderProb||0;
 
-        let personType="woman"; // Baseline default fallback
-        
-        // Compute automatic AI assignments
-        if (detectedGender==="male")   personType="man";
-        if (detectedGender==="female") personType="woman";
-        if (detectedAge!==null&&detectedAge<13) personType="child";
-
-        // Read value tag from our new user override layer dropdown
         const selectedDropdownMode = genderSelect ? genderSelect.value : "auto";
+        let personType = "woman"; // Standard clean default base
+
+        // 1. If the user explicitly chose Men, Women, or Child in the dropdown, obey it instantly!
         if (selectedDropdownMode !== "auto") {
-            personType = selectedDropdownMode; // Force priority override
+            personType = selectedDropdownMode;
+        } 
+        // 2. If it's on Auto, use the live face-api.js AI tracking metrics safely if they loaded
+        else if (detectedGender) {
+            if (detectedGender === "male") personType = "man";
+            if (detectedGender === "female") personType = "woman";
+            if (detectedAge !== null && detectedAge < 13) personType = "child";
+        } 
+        // 3. Smart Context Scan: If AI is processing, scan the uploaded file name for clear clues
+        else {
+            const fileNameLower = imageUpload && imageUpload.files[0] ? imageUpload.files[0].name.toLowerCase() : "";
+            
+            if (fileNameLower.includes("man") || fileNameLower.includes("male") || fileNameLower.includes("boy") || fileNameLower.includes("guy") || fileNameLower.includes("he")) {
+                personType = "man";
+            } else if (fileNameLower.includes("child") || fileNameLower.includes("kid") || fileNameLower.includes("baby") || fileNameLower.includes("girl") && fileNameLower.includes("kid")) {
+                personType = "child";
+            } else {
+                personType = "woman"; // Safe balanced baseline to keep ladies' profiles secure
+            }
         }
+
+        // Standardize internal string mapping values
+        if (personType === "male") personType = "man";
+        if (personType === "female") personType = "woman";
 
         // Render demographic layout box if information is verified
         if (genderResult) {
@@ -325,14 +345,15 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
                 woman: `Target Selection: <strong>Woman</strong>${detectedAge?` · Approx. age ${detectedAge}`:""}`,
                 child: `Target Selection: <strong>Child</strong>${detectedAge?` · Approx. age ${detectedAge}`:""}`
             };
-            genderIcon.textContent=icons[personType];
+            
+            genderIcon.textContent=icons[personType] || "👤";
             
             if (selectedDropdownMode !== "auto") {
                 genderText.innerHTML=labels[personType] + ` <span style="opacity:0.5;font-size:0.78rem;">(Manual Filter Override)</span>`;
             } else if (detectedGender) {
                 genderText.innerHTML=labels[personType] + ` <span style="opacity:0.5;font-size:0.78rem;">(${Math.round(genderProb*100)}% AI confidence)</span>`;
             } else {
-                genderText.innerHTML=`Target Selection: <strong>${capitalise(personType)}</strong> <span style="opacity:0.5;font-size:0.78rem;">(Fallback Default Mode)</span>`;
+                genderText.innerHTML=labels[personType] + ` <span style="opacity:0.5;font-size:0.78rem;">(Smart Fallback Mode)</span>`;
             }
         }
 
@@ -396,52 +417,95 @@ function renderSection(container,label,items){
     items.forEach(item=>{const li=document.createElement("li");li.innerHTML=item;container.appendChild(li);});
 }
 
-function generateShoppingLinks(undertone,skinToneCategory,personType){
-    if(!shopSection||!shopGrid)return;
-    const palette=getClothingPalette(undertone,skinToneCategory,"medium");
-    const hair=getHairPalette(undertone,skinToneCategory);
-    const jewelry=getJewelryPalette(undertone,skinToneCategory);
-    const topColors=palette.best.slice(0,3);
-    const topNeutral=palette.neutrals[0]||"beige";
-    const topHair=hair.best[0]||"natural brown";
-    const topMetal=jewelry.best[0]||"gold";
-    const topGem=jewelry.gems[0]||"pearl";
-    const isMen=personType==="man" || personType==="male";
-    const isChild=personType==="child";
-    
-    const clothingItems=isMen?["shirt","trousers","jacket"]:isChild?["kids top","kids outfit","kids dress"]:["blouse","dress","top"];
-    const accessoryItems=isMen?["mens watch","mens belt","mens shoes"]:isChild?["kids accessories","kids shoes","kids bag"]:["handbag","scarf","shoes"];
-    const shopItems=[
-        {tag:"👗 Clothing",   item:`${topColors[0]} ${clothingItems[0]}`,  color:topColors[0], category:clothingItems[0]},
-        {tag:"👗 Clothing",   item:`${topColors[1]} ${clothingItems[1]}`,  color:topColors[1], category:clothingItems[1]},
-        {tag:"👗 Clothing",   item:`${topNeutral} ${clothingItems[2]}`,    color:topNeutral,   category:clothingItems[2]},
-        {tag:"👜 Accessories",item:`${topNeutral} ${accessoryItems[0]}`,   color:topNeutral,   category:accessoryItems[0]},
-        {tag:"👜 Accessories",item:`${topColors[2]||topColors[0]} ${accessoryItems[1]}`,color:topColors[2]||topColors[0],category:accessoryItems[1]},
-        {tag:"💇 Hair",       item:`${topHair} hair dye`,                 color:topHair,      category:"hair color dye"},
-        {tag:"💍 Jewelry",    item:`${topMetal} necklace`,                color:topMetal,     category:"necklace"},
-        {tag:"💍 Jewelry",    item:`${topGem} earrings`,                  color:topGem,       category:"earrings"},
+/* ==========================================================================
+   DYNAMIC ATTRIBUTE PALETTE COLOR SLIDER CARD BUILDER
+   ========================================================================== */
+function generateShoppingLinks(undertone, skinToneCategory, personType) {
+    if (!shopSection || !shopGrid) return;
+
+    // 1. Gather all calculated color profile tracks securely from the engine
+    const palette = getClothingPalette(undertone, skinToneCategory, "medium");
+    const hair = getHairPalette(undertone, skinToneCategory);
+    const jewelry = getJewelryPalette(undertone, skinToneCategory);
+
+    // Merge Best, Good, and Accent list configurations together so NO colors are forgotten!
+    const dynamicClothingColors = [...(palette.best || []), ...(palette.good || []), ...(palette.accent || [])];
+    const dynamicNeutralColors  = palette.neutrals || ["Grey", "Beige", "Navy"];
+    const metallicHardware      = jewelry.best || ["Gold", "Silver"];
+    const crystalGemstones      = jewelry.gems || ["Pearl", "Sapphire"];
+    const hairTones             = hair.best || ["Natural Brown"];
+
+    const isMen = personType === "man" || personType === "male";
+    const isChild = personType === "child";
+    const prefix = isMen ? "mens " : (isChild ? "kids " : "womens ");
+
+    // 2. Map structural color lists dynamically into independent card slider configurations
+    itemsToShopMatrix = [
+        { id: 0, tag: "👚 Core Tops",       type: isMen ? "shirt" : (isChild ? "tshirt" : "blouse"),    colors: dynamicClothingColors, activeIdx: 0 },
+        { id: 1, tag: "👖 Bottom Staples",  type: isMen ? "trousers" : (isChild ? "pants" : "skirt"),   colors: dynamicNeutralColors,  activeIdx: 0 },
+        { id: 2, tag: "🧥 Outer Layers",    type: isMen ? "jacket" : (isChild ? "hoodie" : "blazer"),   colors: dynamicClothingColors, activeIdx: 1 }, 
+        { id: 3, tag: "👜 Accent Gear",     type: isMen ? "belt" : (isChild ? "backpack" : "handbag"),  colors: dynamicNeutralColors,  activeIdx: 1 },
+        { id: 4, tag: "🧣 Seasonal Layers", type: "scarf",                                              colors: dynamicClothingColors, activeIdx: 2 },
+        { id: 5, tag: "💍 Metallic Links",   type: "necklace",                                           colors: metallicHardware,      activeIdx: 0 },
+        { id: 6, tag: "💎 Gem Accents",     type: "earrings",                                           colors: crystalGemstones,      activeIdx: 0 },
+        { id: 7, tag: "💇 Hair Tones",       type: "hair dye",                                           colors: hairTones,             activeIdx: 0 }
     ];
-    shopGrid.innerHTML="";
-    shopItems.forEach(({tag,item,color,category})=>{
-        const gPrefix=isMen?"mens ":isChild?"kids ":"womens ";
-        const amazonQ=encodeURIComponent(`${color} ${gPrefix}${category}`);
-        const asosQ=encodeURIComponent(`${color} ${gPrefix}${category}`);
-        const hmQ=encodeURIComponent(`${color} ${gPrefix}${category}`);
-        const card=document.createElement("div");
-        card.className="shop-card";
-        card.innerHTML=`
-            <span class="shop-tag">${tag}</span>
-            <span class="shop-item">${capitalise(item)}</span>
-            <span class="shop-color">Color: ${capitalise(color)}</span>
-            <div class="shop-links">
-                <a class="shop-link amazon" href="https://www.amazon.com/s?k=${amazonQ}" target="_blank" rel="noopener noreferrer">Amazon</a>
-                <a class="shop-link asos"   href="https://www.asos.com/search/?q=${asosQ}" target="_blank" rel="noopener noreferrer">ASOS</a>
-                <a class="shop-link hm"     href="https://www2.hm.com/en_us/search-results.html?q=${hmQ}" target="_blank" rel="noopener noreferrer">H&amp;M</a>
-            </div>`;
-        shopGrid.appendChild(card);
-    });
-    shopSection.style.display="block";
+
+    buildSliderCards(prefix);
+    shopSection.style.display = "block";
 }
+
+/* ── INTERACTIVE CONTROLLER: DRAWING CARD LAYER VIEWS ── */
+function buildSliderCards(prefix) {
+    if (!shopGrid) return;
+    shopGrid.innerHTML = "";
+
+    itemsToShopMatrix.forEach((card) => {
+        const currentColor = card.colors[card.activeIdx] || "Universal Base";
+        
+        // Escape characters safely into the URL tracking search queries
+        const targetSearch = encodeURIComponent(`${currentColor} ${prefix}${card.type}`);
+
+        const cardElement = document.createElement("div");
+        cardElement.className = "shop-card";
+        cardElement.innerHTML = `
+            <div>
+                <span class="shop-tag">${card.tag}</span>
+                <div class="shop-item">${capitalise(currentColor)} ${capitalise(card.type)}</div>
+            </div>
+            
+            <!-- INTERACTIVE SLIDER BAR NAVIGATION LAYOUT -->
+            <div class="card-slider-bar">
+                <button class="slider-arrow-btn" onclick="slideCardColor(${card.id}, -1, '${prefix}')">◀</button>
+                <div class="slider-color-txt">Color: ${capitalise(currentColor)}</div>
+                <button class="slider-arrow-btn" onclick="slideCardColor(${card.id}, 1, '${prefix}')">▶</button>
+            </div>
+
+            <div class="shop-links">
+                <a class="shop-link amazon" href="https://www.amazon.com/s?k=${targetSearch}" target="_blank" rel="noopener noreferrer">Amazon</a>
+                <a class="shop-link asos"   href="https://www.asos.com/search/?q=${targetSearch}" target="_blank" rel="noopener noreferrer">ASOS</a>
+                <a class="shop-link hm"     href="https://www2.hm.com/en_us/search-results.html?q=${targetSearch}" target="_blank" rel="noopener noreferrer">H&amp;M</a>
+            </div>
+        `;
+        shopGrid.appendChild(cardElement);
+    });
+}
+
+/* ── GLOBAL INTERFACE TRIGGER: COMPUTE INDEX CHANGELOG MUTATIONS ── */
+window.slideCardColor = function(cardId, offset, prefix) {
+    const targetItem = itemsToShopMatrix.find(c => c.id === cardId);
+    if (!targetItem) return;
+
+    // Advance index forward or backward seamlessly inside a closed loop sequence
+    targetItem.activeIdx += offset;
+    if (targetItem.activeIdx >= targetItem.colors.length) {
+        targetItem.activeIdx = 0; // wrap to beginning
+    } else if (targetItem.activeIdx < 0) {
+        targetItem.activeIdx = targetItem.colors.length - 1; // wrap to ending
+    }
+
+    buildSliderCards(prefix);
+};
 
 function capitalise(str){return str.replace(/\b\w/g,c=>c.toUpperCase());}
 

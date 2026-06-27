@@ -35,80 +35,110 @@
         }
         #genderResult .gender-icon { font-size: 1.4rem; }
 
-        /* ── Shop Section ── */
+        /* ==========================================================================
+           UPGRADED CAROUSEL COMPONENT & VIBRANT HIGH-CONTRAST STORE BUTTONS
+           ========================================================================== */
         #shopSection {
             display: none;
             margin-top: 30px;
         }
         #shopSection h3 {
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             margin-bottom: 6px;
             color: var(--primary-color, #6a5acd);
-        }
-        #shopSection p.shop-sub {
-            font-size: 0.85rem;
-            opacity: 0.7;
-            margin-bottom: 16px;
+            font-weight: 700;
         }
         .shop-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            width: 100%;
         }
         .shop-card {
-            background: var(--card-bg, #fff);
-            border: 1px solid var(--border-color, #e0e0e0);
-            border-radius: 12px;
-            padding: 14px 16px;
+            background: #1e293b !important; /* Force sleek contrast against dark layout framework */
+            border: 1px solid #374151 !important;
+            border-radius: 16px !important;
+            padding: 20px !important;
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            transition: transform 0.2s, box-shadow 0.2s;
+            justify-content: space-between;
+            min-height: 280px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         .shop-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
         }
         .shop-card .shop-tag {
-            font-size: 0.65rem;
-            letter-spacing: 0.12em;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
-            opacity: 0.55;
-            font-weight: 600;
+            opacity: 0.8;
+            font-weight: 700;
+            color: #a78bfa;
         }
         .shop-card .shop-item {
-            font-size: 0.88rem;
-            font-weight: 600;
-            color: var(--text-color, #222);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ffffff !important;
+            margin: 4px 0;
+            line-height: 1.3;
         }
-        .shop-card .shop-color {
-            font-size: 0.78rem;
-            opacity: 0.7;
-        }
-        .shop-card .shop-links {
+
+        /* ── INTERACTIVE INNER SLIDER BAR CONTROLS ── */
+        .card-slider-bar {
             display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 4px;
+            align-items: center;
+            justify-content: space-between;
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 6px 12px;
+            margin: 12px 0;
+            border: 1px solid #1e293b;
         }
-        .shop-card .shop-link {
-            font-size: 0.73rem;
+        .slider-arrow-btn {
+            background: transparent;
+            color: #a78bfa;
+            border: none;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0 8px;
+            user-select: none;
+            transition: transform 0.1s ease;
+        }
+        .slider-arrow-btn:active { transform: scale(0.85); }
+        .slider-color-txt {
+            font-size: 0.85rem;
+            color: #e2e8f0;
             font-weight: 600;
-            padding: 5px 10px;
-            border-radius: 20px;
-            text-decoration: none;
-            transition: opacity 0.2s;
-        }
-        .shop-card .shop-link:hover { opacity: 0.8; }
-        .shop-link.amazon  { background: #FF9900; color: #111; }
-        .shop-link.asos    { background: #2d2d2d; color: #fff; }
-        .shop-link.hm      { background: #e50010; color: #fff; }
-        .shop-disclaimer {
-            font-size: 0.72rem;
-            opacity: 0.5;
-            margin-top: 12px;
             text-align: center;
         }
+
+        /* ── PREMIUM OUTGOING REDIRECT ACTION BUTTONS ── */
+        .shop-links {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .shop-card .shop-link {
+            flex: 1;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 10px 12px;
+            border-radius: 10px;
+            text-decoration: none;
+            text-align: center;
+            transition: transform 0.2s ease, filter 0.2s ease;
+        }
+        .shop-card .shop-link:hover {
+            transform: scale(1.04);
+            filter: brightness(1.15);
+        }
+        .shop-link.amazon  { background: linear-gradient(135deg, #ff9900, #ffb83d); color: #111111 !important; box-shadow: 0 4px 10px rgba(255,153,0,0.2); }
+        .shop-link.asos    { background: linear-gradient(135deg, #4b5563, #374151); color: #ffffff !important; }
+        .shop-link.hm      { background: linear-gradient(135deg, #dc2626, #ef4444); color: #ffffff !important; box-shadow: 0 4px 10px rgba(220,38,38,0.2); }
     </style>
 </head>
 <body>
@@ -224,13 +254,17 @@
     </div>
 </section>
 
-<!-- Shop Your Colors -->
+<!-- Shop Your Colors (UPDATED DYNAMIC INDIVIDUAL CARD COLOR SLIDERS) -->
 <section class="recommendations">
-    <div class="recommend-card" style="grid-column: 1 / -1;" id="shopSection">
-        <h3>🛍️ Shop Your Colors</h3>
-        <p class="shop-sub">Personalised shopping links based on your color analysis — opens in a new tab.</p>
+    <div class="recommend-card" style="grid-column: 1 / -1; padding: 25px;" id="shopSection">
+        <h3>🛍️ Shop Your Palette Matches</h3>
+        <p class="shop-sub" style="margin-bottom: 24px;">Click the inner arrow sliders on each card to loop through all your recommended custom palette colors dynamically.</p>
+        
         <div class="shop-grid" id="shopGrid"></div>
-        <p class="shop-disclaimer">* These are search links to external retailers. We are not affiliated with these stores. Prices and availability vary.</p>
+        
+        <p class="shop-disclaimer" style="margin-top: 25px; font-size: 0.72rem; opacity: 0.5; text-align: center;">
+            * These are search links to external retailers. We are not affiliated with these stores. Prices and availability vary.
+        </p>
     </div>
 </section>
 

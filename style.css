@@ -927,3 +927,110 @@ body.dark-mode .post-container h2,
 body.dark-mode .post-container h3 {
     color: #ffffff !important;
 }
+/* ==========================================================================
+   DYNAMIC COLOR SLIDER CARD AND VIBRANT ACCENT STYLING
+   ========================================================================== */
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    width: 100%;
+}
+
+.shop-card {
+    background: #1e293b !important;
+    border: 1px solid #374151 !important;
+    border-radius: 16px !important;
+    padding: 20px !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 280px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.shop-card .shop-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #a78bfa;
+}
+
+.shop-card .shop-item {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ffffff !important;
+    margin: 4px 0;
+}
+
+/* ── INNER CARD SLIDER BAR CONTROLS ── */
+.card-slider-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #0f172a;
+    border-radius: 10px;
+    padding: 6px 12px;
+    margin: 10px 0;
+    border: 1px solid #1e293b;
+}
+
+.slider-arrow-btn {
+    background: transparent;
+    color: #a78bfa;
+    border: none;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0 5px;
+    transition: transform 0.1s ease;
+}
+.slider-arrow-btn:active { transform: scale(0.85); }
+
+.slider-color-txt {
+    font-size: 0.82rem;
+    color: #e2e8f0;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* ── PREMIUM OUTGOING SHOPPING BUTTON MATRIX ── */
+.shop-links {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.shop-card .shop-link {
+    flex: 1;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 10px 12px;
+    border-radius: 10px;
+    text-decoration: none;
+    text-align: center;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.shop-card .shop-link:hover {
+    transform: scale(1.04);
+    filter: brightness(1.15);
+}
+
+.shop-link.amazon {
+    background: linear-gradient(135deg, #ff9900, #ffb83d);
+    color: #111111 !important;
+    box-shadow: 0 4px 10px rgba(255, 153, 0, 0.2);
+}
+
+.shop-link.asos {
+    background: linear-gradient(135deg, #4b5563, #374151);
+    color: #ffffff !important;
+}
+
+.shop-link.hm {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.2);
+}
