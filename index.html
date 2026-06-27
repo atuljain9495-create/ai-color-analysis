@@ -8,7 +8,6 @@
     <meta name="keywords" content="skin tone detector, color analysis, AI color analysis, fashion colors, undertone detector, seasonal color palette">
     <link rel="canonical" href="https://aicoloranalysis.online/">
 
-    <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://aicoloranalysis.online/">
     <meta property="og:title" content="Free AI Color Analysis | Find Your Seasonal Color Palette">
@@ -139,6 +138,104 @@
         .shop-link.amazon  { background: linear-gradient(135deg, #ff9900, #ffb83d); color: #111111 !important; box-shadow: 0 4px 10px rgba(255,153,0,0.2); }
         .shop-link.asos    { background: linear-gradient(135deg, #4b5563, #374151); color: #ffffff !important; }
         .shop-link.hm      { background: linear-gradient(135deg, #dc2626, #ef4444); color: #ffffff !important; box-shadow: 0 4px 10px rgba(220,38,38,0.2); }
+
+        /* ==========================================================================
+           VIRAL POLAROID FRAME "SHARE MY SEASON" LIGHTBOX MODAL LAYOUT
+           ========================================================================== */
+        .share-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            padding: 20px;
+            animation: fadeIn 0.25s ease;
+        }
+        .share-modal-content {
+            background: #1e293b;
+            border: 1px solid #374151;
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .share-card-preview-img {
+            width: 100%;
+            max-width: 320px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            margin: 15px 0;
+            border: 1px solid #475569;
+        }
+        .close-modal-btn {
+            background: #334155;
+            color: #f1f5f9;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background 0.2s;
+        }
+        .close-modal-btn:hover { background: #475569; }
+        .download-modal-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+            transition: transform 0.2s;
+        }
+        .download-modal-btn:hover { transform: scale(1.03); }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* ==========================================================================
+           MOBILE RESPONSIVE HEADER OPTIMIZATION
+           ========================================================================== */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 12px;
+                padding: 15px 10px;
+                text-align: center;
+            }
+            .header-actions {
+                flex-direction: column;
+                gap: 12px;
+                width: 100%;
+                align-items: center;
+            }
+            nav {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 20px;
+                flex-wrap: wrap;
+                width: 100%;
+            }
+            nav a {
+                padding: 6px 10px;
+                font-size: 0.95rem;
+                font-weight: 600;
+                display: inline-block;
+            }
+            #darkModeBtn {
+                margin-top: 2px;
+                padding: 6px 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -163,7 +260,6 @@
     <p>Upload a photo and instantly get your skin tone, undertone, seasonal palette, gender-specific style recommendations, and real shopping links.</p>
 </section>
 
-<!-- Privacy Notice -->
 <div class="privacy-notice-box">
     <div class="privacy-header">
         <span class="privacy-icon">🔒</span>
@@ -178,12 +274,10 @@
     <span class="privacy-tag">✓ Fully compliant with GDPR and modern data protection standards</span>
 </div>
 
-<!-- Upload Section -->
 <section class="upload-section">
     <div class="card">
         <h3>Upload Your Photo</h3>
         
-        <!-- INTRODUCING THE HYBRID STYLE SELECTOR OVERRIDE LAYER -->
         <div class="style-select-wrapper" style="margin-bottom: 15px; text-align: left; width: 100%;">
             <label for="genderSelect" style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; opacity: 0.85;">Target Style Filter:</label>
             <select id="genderSelect" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--card-bg, #fff); color: var(--text-color, #222); font-weight: 500;">
@@ -211,22 +305,23 @@
     </div>
 </section>
 
-<!-- Preview -->
 <section class="preview-section">
     <div class="preview-wrapper">
         <img id="previewImage" alt="Your uploaded photo preview">
     </div>
 </section>
 
-<!-- Results -->
 <section class="results">
     <div class="result-card">
         <h2>Your Results</h2>
 
-        <!-- Gender Detection Badge -->
         <div id="genderResult">
             <span class="gender-icon" id="genderIcon"></span>
             <span id="genderText"></span>
+        </div>
+
+        <div id="faceStatusWarning" style="display: none; align-items: center; gap: 8px; margin: 10px 0; padding: 10px 16px; background: #fffbeb; border-radius: 10px; border-left: 4px solid #f59e0b; color: #b45309; font-size: 0.9rem; font-weight: 600;">
+            ⚠️ No human face detected. Please use a clear portrait or selfie photo for an accurate color analysis.
         </div>
 
         <div id="skinTone">Waiting for analysis...</div>
@@ -235,10 +330,15 @@
         <div id="confidenceScore"></div>
         <div id="seasonalType"></div>
         <div id="validationMessage" class="validation-message" aria-live="polite"></div>
+
+        <div class="share-actions-wrapper" style="margin-top: 20px; text-align: center;">
+            <button id="shareSeasonBtn" type="button" style="background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #ffffff; border: none; padding: 12px 28px; border-radius: 25px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.35); display: none;">
+                ✨ Share My Season Card
+            </button>
+        </div>
     </div>
 </section>
 
-<!-- Color Recommendations -->
 <section class="recommendations">
     <div class="recommend-card">
         <h3>Recommended Clothing Colors</h3>
@@ -254,7 +354,6 @@
     </div>
 </section>
 
-<!-- Shop Your Colors (UPDATED DYNAMIC INDIVIDUAL CARD COLOR SLIDERS) -->
 <section class="recommendations">
     <div class="recommend-card" style="grid-column: 1 / -1; padding: 25px;" id="shopSection">
         <h3>🛍️ Shop Your Palette Matches</h3>
@@ -268,7 +367,6 @@
     </div>
 </section>
 
-<!-- FAQ -->
 <div class="faq-container">
     <div class="faq-hero">
         <h2>Frequently Asked Questions</h2>
@@ -321,7 +419,6 @@
 <canvas id="canvas" style="display:none;"></canvas>
 <script src="app.js"></script>
 
-<!-- GDPR Cookie Consent Banner -->
 <div id="cookieBanner" style="position:fixed;bottom:20px;left:20px;right:20px;max-width:500px;background:#111827;color:#fff;padding:20px;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,0.3);z-index:10000;display:none;text-align:left;border:1px solid #374151;">
     <p style="font-size:0.9rem;margin-bottom:12px;line-height:1.5;">We use cookies and Google AdSense to serve personalised advertisements. By clicking "Accept" you consent to our use of cookies as described in our <a href="privacy.html" style="color:#a78bfa;">Privacy Policy</a>.</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">

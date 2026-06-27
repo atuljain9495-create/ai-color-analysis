@@ -25,6 +25,8 @@ const genderText     = document.getElementById("genderText");
 const shopSection    = document.getElementById("shopSection");
 const shopGrid       = document.getElementById("shopGrid");
 const genderSelect   = document.getElementById("genderSelect");
+const shareSeasonBtn = document.getElementById("shareSeasonBtn");
+const faceStatusWarning = document.getElementById("faceStatusWarning");
 
 let uploadedImage     = null;
 let stream            = null;
@@ -65,14 +67,16 @@ function clearRecommendations() {
     if (shopGrid)       shopGrid.innerHTML = "";
     if (shopSection)    shopSection.style.display = "none";
     if (genderResult)   genderResult.style.display = "none";
+    if (shareSeasonBtn) shareSeasonBtn.style.display = "none";
+    if (faceStatusWarning) faceStatusWarning.style.display = "none";
 }
 
 function resetResults() {
     if (skinToneDiv)    skinToneDiv.innerHTML = "Waiting for analysis...";
     if (hexColorDiv)    hexColorDiv.innerHTML = "";
     if (undertoneDiv)   undertoneDiv.innerHTML = "";
-    if (seasonalTypeDiv)seasonalTypeDiv.innerHTML = "";
-    if (confidenceScore)confidenceScore.innerHTML = "";
+    if (seasonalTypeDiv) seasonalTypeDiv.innerHTML = "";
+    if (confidenceScore) confidenceScore.innerHTML = "";
     clearRecommendations();
 }
 
@@ -175,6 +179,10 @@ applyDarkModeUI();
 resetResults();
 
 if (imageUpload) {
+    imageUpload.addEventListener("click", function() {
+        resetResults();
+    });
+
     imageUpload.addEventListener("change", function () {
         const file = this.files[0];
         if (!file) return;
@@ -247,6 +255,9 @@ if (analyzeBtn) {
     });
 }
 
+// State tracking globally to pass properties cleanly down into the dynamic image rendering engine
+let currentAnalyzedPersonType = "woman";
+
 function analyzeSkinTone(imageSrc, validationResult = {}) {
     const img = new Image();
     img.onload = function () {
@@ -301,59 +312,67 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         const contrastLevel=validationResult.contrastLevel||"medium";
         const seasonalType=getSeasonalType(undertone,skinToneCategory,contrastLevel);
 
-        // ── FIXED ENGINES: RESOLVING DETECTED ATTRIBUTES ──
         const detectedGender=validationResult.gender||null;
         const detectedAge=validationResult.age||null;
         const genderProb=validationResult.genderProb||0;
+        const faceBoxFound = validationResult.faceBox || null;
 
         const selectedDropdownMode = genderSelect ? genderSelect.value : "auto";
-        let personType = "woman"; // Standard clean default base
+        let personType = "woman"; 
 
-        // 1. If the user explicitly chose Men, Women, or Child in the dropdown, obey it instantly!
         if (selectedDropdownMode !== "auto") {
             personType = selectedDropdownMode;
         } 
-        // 2. If it's on Auto, use the live face-api.js AI tracking metrics safely if they loaded
         else if (detectedGender) {
             if (detectedGender === "male") personType = "man";
             if (detectedGender === "female") personType = "woman";
             if (detectedAge !== null && detectedAge < 13) personType = "child";
         } 
-        // 3. Smart Context Scan: If AI is processing, scan the uploaded file name for clear clues
         else {
             const fileNameLower = imageUpload && imageUpload.files[0] ? imageUpload.files[0].name.toLowerCase() : "";
-            
             if (fileNameLower.includes("man") || fileNameLower.includes("male") || fileNameLower.includes("boy") || fileNameLower.includes("guy") || fileNameLower.includes("he")) {
                 personType = "man";
             } else if (fileNameLower.includes("child") || fileNameLower.includes("kid") || fileNameLower.includes("baby") || fileNameLower.includes("girl") && fileNameLower.includes("kid")) {
                 personType = "child";
             } else {
-                personType = "woman"; // Safe balanced baseline to keep ladies' profiles secure
+                personType = "woman";
             }
         }
 
-        // Standardize internal string mapping values
         if (personType === "male") personType = "man";
         if (personType === "female") personType = "woman";
+        
+        currentAnalyzedPersonType = personType;
 
-        // Render demographic layout box if information is verified
-        if (genderResult) {
-            genderResult.style.display="flex";
-            const icons={man:"👨",woman:"👩",child:"🧒"};
-            const labels={
-                man:   `Target Selection: <strong>Man</strong>${detectedAge?` · Approx. age ${detectedAge}`:""}`,
-                woman: `Target Selection: <strong>Woman</strong>${detectedAge?` · Approx. age ${detectedAge}`:""}`,
-                child: `Target Selection: <strong>Child</strong>${detectedAge?` · Approx. age ${detectedAge}`:""}`
-            };
-            
-            genderIcon.textContent=icons[personType] || "👤";
-            
-            if (selectedDropdownMode !== "auto") {
-                genderText.innerHTML=labels[personType] + ` <span style="opacity:0.5;font-size:0.78rem;">(Manual Filter Override)</span>`;
-            } else if (detectedGender) {
-                genderText.innerHTML=labels[personType] + ` <span style="opacity:0.5;font-size:0.78rem;">(${Math.round(genderProb*100)}% AI confidence)</span>`;
+        if (faceStatusWarning) {
+            if (!faceBoxFound && selectedDropdownMode === "auto") {
+                faceStatusWarning.style.display = "flex";
             } else {
-                genderText.innerHTML=labels[personType] + ` <span style="opacity:0.5;font-size:0.78rem;">(Smart Fallback Mode)</span>`;
+                faceStatusWarning.style.display = "none";
+            }
+        }
+
+        if (genderResult) {
+            if (!faceBoxFound && selectedDropdownMode === "auto") {
+                genderResult.style.display = "none";
+            } else {
+                genderResult.style.display = "flex";
+                const icons={man:"👨",woman:"👩",child:"🧒"};
+                const labels={
+                    man:   `Target Selection: <strong>Man</strong>${detectedAge?` · Approx. age ${detectedAge}`:""}`,
+                    woman: `Target Selection: <strong>Woman</strong>${detectedAge?` · Approx. age ${detectedAge}`:""}`,
+                    child: `Target Selection: <strong>Child</strong>${detectedAge?` · Approx. age ${detectedAge}`:""}`
+                };
+                
+                genderIcon.textContent=icons[personType] || "👤";
+                
+                if (selectedDropdownMode !== "auto") {
+                    genderText.innerHTML=labels[personType] + ` <span style="opacity:0.5;font-size:0.78rem;">(Manual Filter Override)</span>`;
+                } else if (detectedGender) {
+                    genderText.innerHTML=labels[personType] + ` <span style="opacity:0.5;font-size:0.78rem;">(${Math.round(genderProb*100)}% AI confidence)</span>`;
+                } else {
+                    genderText.innerHTML=labels[personType] + ` <span style="opacity:0.5;font-size:0.78rem;">(Smart Fallback Mode)</span>`;
+                }
             }
         }
 
@@ -368,6 +387,8 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
 
         generateRecommendations(undertone,skinToneCategory,contrastLevel);
         generateShoppingLinks(undertone,skinToneCategory,personType);
+
+        if (shareSeasonBtn) shareSeasonBtn.style.display = "inline-block";
     };
     img.src=imageSrc;
 }
@@ -417,18 +438,13 @@ function renderSection(container,label,items){
     items.forEach(item=>{const li=document.createElement("li");li.innerHTML=item;container.appendChild(li);});
 }
 
-/* ==========================================================================
-   DYNAMIC ATTRIBUTE PALETTE COLOR SLIDER CARD BUILDER
-   ========================================================================== */
 function generateShoppingLinks(undertone, skinToneCategory, personType) {
     if (!shopSection || !shopGrid) return;
 
-    // 1. Gather all calculated color profile tracks securely from the engine
     const palette = getClothingPalette(undertone, skinToneCategory, "medium");
     const hair = getHairPalette(undertone, skinToneCategory);
     const jewelry = getJewelryPalette(undertone, skinToneCategory);
 
-    // Merge Best, Good, and Accent list configurations together so NO colors are forgotten!
     const dynamicClothingColors = [...(palette.best || []), ...(palette.good || []), ...(palette.accent || [])];
     const dynamicNeutralColors  = palette.neutrals || ["Grey", "Beige", "Navy"];
     const metallicHardware      = jewelry.best || ["Gold", "Silver"];
@@ -439,23 +455,48 @@ function generateShoppingLinks(undertone, skinToneCategory, personType) {
     const isChild = personType === "child";
     const prefix = isMen ? "mens " : (isChild ? "kids " : "womens ");
 
-    // 2. Map structural color lists dynamically into independent card slider configurations
-    itemsToShopMatrix = [
-        { id: 0, tag: "👚 Core Tops",       type: isMen ? "shirt" : (isChild ? "tshirt" : "blouse"),    colors: dynamicClothingColors, activeIdx: 0 },
-        { id: 1, tag: "👖 Bottom Staples",  type: isMen ? "trousers" : (isChild ? "pants" : "skirt"),   colors: dynamicNeutralColors,  activeIdx: 0 },
-        { id: 2, tag: "🧥 Outer Layers",    type: isMen ? "jacket" : (isChild ? "hoodie" : "blazer"),   colors: dynamicClothingColors, activeIdx: 1 }, 
-        { id: 3, tag: "👜 Accent Gear",     type: isMen ? "belt" : (isChild ? "backpack" : "handbag"),  colors: dynamicNeutralColors,  activeIdx: 1 },
-        { id: 4, tag: "🧣 Seasonal Layers", type: "scarf",                                              colors: dynamicClothingColors, activeIdx: 2 },
-        { id: 5, tag: "💍 Metallic Links",   type: "necklace",                                           colors: metallicHardware,      activeIdx: 0 },
-        { id: 6, tag: "💎 Gem Accents",     type: "earrings",                                           colors: crystalGemstones,      activeIdx: 0 },
-        { id: 7, tag: "💇 Hair Tones",       type: "hair dye",                                           colors: hairTones,             activeIdx: 0 }
+    let generalItemsMatrix = [
+        { id: 0,  tag: "👚 Core Tops",       type: isMen ? "shirt" : (isChild ? "tshirt" : "blouse"),    colors: dynamicClothingColors, activeIdx: 0 },
+        { id: 1,  tag: "👖 Bottom Staples",  type: isMen ? "trousers" : (isChild ? "pants" : "skirt"),   colors: dynamicNeutralColors,  activeIdx: 0 },
+        { id: 2,  tag: "🧥 Outer Layers",    type: isMen ? "jacket" : (isChild ? "hoodie" : "blazer"),   colors: dynamicClothingColors, activeIdx: 1 }, 
+        { id: 3,  tag: "👜 Accent Gear",     type: isMen ? "belt" : (isChild ? "backpack" : "handbag"),  colors: dynamicNeutralColors,  activeIdx: 1 },
+        { id: 4,  tag: "🧣 Seasonal Layers", type: "scarf",                                              colors: dynamicClothingColors, activeIdx: 2 }
     ];
+
+    if (!isMen && !isChild) {
+        let lipColors = ["Nude Pink", "Dusty Rose", "Mauve Berry", "Soft Plum"];
+        let eyeshadowPalettes = ["Nude Shimmer", "Cool Taupe", "Rose Gold", "Slate Matte"];
+        let blushTones = ["Soft Pink", "Cool Berry", "Rose Mauve"];
+
+        if (undertone === "Warm") {
+            lipColors = ["Warm Peach", "Coral Red", "Terracotta Brown", "Spiced Honey", "Brick Red"];
+            eyeshadowPalettes = ["Warm Bronze", "Golden Ochre", "Terracotta Shimmer", "Copper Earth"];
+            blushTones = ["Warm Peach", "Soft Coral", "Sunkissed Amber", "Apricot Glow"];
+        } else if (undertone === "Neutral") {
+            lipColors = ["Universal Nude", "Spiced Rose", "Soft Berry", "Classic Crimson"];
+            eyeshadowPalettes = ["Neutral Earth", "Champagne Shimmer", "Taupe Matte", "Bronze Glow"];
+            blushTones = ["Nude Peach", "Rosewood", "Soft Amber"];
+        }
+
+        generalItemsMatrix.push(
+            { id: 5, tag: "💄 Cosmetics (8%+$)", type: "lipstick",           colors: lipColors,         activeIdx: 0 },
+            { id: 6, tag: "🎨 Cosmetics (8%+$)", type: "eyeshadow palette",  colors: eyeshadowPalettes, activeIdx: 0 },
+            { id: 7, tag: "✨ Cosmetics (8%+$)", type: "makeup blush",       colors: blushTones,        activeIdx: 0 }
+        );
+    }
+
+    generalItemsMatrix.push(
+        { id: 8,  tag: "💍 Metallic Links",   type: "necklace",              colors: metallicHardware,  activeIdx: 0 },
+        { id: 9,  tag: "💎 Gem Accents",     type: "earrings",              colors: crystalGemstones,  activeIdx: 0 },
+        { id: 10, tag: "💇 Hair Tones",       type: "hair dye",              colors: hairTones,         activeIdx: 0 }
+    );
+
+    itemsToShopMatrix = generalItemsMatrix;
 
     buildSliderCards(prefix);
     shopSection.style.display = "block";
 }
 
-/* ── INTERACTIVE CONTROLLER: DRAWING CARD LAYER VIEWS ── */
 function buildSliderCards(prefix) {
     if (!shopGrid) return;
     shopGrid.innerHTML = "";
@@ -463,8 +504,12 @@ function buildSliderCards(prefix) {
     itemsToShopMatrix.forEach((card) => {
         const currentColor = card.colors[card.activeIdx] || "Universal Base";
         
-        // Escape characters safely into the URL tracking search queries
-        const targetSearch = encodeURIComponent(`${currentColor} ${prefix}${card.type}`);
+        let dynamicSearchTerm = "";
+        if (card.tag.includes("Cosmetics")) {
+            dynamicSearchTerm = encodeURIComponent(`${currentColor} ${card.type}`); 
+        } else {
+            dynamicSearchTerm = encodeURIComponent(`${currentColor} ${prefix}${card.type}`);
+        }
 
         const cardElement = document.createElement("div");
         cardElement.className = "shop-card";
@@ -474,40 +519,199 @@ function buildSliderCards(prefix) {
                 <div class="shop-item">${capitalise(currentColor)} ${capitalise(card.type)}</div>
             </div>
             
-            <!-- INTERACTIVE SLIDER BAR NAVIGATION LAYOUT -->
             <div class="card-slider-bar">
                 <button class="slider-arrow-btn" onclick="slideCardColor(${card.id}, -1, '${prefix}')">◀</button>
-                <div class="slider-color-txt">Color: ${capitalise(currentColor)}</div>
+                <div class="slider-color-txt">Variant: ${capitalise(currentColor)}</div>
                 <button class="slider-arrow-btn" onclick="slideCardColor(${card.id}, 1, '${prefix}')">▶</button>
             </div>
 
             <div class="shop-links">
-                <a class="shop-link amazon" href="https://www.amazon.com/s?k=${targetSearch}&tag=aicolor-20" target="_blank" rel="noopener noreferrer">Amazon</a>
-                <a class="shop-link asos"   href="https://www.asos.com/search/?q=${targetSearch}" target="_blank" rel="noopener noreferrer">ASOS</a>
-                <a class="shop-link hm"     href="https://www2.hm.com/en_us/search-results.html?q=${targetSearch}" target="_blank" rel="noopener noreferrer">H&amp;M</a>
+                <a class="shop-link amazon" href="https://www.amazon.com/s?k=${dynamicSearchTerm}&tag=aicolor-20" target="_blank" rel="noopener noreferrer">Amazon</a>
+                <a class="shop-link asos"   href="https://www.asos.com/search/?q=${dynamicSearchTerm}" target="_blank" rel="noopener noreferrer">ASOS</a>
+                <a class="shop-link hm"     href="https://www2.hm.com/en_us/search-results.html?q=${dynamicSearchTerm}" target="_blank" rel="noopener noreferrer">H&amp;M</a>
             </div>
         `;
         shopGrid.appendChild(cardElement);
     });
 }
 
-/* ── GLOBAL INTERFACE TRIGGER: COMPUTE INDEX CHANGELOG MUTATIONS ── */
 window.slideCardColor = function(cardId, offset, prefix) {
     const targetItem = itemsToShopMatrix.find(c => c.id === cardId);
     if (!targetItem) return;
 
-    // Advance index forward or backward seamlessly inside a closed loop sequence
     targetItem.activeIdx += offset;
     if (targetItem.activeIdx >= targetItem.colors.length) {
-        targetItem.activeIdx = 0; // wrap to beginning
+        targetItem.activeIdx = 0;
     } else if (targetItem.activeIdx < 0) {
-        targetItem.activeIdx = targetItem.colors.length - 1; // wrap to ending
+        targetItem.activeIdx = targetItem.colors.length - 1;
     }
 
     buildSliderCards(prefix);
 };
 
 function capitalise(str){return str.replace(/\b\w/g,c=>c.toUpperCase());}
+
+/* ==========================================================================
+   VIRAL POLAROID FRAME "SHARE MY SEASON" CANVAS ENGINE (DEMOGRAPHIC CUSTOMIZED)
+   ========================================================================== */
+if (shareSeasonBtn) {
+    shareSeasonBtn.addEventListener("click", () => {
+        let seasonalTypeText = seasonalTypeDiv ? seasonalTypeDiv.innerText.replace("Seasonal Type:", "").trim() : "My Custom Season";
+        const skinToneText = skinToneDiv ? skinToneDiv.innerText.replace("Skin Tone:", "").trim() : "";
+        const undertoneText = undertoneDiv ? undertoneDiv.innerText.replace("Undertone:", "").trim() : "";
+
+        const clothingColorsList = clothingColors ? Array.from(clothingColors.querySelectorAll("li:not(.recommendation-heading)")).map(li => li.innerText) : [];
+        const defaultPaletteHexes = ["#2d3748", "#4a5568", "#718096", "#a0aec0"];
+        
+        let colorSwatches = clothingColorsList.slice(0, 4);
+        if (colorSwatches.length < 4) colorSwatches = ["Peach", "Coral", "Aqua", "Ivory"];
+
+        const shareCanvas = document.createElement("canvas");
+        const sCtx = shareCanvas.getContext("2d");
+        shareCanvas.width = 1200;
+        shareCanvas.height = 1500;
+
+        // Dynamic Background Theming Layer
+        if (currentAnalyzedPersonType === "woman") {
+            sCtx.fillStyle = "#831843"; // Luxurious Deep Berry-Pink for Women
+        } else if (currentAnalyzedPersonType === "child") {
+            sCtx.fillStyle = "#0284c7"; // Bright happy sky-blue for Children
+        } else {
+            sCtx.fillStyle = "#1e293b"; // Classic sleek charcoal-dark for Men
+        }
+        sCtx.fillRect(0, 0, shareCanvas.width, shareCanvas.height);
+        
+        sCtx.lineWidth = 10;
+        sCtx.strokeStyle = currentAnalyzedPersonType === "woman" ? "#9d174d" : "#334155";
+        sCtx.strokeRect(20, 20, shareCanvas.width - 40, shareCanvas.height - 40);
+
+        // ── INJECT CARTOON CHARACTERS & ANIMALS FOR CHILDREN'S MATRIX ──
+        if (currentAnalyzedPersonType === "child") {
+            sCtx.font = "80px system-ui";
+            sCtx.textAlign = "center";
+            
+            // Draw cartoon panda and lion stickers in upper corners
+            sCtx.fillText("🐼", 100, 110);              // Top Left Corner Panda
+            sCtx.fillText("🦁", shareCanvas.width - 100, 110); // Top Right Corner Lion
+
+            // Draw cartoon tropical fish swimming up the left side margin track channels
+            sCtx.fillText("🐠", 60, 450);
+            sCtx.fillText("🐟", 65, 750);
+            sCtx.fillText("🐠", 55, 1050);
+
+            // Add clear bubble physics next to fish coordinates
+            sCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
+            sCtx.beginPath(); sCtx.arc(60, 370, 12, 0, Math.PI * 2); sCtx.fill();
+            sCtx.beginPath(); sCtx.arc(70, 680, 8, 0, Math.PI * 2); sCtx.fill();
+            sCtx.beginPath(); sCtx.arc(50, 980, 16, 0, Math.PI * 2); sCtx.fill();
+
+            seasonalTypeText = "✨ " + seasonalTypeText;
+        }
+
+        const userImgObj = new Image();
+        userImgObj.onload = function() {
+            const frameX = 120;
+            const frameY = 140;
+            const frameSize = 960;
+
+            sCtx.save();
+            sCtx.beginPath();
+            sCtx.roundRect(frameX, frameY, frameSize, frameSize, 24);
+            sCtx.clip();
+
+            let srcX = 0, srcY = 0, srcSize = userImgObj.width;
+            if (userImgObj.width > userImgObj.height) {
+                srcSize = userImgObj.height;
+                srcX = (userImgObj.width - userImgObj.height) / 2;
+            } else {
+                srcSize = userImgObj.width;
+                srcY = (userImgObj.height - userImgObj.width) / 2;
+            }
+
+            sCtx.drawImage(userImgObj, srcX, srcY, srcSize, srcSize, frameX, frameY, frameSize, frameSize);
+            sCtx.restore();
+
+            const paletteStartY = 1180; 
+            const circleRadius = 45;
+            const gapBetweenCircles = 60;
+            const totalWidthOfCircles = (circleRadius * 2 * 4) + (gapBetweenCircles * 3);
+            const circlesStartX = (shareCanvas.width - totalWidthOfCircles) / 2 + circleRadius;
+
+            const styleColorMap = {
+                "peach": "#ffb09c", "coral": "#ff6b6b", "aqua": "#4edcd6", "ivory": "#fffff0",
+                "orange": "#ff9233", "rust": "#b83b1d", "olive": "#606c38", "teal": "#2a9d8f",
+                "fuchsia": "#ff007f", "mint": "#a8dadc", "lavender": "#e0b0ff", "gold": "#d4af37",
+                "sapphire": "#0f52ba", "emerald": "#50c878", "plum": "#dda0dd", "rose": "#ff007f",
+                "burnt orange": "#cc5500", "mustard": "#ffdb58", "taupe": "#b38b6d", "beige": "#f5f5dc"
+            };
+
+            for (let i = 0; i < 4; i++) {
+                let computedFill = defaultPaletteHexes[i];
+                if (colorSwatches[i]) {
+                    const matchedToken = Object.keys(styleColorMap).find(key => colorSwatches[i].toLowerCase().includes(key));
+                    if (matchedToken) computedFill = styleColorMap[matchedToken];
+                }
+
+                const cX = circlesStartX + (i * (circleRadius * 2 + gapBetweenCircles));
+                
+                sCtx.shadowColor = "rgba(0, 0, 0, 0.4)";
+                sCtx.shadowBlur = 15;
+                sCtx.shadowOffsetY = 6;
+
+                sCtx.fillStyle = computedFill;
+                sCtx.beginPath();
+                sCtx.arc(cX, paletteStartY, circleRadius, 0, 2 * Math.PI);
+                sCtx.fill();
+                
+                sCtx.shadowColor = "transparent";
+                sCtx.shadowBlur = 0;
+                sCtx.shadowOffsetY = 0;
+            }
+
+            sCtx.fillStyle = "#ffffff";
+            sCtx.textAlign = "center";
+            sCtx.font = "bold 64px system-ui, -apple-system, sans-serif";
+            sCtx.fillText(seasonalTypeText.toUpperCase(), shareCanvas.width / 2, 1320); 
+
+            sCtx.fillStyle = currentAnalyzedPersonType === "woman" ? "#fbcfe8" : (currentAnalyzedPersonType === "child" ? "#e0f2fe" : "#94a3b8");
+            sCtx.font = "600 32px system-ui, -apple-system, sans-serif";
+            sCtx.fillText(`${skinToneText}  •  ${undertoneText} Undertone`, shareCanvas.width / 2, 1380); 
+
+            sCtx.fillStyle = currentAnalyzedPersonType === "woman" ? "#f472b6" : (currentAnalyzedPersonType === "child" ? "#bae6fd" : "#a78bfa");
+            sCtx.font = "bold 38px system-ui, -apple-system, sans-serif";
+            sCtx.letterSpacing = "2px";
+            sCtx.fillText("aicoloranalysis.online", shareCanvas.width / 2, 1450); 
+
+            const renderDataUrl = shareCanvas.toDataURL("image/png");
+            launchShareModalLayout(renderDataUrl, seasonalTypeText);
+        };
+        userImgObj.src = previewImage.src;
+    });
+}
+
+function launchShareModalLayout(imgDataUrl, seasonTitle) {
+    const overlayNode = document.createElement("div");
+    overlayNode.className = "share-modal-overlay";
+    
+    overlayNode.innerHTML = `
+        <div class="share-modal-content">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 4px;">✨ Your Season Card is Ready!</h3>
+            <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 10px;">Long press to save on mobile, or click download below.</p>
+            
+            <img src="${imgDataUrl}" class="share-card-preview-img" alt="Seasonal Profile Card Summary Preview">
+            
+            <div style="display: flex; justify-content: center; width: 100%; margin-top: 10px;">
+                <button type="button" class="close-modal-btn" id="closeShareModal">Cancel</button>
+                <a href="${imgDataUrl}" download="AI-Color-Analysis-${seasonTitle.replace(/\s+/g, '-')}.png" class="download-modal-btn" id="confirmDownload">Save Image</a>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlayNode);
+
+    document.getElementById("closeShareModal").addEventListener("click", () => overlayNode.remove());
+    overlayNode.addEventListener("click", (e) => { if (e.target === overlayNode) overlayNode.remove(); });
+}
 
 function getClothingPalette(undertone,skinToneCategory,contrastLevel){
     if(undertone==="Warm"&&skinToneCategory==="light"){
