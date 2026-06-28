@@ -142,34 +142,59 @@ async function detectFaceData(imageElement) {
 /* ── Skin Pixel Detector ──
    Works instantly, no CDN, no network needed.
    Counts pixels matching human skin tone (all ethnicities).
+   Excludes: pure oranges, yellows, illustrations, logos.
    Returns skinRatio 0-100 (% of image that is skin-coloured).
-   If < 8% skin pixels found → not a human photo. */
+   If < 18% skin pixels found → not a human photo. */
 function detectSkinPixels(imageElement) {
     const tc  = document.createElement("canvas");
     const ctx = tc.getContext("2d", { willReadFrequently: true });
-    const maxSize = 200; // scale down for speed
+    const maxSize = 200;
     const scale   = Math.min(maxSize / imageElement.width, maxSize / imageElement.height, 1);
     tc.width  = Math.floor(imageElement.width  * scale);
     tc.height = Math.floor(imageElement.height * scale);
     ctx.drawImage(imageElement, 0, 0, tc.width, tc.height);
     const data = ctx.getImageData(0, 0, tc.width, tc.height).data;
     let skinCount = 0, total = 0;
+
     for (let i = 0; i < data.length; i += 4) {
         const r = data[i], g = data[i+1], b = data[i+2];
         total++;
-        // Rule 1: RGB skin range (fair to medium skin)
-        const rgbSkin = r > 60 && g > 35 && b > 15 &&
-                        r > b && r > g * 0.7 &&
-                        Math.abs(r - g) > 8 &&
-                        r < 250 && g < 220 && b < 200;
-        // Rule 2: YCbCr skin range (catches darker skin tones too)
+
+        // ── Exclude pure oranges and yellows (logos, illustrations) ──
+        // Orange: very high R, high G, low B with big R-B gap
+        const isOrange = r > 180 && g > 80 && g < 180 && b < 80 && (r - b) > 120;
+        // Yellow: high R, high G close to R, very low B
+        const isYellow = r > 150 && g > 130 && b < 80 && Math.abs(r - g) < 60;
+        // Pure red/illustration colours
+        const isPureRed = r > 180 && g < 80 && b < 80;
+        if (isOrange || isYellow || isPureRed) continue;
+
+        // ── YCbCr skin range (most reliable, covers all ethnicities) ──
         const Y  =  0.299*r + 0.587*g + 0.114*b;
         const Cb = -0.169*r - 0.331*g + 0.500*b + 128;
         const Cr =  0.500*r - 0.419*g - 0.081*b + 128;
-        const ycbcrSkin = Y > 40 && Cb >= 80 && Cb <= 135 && Cr >= 130 && Cr <= 180;
-        if (rgbSkin || ycbcrSkin) skinCount++;
+        // Tighter Cr/Cb range than before to avoid false positives
+        const ycbcrSkin = Y > 50 && Y < 230 &&
+                          Cb >= 85 && Cb <= 130 &&
+                          Cr >= 135 && Cr <= 175;
+
+        // ── RGB skin range — tighter to avoid warm coloured objects ──
+        const rgbSkin = r > 70 && g > 40 && b > 20 &&
+                        r > b + 15 &&          // R clearly above B
+                        r > g * 0.75 &&        // R above G
+                        g > b + 5 &&           // G above B (excludes purple/blue tones)
+                        (r - g) < 80 &&        // not too orange (R-G gap not huge)
+                        r < 240 && g < 200 && b < 180 &&
+                        Math.abs(r - g) > 5;   // some warmth present
+
+        if (ycbcrSkin && rgbSkin) skinCount++; // BOTH must match for stricter detection
     }
-    return { skinRatio: Math.round((skinCount / total) * 100), hasSkin: (skinCount / total) > 0.06 };
+
+    const skinRatio = skinCount / total;
+    return {
+        skinRatio: Math.round(skinRatio * 100),
+        hasSkin:   skinRatio > 0.18  // raised from 0.06 to 0.18 — needs 18% real skin pixels
+    };
 }
 
 function getAverageBrightness(data) {
