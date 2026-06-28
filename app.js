@@ -139,48 +139,46 @@ async function detectFaceData(imageElement) {
     return { faceBox: null, gender: null, age: null };
 }
 
+/* ── Localized Skin Pixel Detector ──
+   Focuses color checking strictly on the head/portrait region.
+   Completely bypasses side backdrops (like blue doors) and clothes. */
 function detectSkinPixels(imageElement) {
     const tc  = document.createElement("canvas");
     const ctx = tc.getContext("2d", { willReadFrequently: true });
-    const maxSize = 200;
-    const scale   = Math.min(maxSize / imageElement.width, maxSize / imageElement.height, 1);
-    tc.width  = Math.floor(imageElement.width  * scale);
-    tc.height = Math.floor(imageElement.height * scale);
-    ctx.drawImage(imageElement, 0, 0, tc.width, tc.height);
-    const data = ctx.getImageData(0, 0, tc.width, tc.height).data;
+    
+    // Sample only the top-center 40% area of the photo where faces sit
+    const sampleWidth = Math.floor(imageElement.width * 0.4);
+    const sampleHeight = Math.floor(imageElement.height * 0.4);
+    const startX = Math.floor((imageElement.width - sampleWidth) / 2);
+    const startY = Math.floor(imageElement.height * 0.1); 
+
+    tc.width  = sampleWidth;
+    tc.height = sampleHeight;
+    
+    ctx.drawImage(imageElement, startX, startY, sampleWidth, sampleHeight, 0, 0, sampleWidth, sampleHeight);
+    const data = ctx.getImageData(0, 0, sampleWidth, sampleHeight).data;
     let skinCount = 0, total = 0;
 
     for (let i = 0; i < data.length; i += 4) {
         const r = data[i], g = data[i+1], b = data[i+2];
         total++;
 
-        // ── TEXTILE DYE BLOCKER (ANTI-FALSE POSITIVE) ──
-        // In real human skin, Green is always higher than Blue. If Blue > Green, it is an object/clothing fabric.
-        if (b > g) continue;
-
-        // Ignore pure vibrant neon backdrops/logos
-        const isPureOrange = r > 220 && g > 100 && g < 150 && b < 40;
-        const isPureYellow = r > 220 && g > 210 && b < 50;
-        const isPureRed    = r > 220 && g < 50 && b < 50;
-        if (isPureOrange || isPureYellow || isPureRed) continue;
-
-        // ── GLOBAL UNIVERSAL SKIN CHANNELS (YCbCr) ──
-        const Y  =  0.299*r + 0.587*g + 0.114*b;
-        const Cb = -0.169*r - 0.331*g + 0.500*b + 128;
-        const Cr =  0.500*r - 0.419*g - 0.081*b + 128;
-        
-        const ycbcrSkin = Y > 40 && Cb >= 80 && Cb <= 135 && Cr >= 130 && Cr <= 180;
-
-        // ── INCLUSIVE COMPATIBLE RGB RANGE ──
-        const rgbSkin = r > 60 && g > 35 && b > 15 && r > g * 0.75 && r > b;
-
-        if (ycbcrSkin && rgbSkin) skinCount++;
+        // Skin pigment verification inside the face region (Red > Green > Blue)
+        if (r > g && g > b && r > 45) {
+            const Y  =  0.299*r + 0.587*g + 0.114*b;
+            const Cb = -0.169*r - 0.331*g + 0.500*b + 128;
+            const Cr =  0.500*r - 0.419*g - 0.081*b + 128;
+            
+            if (Y > 40 && Cb >= 80 && Cb <= 135 && Cr >= 130 && Cr <= 180) {
+                skinCount++;
+            }
+        }
     }
 
     const skinRatio = skinCount / total;
     return {
         skinRatio: Math.round(skinRatio * 100),
-        hasSkin:   skinRatio >= 0.04  // 4% threshold fallback balances clear face detection with color rejection
+        hasSkin:   skinRatio >= 0.03  // 3% minimum validation inside the localized region
     };
 }
 
@@ -224,14 +222,13 @@ async function validatePhoto(imageSrc) {
     await initFaceApi();
     const faceData = await detectFaceData(img);
 
-    // GLOBAL ETHNICITY COMPATIBILITY UPGRADE:
-    // If AI explicitly detects a face box frame structure, approve it immediately and bypass color counters
+    // If AI explicitly tracks a face box, approve it instantly and bypass color counts
     if (faceData && faceData.faceBox) {
         if (faceStatusWarning) faceStatusWarning.style.display = "none";
         return { brightness, contrastLevel, skinRatio: 100, ...faceData };
     }
 
-    // Fallback Gate: Only use the basic skin pixel math if the face detector library failed completely
+    // Fallback region verification if face tracking failed completely
     const skinResult = detectSkinPixels(img);
     if (!skinResult.hasSkin) {
         if (faceStatusWarning) faceStatusWarning.style.display = "flex";
