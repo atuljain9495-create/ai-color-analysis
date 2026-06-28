@@ -139,12 +139,6 @@ async function detectFaceData(imageElement) {
     return { faceBox: null, gender: null, age: null };
 }
 
-/* ── Skin Pixel Detector ──
-   Works instantly, no CDN, no network needed.
-   Counts pixels matching human skin tone (all ethnicities).
-   Excludes: pure oranges, yellows, illustrations, logos.
-   Returns skinRatio 0-100 (% of image that is skin-coloured).
-   If < 18% skin pixels found → not a human photo. */
 function detectSkinPixels(imageElement) {
     const tc  = document.createElement("canvas");
     const ctx = tc.getContext("2d", { willReadFrequently: true });
@@ -160,40 +154,25 @@ function detectSkinPixels(imageElement) {
         const r = data[i], g = data[i+1], b = data[i+2];
         total++;
 
-        // ── Exclude pure oranges and yellows (logos, illustrations) ──
-        // Orange: very high R, high G, low B with big R-B gap
         const isOrange = r > 180 && g > 80 && g < 180 && b < 80 && (r - b) > 120;
-        // Yellow: high R, high G close to R, very low B
         const isYellow = r > 150 && g > 130 && b < 80 && Math.abs(r - g) < 60;
-        // Pure red/illustration colours
         const isPureRed = r > 180 && g < 80 && b < 80;
         if (isOrange || isYellow || isPureRed) continue;
 
-        // ── YCbCr skin range (most reliable, covers all ethnicities) ──
         const Y  =  0.299*r + 0.587*g + 0.114*b;
         const Cb = -0.169*r - 0.331*g + 0.500*b + 128;
         const Cr =  0.500*r - 0.419*g - 0.081*b + 128;
-        // Tighter Cr/Cb range than before to avoid false positives
-        const ycbcrSkin = Y > 50 && Y < 230 &&
-                          Cb >= 85 && Cb <= 130 &&
-                          Cr >= 135 && Cr <= 175;
+        const ycbcrSkin = Y > 50 && Y < 230 && Cb >= 85 && Cb <= 130 && Cr >= 135 && Cr <= 175;
 
-        // ── RGB skin range — tighter to avoid warm coloured objects ──
-        const rgbSkin = r > 70 && g > 40 && b > 20 &&
-                        r > b + 15 &&          // R clearly above B
-                        r > g * 0.75 &&        // R above G
-                        g > b + 5 &&           // G above B (excludes purple/blue tones)
-                        (r - g) < 80 &&        // not too orange (R-G gap not huge)
-                        r < 240 && g < 200 && b < 180 &&
-                        Math.abs(r - g) > 5;   // some warmth present
+        const rgbSkin = r > 70 && g > 40 && b > 20 && r > b + 15 && r > g * 0.75 && g > b + 5 && (r - g) < 80 && r < 240 && g < 200 && b < 180 && Math.abs(r - g) > 5;
 
-        if (ycbcrSkin && rgbSkin) skinCount++; // BOTH must match for stricter detection
+        if (ycbcrSkin && rgbSkin) skinCount++;
     }
 
     const skinRatio = skinCount / total;
     return {
         skinRatio: Math.round(skinRatio * 100),
-        hasSkin:   skinRatio > 0.18  // raised from 0.06 to 0.18 — needs 18% real skin pixels
+        hasSkin:   skinRatio >= 0.04  // 4% threshold allows half-body landscape portraits
     };
 }
 
@@ -231,22 +210,23 @@ async function validatePhoto(imageSrc) {
     if (brightness > 240)
         throw new Error("Photo is overexposed. Avoid direct flash or harsh lighting.");
 
-    // ── PRIMARY GATE: Skin pixel detection (instant, no CDN needed) ──
+    const contrastLevel = getContrastLevel(data);
+
+    // Try face-api detection first
+    await initFaceApi();
+    const faceData = await detectFaceData(img);
+
+    // Fallback: If face tracking fails but skin pixels exist over 4%, allow the user to continue!
     const skinResult = detectSkinPixels(img);
-    if (!skinResult.hasSkin) {
+    if (!faceData.faceBox && !skinResult.hasSkin) {
         if (faceStatusWarning) faceStatusWarning.style.display = "flex";
         throw new Error(
-            `No human skin detected in this photo (only ${skinResult.skinRatio}% skin pixels found). ` +
-            `Please upload a clear selfie or portrait showing your face — not a screenshot or object photo.`
+            `No human face or skin tone detected in this photo (only ${skinResult.skinRatio}% matching pixels found). ` +
+            `Please upload a clear selfie or portrait showing your face.`
         );
     }
     if (faceStatusWarning) faceStatusWarning.style.display = "none";
 
-    const contrastLevel = getContrastLevel(data);
-
-    // ── BONUS: face-api for gender/age (optional, non-blocking) ──
-    await initFaceApi();
-    const faceData = await detectFaceData(img);
     return { brightness, contrastLevel, skinRatio: skinResult.skinRatio, ...faceData };
 }
 
@@ -254,7 +234,6 @@ if (localStorage.getItem("darkMode") === "true") document.body.classList.add("da
 applyDarkModeUI();
 resetResults();
 
-/* ── Gender Button Selection ── */
 window._selectedGender = "woman"; // default
 
 window.selectGender = function(gender) {
@@ -355,7 +334,6 @@ if (analyzeBtn) {
     });
 }
 
-// State tracking globally to pass properties cleanly down into the dynamic image rendering engine
 let currentAnalyzedPersonType = "woman";
 
 function analyzeSkinTone(imageSrc, validationResult = {}) {
@@ -413,24 +391,17 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         const contrastLevel=validationResult.contrastLevel||"medium";
         const seasonalType=getSeasonalType(undertone,skinToneCategory,contrastLevel);
 
-        const detectedGender=validationResult.gender||null;
         const detectedAge=validationResult.age||null;
-        const genderProb=validationResult.genderProb||0;
-        const faceBoxFound = validationResult.faceBox || null;
 
-        // Use button selection — 100% accurate, always works
         let personType = window._selectedGender || "woman";
         if (personType === "male")   personType = "man";
         if (personType === "female") personType = "woman";
-
-        // If face-api managed to detect age and it's a child, override
         if (detectedAge !== null && detectedAge < 13) personType = "child";
 
         currentAnalyzedPersonType = personType;
 
         if (faceStatusWarning) faceStatusWarning.style.display = "none";
 
-        // Gender badge
         if (genderResult) {
             genderResult.style.display = "flex";
             const icons = { man:"👨", woman:"👩", child:"🧒" };
@@ -452,7 +423,6 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
 
         if (shareSeasonBtn) shareSeasonBtn.style.display = "inline-block";
 
-        // Unlock dress checker with this user's palette
         const fullPalette = getClothingPalette(undertone, skinToneCategory, contrastLevel);
         unlockDressChecker(fullPalette, undertone, seasonalType);
     };
@@ -558,7 +528,6 @@ function generateShoppingLinks(undertone, skinToneCategory, personType) {
     );
 
     itemsToShopMatrix = generalItemsMatrix;
-
     buildSliderCards(prefix);
     shopSection.style.display = "block";
 }
@@ -617,9 +586,6 @@ window.slideCardColor = function(cardId, offset, prefix) {
 
 function capitalise(str){return str.replace(/\b\w/g,c=>c.toUpperCase());}
 
-/* ==========================================================================
-   VIRAL POLAROID FRAME "SHARE MY SEASON" CANVAS ENGINE (DEMOGRAPHIC CUSTOMIZED)
-   ========================================================================== */
 if (shareSeasonBtn) {
     shareSeasonBtn.addEventListener("click", () => {
         let seasonalTypeText = seasonalTypeDiv ? seasonalTypeDiv.innerText.replace("Seasonal Type:", "").trim() : "My Custom Season";
@@ -637,13 +603,12 @@ if (shareSeasonBtn) {
         shareCanvas.width = 1200;
         shareCanvas.height = 1500;
 
-        // Dynamic Background Theming Layer
         if (currentAnalyzedPersonType === "woman") {
-            sCtx.fillStyle = "#831843"; // Luxurious Deep Berry-Pink for Women
+            sCtx.fillStyle = "#831843";
         } else if (currentAnalyzedPersonType === "child") {
-            sCtx.fillStyle = "#0284c7"; // Bright happy sky-blue for Children
+            sCtx.fillStyle = "#0284c7";
         } else {
-            sCtx.fillStyle = "#1e293b"; // Classic sleek charcoal-dark for Men
+            sCtx.fillStyle = "#1e293b";
         }
         sCtx.fillRect(0, 0, shareCanvas.width, shareCanvas.height);
         
@@ -651,21 +616,15 @@ if (shareSeasonBtn) {
         sCtx.strokeStyle = currentAnalyzedPersonType === "woman" ? "#9d174d" : "#334155";
         sCtx.strokeRect(20, 20, shareCanvas.width - 40, shareCanvas.height - 40);
 
-        // ── INJECT CARTOON CHARACTERS & ANIMALS FOR CHILDREN'S MATRIX ──
         if (currentAnalyzedPersonType === "child") {
             sCtx.font = "80px system-ui";
             sCtx.textAlign = "center";
-            
-            // Draw cartoon panda and lion stickers in upper corners
-            sCtx.fillText("🐼", 100, 110);              // Top Left Corner Panda
-            sCtx.fillText("🦁", shareCanvas.width - 100, 110); // Top Right Corner Lion
-
-            // Draw cartoon tropical fish swimming up the left side margin track channels
+            sCtx.fillText("🐼", 100, 110);
+            sCtx.fillText("🦁", shareCanvas.width - 100, 110);
             sCtx.fillText("🐠", 60, 450);
             sCtx.fillText("🐟", 65, 750);
             sCtx.fillText("🐠", 55, 1050);
 
-            // Add clear bubble physics next to fish coordinates
             sCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
             sCtx.beginPath(); sCtx.arc(60, 370, 12, 0, Math.PI * 2); sCtx.fill();
             sCtx.beginPath(); sCtx.arc(70, 680, 8, 0, Math.PI * 2); sCtx.fill();
@@ -763,9 +722,7 @@ function launchShareModalLayout(imgDataUrl, seasonTitle) {
         <div class="share-modal-content">
             <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 4px;">✨ Your Season Card is Ready!</h3>
             <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 10px;">Long press to save on mobile, or click download below.</p>
-            
             <img src="${imgDataUrl}" class="share-card-preview-img" alt="Seasonal Profile Card Summary Preview">
-            
             <div style="display: flex; justify-content: center; width: 100%; margin-top: 10px;">
                 <button type="button" class="close-modal-btn" id="closeShareModal">Cancel</button>
                 <a href="${imgDataUrl}" download="AI-Color-Analysis-${seasonTitle.replace(/\s+/g, '-')}.png" class="download-modal-btn" id="confirmDownload">Save Image</a>
@@ -774,7 +731,6 @@ function launchShareModalLayout(imgDataUrl, seasonTitle) {
     `;
     
     document.body.appendChild(overlayNode);
-
     document.getElementById("closeShareModal").addEventListener("click", () => overlayNode.remove());
     overlayNode.addEventListener("click", (e) => { if (e.target === overlayNode) overlayNode.remove(); });
 }
@@ -824,12 +780,8 @@ function getJewelryPalette(undertone,skinToneCategory){
 function rgbToHex(r,g,b){return"#"+[r,g,b].map(x=>{const h=x.toString(16);return h.length===1?"0"+h:h;}).join("");}
 
 /* ═══════════════════════════════════════════════════════════
-   DRESS COLOR CHECKER
-   Reads dominant color from uploaded product image
-   Compares against user's saved palette to give a match score
+   DRESS COLOR CHECKER (PIXEL DETECTOR & VERDICT ASSIGNER)
 ═══════════════════════════════════════════════════════════ */
-
-// Storage for user's palette — set after main analysis runs
 window._userPalette = null;
 window._userUndertone = null;
 window._userSeason = null;
@@ -842,17 +794,14 @@ function getDominantColor(imageElement) {
     ctx.drawImage(imageElement, 0, 0, size, size);
     const data = ctx.getImageData(0, 0, size, size).data;
 
-    // Sample centre 60% of the image to avoid background/borders
     const margin = Math.floor(size * 0.2);
     let rSum=0, gSum=0, bSum=0, count=0;
     for (let y = margin; y < size - margin; y++) {
         for (let x = margin; x < size - margin; x++) {
             const i = (y * size + x) * 4;
             const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
-            if (a < 200) continue; // skip transparent pixels
-            // Skip near-white backgrounds (product photos often have white bg)
+            if (a < 200) continue; 
             if (r > 240 && g > 240 && b > 240) continue;
-            // Skip near-black backgrounds
             if (r < 15 && g < 15 && b < 15) continue;
             rSum+=r; gSum+=g; bSum+=b; count++;
         }
@@ -872,7 +821,6 @@ function classifyColor(r, g, b) {
     const min = Math.min(r,g,b);
     const saturation = max === 0 ? 0 : (max-min)/max;
 
-    // Hue calculation
     let hue = 0;
     if (max !== min) {
         if (max === r) hue = ((g-b)/(max-min)) % 6;
@@ -882,7 +830,6 @@ function classifyColor(r, g, b) {
         if (hue < 0) hue += 360;
     }
 
-    // Low saturation = neutral/grey
     if (saturation < 0.12) {
         if (brightness > 200) return { name: "White / Off-White", family: "neutral", warm: false };
         if (brightness > 140) return { name: "Light Gray",        family: "neutral", warm: false };
@@ -890,23 +837,22 @@ function classifyColor(r, g, b) {
         return { name: "Black / Charcoal", family: "neutral", warm: false };
     }
 
-    // ── FIXED HUE Family Thresholds ──
-    if (hue < 15 || hue >= 345)  return { name: "Red",            family: "red",    warm: false };
-    if (hue < 25)                return { name: "Orange-Red",     family: "orange", warm: true  };
-    if (hue < 40)                return { name: "Orange",         family: "orange", warm: true  }; // Lowered from 50 to catch true orange
+    // ── FIXED FAMILY HUE THRESHOLDS ──
+    if (hue < 15  || hue >= 345) return { name: "Red",         family: "red",    warm: false };
+    if (hue < 25)                 return { name: "Orange-Red",  family: "orange", warm: true  };
+    if (hue < 40)                 return { name: "Orange",      family: "orange", warm: true  }; // Shifted down from 50 to clear yellow space
     if (hue < 65) {
-        // Double check if it's a darker gold/mustard yellow or a bright lemon yellow
         const name = brightness < 140 ? "Mustard / Gold Yellow" : "Yellow";
         return { name: name, family: "yellow", warm: true };
     }
-    if (hue < 80)                return { name: "Yellow-Green",   family: "green",  warm: true  };
-    if (hue < 150)               return { name: "Green",          family: "green",  warm: false };
-    if (hue < 175)               return { name: "Teal / Cyan",    family: "teal",   warm: false };
-    if (hue < 210)               return { name: "Light Blue",     family: "blue",   warm: false };
-    if (hue < 255)               return { name: "Blue",           family: "blue",   warm: false };
-    if (hue < 275)               return { name: "Blue-Purple",    family: "purple", warm: false };
-    if (hue < 310)               return { name: "Purple",         family: "purple", warm: false };
-    if (hue < 330)               return { name: "Pink / Magenta", family: "pink",   warm: false };
+    if (hue < 80)                 return { name: "Yellow-Green",family: "green",  warm: true  };
+    if (hue < 150)                return { name: "Green",       family: "green",  warm: false };
+    if (hue < 175)                return { name: "Teal / Cyan", family: "teal",   warm: false };
+    if (hue < 210)                return { name: "Light Blue",  family: "blue",   warm: false };
+    if (hue < 255)                return { name: "Blue",        family: "blue",   warm: false };
+    if (hue < 275)                return { name: "Blue-Purple", family: "purple", warm: false };
+    if (hue < 310)                return { name: "Purple",      family: "purple", warm: false };
+    if (hue < 330)                return { name: "Pink / Magenta", family: "pink", warm: false };
     return { name: "Rose Pink", family: "pink", warm: false };
 }
 
@@ -914,7 +860,6 @@ function checkColorAgainstPalette(colorInfo, palette, undertone, season) {
     const family = colorInfo.family;
     const isWarm = colorInfo.warm;
 
-    // Check against best colours
     const bestMatch = palette.best.some(c => {
         const cl = c.toLowerCase();
         return cl.includes(family) ||
@@ -930,18 +875,10 @@ function checkColorAgainstPalette(colorInfo, palette, undertone, season) {
 
     const avoidMatch = palette.avoid.some(c => {
         const cl = c.toLowerCase();
-        return cl.includes(family) ||
-               (family === "orange" && (cl.includes("orange") || cl.includes("rust"))) ||
-               (family === "yellow" && cl.includes("mustard")) ||
-               (family === "blue"   && (cl.includes("ice") || cl.includes("icy")));
+        return cl.includes(family) || (family === "orange" && (cl.includes("orange") || cl.includes("rust"))) || (family === "yellow" && cl.includes("mustard")) || (family === "blue" && (cl.includes("ice") || cl.includes("icy")));
     });
 
-    const goodMatch = palette.good.some(c => {
-        const cl = c.toLowerCase();
-        return cl.includes(family);
-    });
-
-    // Undertone compatibility
+    const goodMatch = palette.good.some(c => c.toLowerCase().includes(family));
     const undertoneMatch = (undertone === "Warm" && isWarm) || (undertone === "Cool" && !isWarm) || undertone === "Neutral";
 
     if (avoidMatch) return "avoid";
@@ -951,7 +888,6 @@ function checkColorAgainstPalette(colorInfo, palette, undertone, season) {
     return "caution";
 }
 
-// Init dress checker UI
 const dressUpload   = document.getElementById("dressUpload");
 const dressCheckBtn = document.getElementById("dressCheckBtn");
 const dressResult   = document.getElementById("dressResult");
@@ -1001,39 +937,29 @@ if (dressCheckBtn) {
 
         const verdictConfig = {
             perfect: {
-                emoji: "✅",
-                title: "Perfect Match!",
+                emoji: "✅", title: "Perfect Match!",
                 msg:   `This <strong>${colorInfo.name}</strong> colour fits beautifully in your <strong>${window._userSeason}</strong> palette. It will naturally enhance your ${window._userUndertone.toLowerCase()} undertone and make you look radiant.`,
-                bg:    "linear-gradient(135deg,#064e3b,#065f46)",
-                border:"#10b981"
+                bg:    "linear-gradient(135deg,#064e3b,#065f46)", border:"#10b981"
             },
             good: {
-                emoji: "👍",
-                title: "Good Choice",
+                emoji: "👍", title: "Good Choice",
                 msg:   `This <strong>${colorInfo.name}</strong> is a solid pick for your <strong>${window._userSeason}</strong> profile. It complements your palette well, though not your absolute best shade.`,
-                bg:    "linear-gradient(135deg,#1e3a5f,#1e40af)",
-                border:"#3b82f6"
+                bg:    "linear-gradient(135deg,#1e3a5f,#1e40af)", border:"#3b82f6"
             },
             okay: {
-                emoji: "🟡",
-                title: "Wearable but Not Ideal",
+                emoji: "🟡", title: "Wearable but Not Ideal",
                 msg:   `This <strong>${colorInfo.name}</strong> can work, but it's not optimised for your <strong>${window._userSeason}</strong> palette. Pair it with one of your best neutral shades to balance it out.`,
-                bg:    "linear-gradient(135deg,#451a03,#92400e)",
-                border:"#f59e0b"
+                bg:    "linear-gradient(135deg,#451a03,#92400e)", border:"#f59e0b"
             },
             caution: {
-                emoji: "⚠️",
-                title: "Proceed with Caution",
+                emoji: "⚠️", title: "Proceed with Caution",
                 msg:   `This <strong>${colorInfo.name}</strong> doesn't align well with your <strong>${window._userUndertone}</strong> undertone. It may make your complexion appear dull or washed out.`,
-                bg:    "linear-gradient(135deg,#3b1f00,#7c2d12)",
-                border:"#f97316"
+                bg:    "linear-gradient(135deg,#3b1f00,#7c2d12)", border:"#f97316"
             },
             avoid: {
-                emoji: "❌",
-                title: "Not Recommended",
+                emoji: "❌", title: "Not Recommended",
                 msg:   `This <strong>${colorInfo.name}</strong> is in the avoid list for your <strong>${window._userSeason}</strong> profile. It is likely to clash with your ${window._userUndertone.toLowerCase()} undertone. We'd suggest returning it.`,
-                bg:    "linear-gradient(135deg,#450a0a,#7f1d1d)",
-                border:"#ef4444"
+                bg:    "linear-gradient(135deg,#450a0a,#7f1d1d)", border:"#ef4444"
             }
         };
 
@@ -1057,7 +983,6 @@ if (dressCheckBtn) {
     });
 }
 
-// Called after main analysis completes — unlocks dress checker and saves palette
 function unlockDressChecker(palette, undertone, season) {
     window._userPalette   = palette;
     window._userUndertone = undertone;
