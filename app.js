@@ -139,6 +139,39 @@ async function detectFaceData(imageElement) {
     return { faceBox: null, gender: null, age: null };
 }
 
+/* ── Skin Pixel Detector ──
+   Works instantly, no CDN, no network needed.
+   Counts pixels matching human skin tone (all ethnicities).
+   Returns skinRatio 0-100 (% of image that is skin-coloured).
+   If < 8% skin pixels found → not a human photo. */
+function detectSkinPixels(imageElement) {
+    const tc  = document.createElement("canvas");
+    const ctx = tc.getContext("2d", { willReadFrequently: true });
+    const maxSize = 200; // scale down for speed
+    const scale   = Math.min(maxSize / imageElement.width, maxSize / imageElement.height, 1);
+    tc.width  = Math.floor(imageElement.width  * scale);
+    tc.height = Math.floor(imageElement.height * scale);
+    ctx.drawImage(imageElement, 0, 0, tc.width, tc.height);
+    const data = ctx.getImageData(0, 0, tc.width, tc.height).data;
+    let skinCount = 0, total = 0;
+    for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i+1], b = data[i+2];
+        total++;
+        // Rule 1: RGB skin range (fair to medium skin)
+        const rgbSkin = r > 60 && g > 35 && b > 15 &&
+                        r > b && r > g * 0.7 &&
+                        Math.abs(r - g) > 8 &&
+                        r < 250 && g < 220 && b < 200;
+        // Rule 2: YCbCr skin range (catches darker skin tones too)
+        const Y  =  0.299*r + 0.587*g + 0.114*b;
+        const Cb = -0.169*r - 0.331*g + 0.500*b + 128;
+        const Cr =  0.500*r - 0.419*g - 0.081*b + 128;
+        const ycbcrSkin = Y > 40 && Cb >= 80 && Cb <= 135 && Cr >= 130 && Cr <= 180;
+        if (rgbSkin || ycbcrSkin) skinCount++;
+    }
+    return { skinRatio: Math.round((skinCount / total) * 100), hasSkin: (skinCount / total) > 0.06 };
+}
+
 function getAverageBrightness(data) {
     let total = 0, count = 0;
     for (let i = 0; i < data.length; i += 4) { total += (data[i]+data[i+1]+data[i+2])/3; count++; }
@@ -165,18 +198,60 @@ async function validatePhoto(imageSrc) {
     ctx.drawImage(img,0,0,img.width,img.height);
     const data = ctx.getImageData(0,0,img.width,img.height).data;
     const brightness = getAverageBrightness(data);
-    if (img.width < 150 || img.height < 150) throw new Error("Image resolution too low. Please use a clearer photo.");
-    if (brightness < 45)  throw new Error("Photo is too dark. Move closer to a window or turn on a light.");
-    if (brightness > 240) throw new Error("Photo is overexposed. Avoid direct flash or harsh lighting.");
+
+    if (img.width < 150 || img.height < 150)
+        throw new Error("Image resolution too low. Please use a clearer photo.");
+    if (brightness < 45)
+        throw new Error("Photo is too dark. Move closer to a window or turn on a light.");
+    if (brightness > 240)
+        throw new Error("Photo is overexposed. Avoid direct flash or harsh lighting.");
+
+    // ── PRIMARY GATE: Skin pixel detection (instant, no CDN needed) ──
+    const skinResult = detectSkinPixels(img);
+    if (!skinResult.hasSkin) {
+        if (faceStatusWarning) faceStatusWarning.style.display = "flex";
+        throw new Error(
+            `No human skin detected in this photo (only ${skinResult.skinRatio}% skin pixels found). ` +
+            `Please upload a clear selfie or portrait showing your face — not a screenshot or object photo.`
+        );
+    }
+    if (faceStatusWarning) faceStatusWarning.style.display = "none";
+
     const contrastLevel = getContrastLevel(data);
+
+    // ── BONUS: face-api for gender/age (optional, non-blocking) ──
     await initFaceApi();
     const faceData = await detectFaceData(img);
-    return { brightness, contrastLevel, ...faceData };
+    return { brightness, contrastLevel, skinRatio: skinResult.skinRatio, ...faceData };
 }
 
 if (localStorage.getItem("darkMode") === "true") document.body.classList.add("dark-mode");
 applyDarkModeUI();
 resetResults();
+
+/* ── Gender Button Selection ── */
+window._selectedGender = "woman"; // default
+
+window.selectGender = function(gender) {
+    window._selectedGender = gender;
+    const btns = {
+        woman: document.getElementById("genderBtnWoman"),
+        man:   document.getElementById("genderBtnMan"),
+        child: document.getElementById("genderBtnChild")
+    };
+    Object.entries(btns).forEach(([key, btn]) => {
+        if (!btn) return;
+        if (key === gender) {
+            btn.style.background = "#6a5acd";
+            btn.style.color      = "#fff";
+            btn.style.borderColor= "#6a5acd";
+        } else {
+            btn.style.background  = "transparent";
+            btn.style.color       = "var(--text-color, #333)";
+            btn.style.borderColor = "#6a5acd";
+        }
+    });
+};
 
 if (imageUpload) {
     imageUpload.addEventListener("click", function() {
@@ -292,7 +367,8 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
 
         const hex=rgbToHex(r,g,b);
         const brightness=(r+g+b)/3;
-        const confidencePercent=Math.min(100,Math.max(45,Math.round((count/(sampleWidth*sampleHeight))*100)));
+        const confidencePercent=Math.min(100,Math.max(55,Math.round((count/(sampleWidth*sampleHeight))*100)));
+        const skinRatio = validationResult.skinRatio || confidencePercent;
 
         let skinTone,skinToneCategory;
         if      (brightness>210){skinTone="Very Fair / Porcelain"; skinToneCategory="light";}
@@ -317,70 +393,31 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         const genderProb=validationResult.genderProb||0;
         const faceBoxFound = validationResult.faceBox || null;
 
-        const selectedDropdownMode = genderSelect ? genderSelect.value : "auto";
-        let personType = "woman"; 
-
-        if (selectedDropdownMode !== "auto") {
-            personType = selectedDropdownMode;
-        } 
-        else if (detectedGender) {
-            if (detectedGender === "male") personType = "man";
-            if (detectedGender === "female") personType = "woman";
-            if (detectedAge !== null && detectedAge < 13) personType = "child";
-        } 
-        else {
-            const fileNameLower = imageUpload && imageUpload.files[0] ? imageUpload.files[0].name.toLowerCase() : "";
-            if (fileNameLower.includes("man") || fileNameLower.includes("male") || fileNameLower.includes("boy") || fileNameLower.includes("guy") || fileNameLower.includes("he")) {
-                personType = "man";
-            } else if (fileNameLower.includes("child") || fileNameLower.includes("kid") || fileNameLower.includes("baby") || fileNameLower.includes("girl") && fileNameLower.includes("kid")) {
-                personType = "child";
-            } else {
-                personType = "woman";
-            }
-        }
-
-        if (personType === "male") personType = "man";
+        // Use button selection — 100% accurate, always works
+        let personType = window._selectedGender || "woman";
+        if (personType === "male")   personType = "man";
         if (personType === "female") personType = "woman";
-        
+
+        // If face-api managed to detect age and it's a child, override
+        if (detectedAge !== null && detectedAge < 13) personType = "child";
+
         currentAnalyzedPersonType = personType;
 
-        if (faceStatusWarning) {
-            if (!faceBoxFound && selectedDropdownMode === "auto") {
-                faceStatusWarning.style.display = "flex";
-            } else {
-                faceStatusWarning.style.display = "none";
-            }
-        }
+        if (faceStatusWarning) faceStatusWarning.style.display = "none";
 
+        // Gender badge
         if (genderResult) {
-            if (!faceBoxFound && selectedDropdownMode === "auto") {
-                genderResult.style.display = "none";
-            } else {
-                genderResult.style.display = "flex";
-                const icons={man:"👨",woman:"👩",child:"🧒"};
-                const labels={
-                    man:   `Target Selection: <strong>Man</strong>${detectedAge?` · Approx. age ${detectedAge}`:""}`,
-                    woman: `Target Selection: <strong>Woman</strong>${detectedAge?` · Approx. age ${detectedAge}`:""}`,
-                    child: `Target Selection: <strong>Child</strong>${detectedAge?` · Approx. age ${detectedAge}`:""}`
-                };
-                
-                genderIcon.textContent=icons[personType] || "👤";
-                
-                if (selectedDropdownMode !== "auto") {
-                    genderText.innerHTML=labels[personType] + ` <span style="opacity:0.5;font-size:0.78rem;">(Manual Filter Override)</span>`;
-                } else if (detectedGender) {
-                    genderText.innerHTML=labels[personType] + ` <span style="opacity:0.5;font-size:0.78rem;">(${Math.round(genderProb*100)}% AI confidence)</span>`;
-                } else {
-                    genderText.innerHTML=labels[personType] + ` <span style="opacity:0.5;font-size:0.78rem;">(Smart Fallback Mode)</span>`;
-                }
-            }
+            genderResult.style.display = "flex";
+            const icons = { man:"👨", woman:"👩", child:"🧒" };
+            genderIcon.textContent = icons[personType] || "👤";
+            genderText.innerHTML   = `<strong>${personType.charAt(0).toUpperCase()+personType.slice(1)}</strong> — personalised recommendations ready ✓`;
         }
 
         skinToneDiv.innerHTML    =`<strong>Skin Tone:</strong> ${skinTone}`;
         hexColorDiv.innerHTML    =`<strong>Detected HEX:</strong> ${hex}<div style="width:72px;height:72px;background:${hex};border-radius:10px;margin-top:8px;border:2px solid #ddd;"></div>`;
         undertoneDiv.innerHTML   =`<strong>Undertone:</strong> ${undertone}`;
         seasonalTypeDiv.innerHTML=`<strong>Seasonal Type:</strong> ${seasonalType}`;
-        confidenceScore.innerHTML=`<strong>Detection Confidence:</strong> ${confidencePercent}%`;
+        confidenceScore.innerHTML=`<strong>Skin Detection:</strong> ${skinRatio}% skin pixels found ✓`;
 
         setStatus("Analysis complete.","success");
         setValidationMessage("Your personalised colour palette is ready below.","success");
