@@ -451,6 +451,10 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         generateShoppingLinks(undertone,skinToneCategory,personType);
 
         if (shareSeasonBtn) shareSeasonBtn.style.display = "inline-block";
+
+        // Unlock dress checker with this user's palette
+        const fullPalette = getClothingPalette(undertone, skinToneCategory, contrastLevel);
+        unlockDressChecker(fullPalette, undertone, seasonalType);
     };
     img.src=imageSrc;
 }
@@ -818,3 +822,248 @@ function getJewelryPalette(undertone,skinToneCategory){
 }
 
 function rgbToHex(r,g,b){return"#"+[r,g,b].map(x=>{const h=x.toString(16);return h.length===1?"0"+h:h;}).join("");}
+
+/* ═══════════════════════════════════════════════════════════
+   DRESS COLOR CHECKER
+   Reads dominant color from uploaded product image
+   Compares against user's saved palette to give a match score
+═══════════════════════════════════════════════════════════ */
+
+// Storage for user's palette — set after main analysis runs
+window._userPalette = null;
+window._userUndertone = null;
+window._userSeason = null;
+
+function getDominantColor(imageElement) {
+    const tc  = document.createElement("canvas");
+    const ctx = tc.getContext("2d", { willReadFrequently: true });
+    const size = 150;
+    tc.width = size; tc.height = size;
+    ctx.drawImage(imageElement, 0, 0, size, size);
+    const data = ctx.getImageData(0, 0, size, size).data;
+
+    // Sample centre 60% of the image to avoid background/borders
+    const margin = Math.floor(size * 0.2);
+    let rSum=0, gSum=0, bSum=0, count=0;
+    for (let y = margin; y < size - margin; y++) {
+        for (let x = margin; x < size - margin; x++) {
+            const i = (y * size + x) * 4;
+            const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
+            if (a < 200) continue; // skip transparent pixels
+            // Skip near-white backgrounds (product photos often have white bg)
+            if (r > 240 && g > 240 && b > 240) continue;
+            // Skip near-black backgrounds
+            if (r < 15 && g < 15 && b < 15) continue;
+            rSum+=r; gSum+=g; bSum+=b; count++;
+        }
+    }
+    if (count === 0) { rSum=0;gSum=0;bSum=0;count=1; }
+    return {
+        r: Math.round(rSum/count),
+        g: Math.round(gSum/count),
+        b: Math.round(bSum/count),
+        hex: rgbToHex(Math.round(rSum/count), Math.round(gSum/count), Math.round(bSum/count))
+    };
+}
+
+function classifyColor(r, g, b) {
+    const brightness = (r+g+b)/3;
+    const max = Math.max(r,g,b);
+    const min = Math.min(r,g,b);
+    const saturation = max === 0 ? 0 : (max-min)/max;
+
+    // Hue calculation
+    let hue = 0;
+    if (max !== min) {
+        if (max === r) hue = ((g-b)/(max-min)) % 6;
+        else if (max === g) hue = (b-r)/(max-min) + 2;
+        else hue = (r-g)/(max-min) + 4;
+        hue = Math.round(hue * 60);
+        if (hue < 0) hue += 360;
+    }
+
+    // Low saturation = neutral/grey
+    if (saturation < 0.12) {
+        if (brightness > 200) return { name: "White / Off-White", family: "neutral", warm: false };
+        if (brightness > 140) return { name: "Light Gray",        family: "neutral", warm: false };
+        if (brightness > 80)  return { name: "Medium Gray",       family: "neutral", warm: false };
+        return { name: "Black / Charcoal", family: "neutral", warm: false };
+    }
+
+    // ── FIXED HUE Family Thresholds ──
+    if (hue < 15 || hue >= 345)  return { name: "Red",            family: "red",    warm: false };
+    if (hue < 25)                return { name: "Orange-Red",     family: "orange", warm: true  };
+    if (hue < 40)                return { name: "Orange",         family: "orange", warm: true  }; // Lowered from 50 to catch true orange
+    if (hue < 65) {
+        // Double check if it's a darker gold/mustard yellow or a bright lemon yellow
+        const name = brightness < 140 ? "Mustard / Gold Yellow" : "Yellow";
+        return { name: name, family: "yellow", warm: true };
+    }
+    if (hue < 80)                return { name: "Yellow-Green",   family: "green",  warm: true  };
+    if (hue < 150)               return { name: "Green",          family: "green",  warm: false };
+    if (hue < 175)               return { name: "Teal / Cyan",    family: "teal",   warm: false };
+    if (hue < 210)               return { name: "Light Blue",     family: "blue",   warm: false };
+    if (hue < 255)               return { name: "Blue",           family: "blue",   warm: false };
+    if (hue < 275)               return { name: "Blue-Purple",    family: "purple", warm: false };
+    if (hue < 310)               return { name: "Purple",         family: "purple", warm: false };
+    if (hue < 330)               return { name: "Pink / Magenta", family: "pink",   warm: false };
+    return { name: "Rose Pink", family: "pink", warm: false };
+}
+
+function checkColorAgainstPalette(colorInfo, palette, undertone, season) {
+    const family = colorInfo.family;
+    const isWarm = colorInfo.warm;
+
+    // Check against best colours
+    const bestMatch = palette.best.some(c => {
+        const cl = c.toLowerCase();
+        return cl.includes(family) ||
+               (family === "orange" && (cl.includes("coral") || cl.includes("terracotta") || cl.includes("rust") || cl.includes("peach"))) ||
+               (family === "green"  && (cl.includes("olive") || cl.includes("sage") || cl.includes("forest") || cl.includes("teal"))) ||
+               (family === "blue"   && (cl.includes("navy") || cl.includes("sapphire") || cl.includes("cobalt") || cl.includes("teal"))) ||
+               (family === "purple" && (cl.includes("plum") || cl.includes("lavender") || cl.includes("berry") || cl.includes("mauve"))) ||
+               (family === "pink"   && (cl.includes("rose") || cl.includes("blush") || cl.includes("fuchsia") || cl.includes("dusty rose"))) ||
+               (family === "red"    && (cl.includes("burgundy") || cl.includes("crimson") || cl.includes("berry") || cl.includes("raspberry"))) ||
+               (family === "yellow" && (cl.includes("gold") || cl.includes("mustard") || cl.includes("champagne"))) ||
+               (family === "neutral"&& (cl.includes("camel") || cl.includes("taupe") || cl.includes("beige") || cl.includes("ivory") || cl.includes("white") || cl.includes("gray") || cl.includes("charcoal") || cl.includes("black")));
+    });
+
+    const avoidMatch = palette.avoid.some(c => {
+        const cl = c.toLowerCase();
+        return cl.includes(family) ||
+               (family === "orange" && (cl.includes("orange") || cl.includes("rust"))) ||
+               (family === "yellow" && cl.includes("mustard")) ||
+               (family === "blue"   && (cl.includes("ice") || cl.includes("icy")));
+    });
+
+    const goodMatch = palette.good.some(c => {
+        const cl = c.toLowerCase();
+        return cl.includes(family);
+    });
+
+    // Undertone compatibility
+    const undertoneMatch = (undertone === "Warm" && isWarm) || (undertone === "Cool" && !isWarm) || undertone === "Neutral";
+
+    if (avoidMatch) return "avoid";
+    if (bestMatch && undertoneMatch) return "perfect";
+    if (bestMatch || (goodMatch && undertoneMatch)) return "good";
+    if (undertoneMatch) return "okay";
+    return "caution";
+}
+
+// Init dress checker UI
+const dressUpload   = document.getElementById("dressUpload");
+const dressCheckBtn = document.getElementById("dressCheckBtn");
+const dressResult   = document.getElementById("dressResult");
+const dressPreviewBox = document.getElementById("dressPreviewBox");
+const dressPreviewImg = document.getElementById("dressPreviewImg");
+
+let dressImageData = null;
+
+if (dressUpload) {
+    dressUpload.addEventListener("change", function() {
+        const file = this.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            dressImageData = e.target.result;
+            dressPreviewImg.src = dressImageData;
+            dressPreviewBox.style.display = "block";
+            if (dressCheckBtn) dressCheckBtn.style.display = "inline-block";
+            if (dressResult)   dressResult.style.display   = "none";
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+if (dressCheckBtn) {
+    dressCheckBtn.addEventListener("click", async () => {
+        if (!dressImageData) return;
+        if (!window._userPalette) {
+            dressResult.style.display = "block";
+            dressResult.innerHTML = `<p style="color:#f59e0b;">⚠️ Please run your skin analysis first before checking a product.</p>`;
+            return;
+        }
+
+        dressCheckBtn.textContent = "⏳ Analysing...";
+        dressCheckBtn.disabled    = true;
+
+        const img = await new Promise((res,rej) => {
+            const i = new Image();
+            i.onload = ()=>res(i);
+            i.onerror=()=>rej();
+            i.src = dressImageData;
+        });
+
+        const dominant  = getDominantColor(img);
+        const colorInfo = classifyColor(dominant.r, dominant.g, dominant.b);
+        const verdict   = checkColorAgainstPalette(colorInfo, window._userPalette, window._userUndertone, window._userSeason);
+
+        const verdictConfig = {
+            perfect: {
+                emoji: "✅",
+                title: "Perfect Match!",
+                msg:   `This <strong>${colorInfo.name}</strong> colour fits beautifully in your <strong>${window._userSeason}</strong> palette. It will naturally enhance your ${window._userUndertone.toLowerCase()} undertone and make you look radiant.`,
+                bg:    "linear-gradient(135deg,#064e3b,#065f46)",
+                border:"#10b981"
+            },
+            good: {
+                emoji: "👍",
+                title: "Good Choice",
+                msg:   `This <strong>${colorInfo.name}</strong> is a solid pick for your <strong>${window._userSeason}</strong> profile. It complements your palette well, though not your absolute best shade.`,
+                bg:    "linear-gradient(135deg,#1e3a5f,#1e40af)",
+                border:"#3b82f6"
+            },
+            okay: {
+                emoji: "🟡",
+                title: "Wearable but Not Ideal",
+                msg:   `This <strong>${colorInfo.name}</strong> can work, but it's not optimised for your <strong>${window._userSeason}</strong> palette. Pair it with one of your best neutral shades to balance it out.`,
+                bg:    "linear-gradient(135deg,#451a03,#92400e)",
+                border:"#f59e0b"
+            },
+            caution: {
+                emoji: "⚠️",
+                title: "Proceed with Caution",
+                msg:   `This <strong>${colorInfo.name}</strong> doesn't align well with your <strong>${window._userUndertone}</strong> undertone. It may make your complexion appear dull or washed out.`,
+                bg:    "linear-gradient(135deg,#3b1f00,#7c2d12)",
+                border:"#f97316"
+            },
+            avoid: {
+                emoji: "❌",
+                title: "Not Recommended",
+                msg:   `This <strong>${colorInfo.name}</strong> is in the avoid list for your <strong>${window._userSeason}</strong> profile. It is likely to clash with your ${window._userUndertone.toLowerCase()} undertone. We'd suggest returning it.`,
+                bg:    "linear-gradient(135deg,#450a0a,#7f1d1d)",
+                border:"#ef4444"
+            }
+        };
+
+        const v = verdictConfig[verdict];
+        dressResult.style.display = "block";
+        dressResult.innerHTML = `
+            <div style="background:${v.bg};border:1px solid ${v.border};border-radius:14px;padding:20px 22px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                    <div style="width:52px;height:52px;border-radius:10px;background:${dominant.hex};border:2px solid rgba(255,255,255,0.3);flex-shrink:0;"></div>
+                    <div>
+                        <div style="font-size:1.1rem;font-weight:800;color:#fff;">${v.emoji} ${v.title}</div>
+                        <div style="font-size:0.78rem;opacity:0.7;color:#fff;">Detected colour: ${colorInfo.name} &nbsp;·&nbsp; HEX ${dominant.hex}</div>
+                    </div>
+                </div>
+                <p style="color:#fff;font-size:0.88rem;line-height:1.7;margin:0;">${v.msg}</p>
+            </div>
+        `;
+
+        dressCheckBtn.textContent = "🎨 Check This Color";
+        dressCheckBtn.disabled    = false;
+    });
+}
+
+// Called after main analysis completes — unlocks dress checker and saves palette
+function unlockDressChecker(palette, undertone, season) {
+    window._userPalette   = palette;
+    window._userUndertone = undertone;
+    window._userSeason    = season;
+    const locked  = document.getElementById("dressCheckerLocked");
+    const active  = document.getElementById("dressCheckerActive");
+    if (locked) locked.style.display = "none";
+    if (active) active.style.display = "block";
+}

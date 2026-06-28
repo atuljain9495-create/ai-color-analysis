@@ -348,6 +348,70 @@
     </div>
 </section>
 
+<!-- ═══════════════════════════════════════
+     DRESS COLOR CHECKER FEATURE (MOVED SECTION)
+════════════════════════════════════════ -->
+<section class="recommendations" id="dressCheckerSection">
+    <div class="recommend-card" style="grid-column: 1 / -1; padding: 28px;">
+
+        <h3 style="font-size:1.3rem; font-weight:700; margin-bottom:6px;">👗 Test a Product Before You Buy!</h3>
+        <p style="font-size:0.88rem; opacity:0.7; margin-bottom:20px; line-height:1.6;">
+            Screenshot any clothing item from Amazon, ASOS or H&M and upload it here.
+            We'll instantly tell you if that colour suits your personal palette.
+        </p>
+
+        <!-- Requires skin analysis first -->
+        <div id="dressCheckerLocked" style="display:flex; align-items:center; gap:12px; background:rgba(106,90,205,0.1); border:1px dashed #6a5acd; border-radius:12px; padding:16px 20px; margin-bottom:16px;">
+            <span style="font-size:1.6rem;">🔒</span>
+            <p style="font-size:0.88rem; opacity:0.8; margin:0;">
+                <strong>Run your skin analysis first</strong> — then come back here to check any clothing item instantly.
+            </p>
+        </div>
+
+        <div id="dressCheckerActive" style="display:none;">
+            <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; margin-bottom:16px;">
+
+                <!-- Upload box -->
+                <label for="dressUpload" id="dressUploadLabel" style="
+                    flex:1; min-width:200px; display:flex; flex-direction:column;
+                    align-items:center; justify-content:center; gap:10px;
+                    border: 2px dashed #6a5acd; border-radius:14px;
+                    padding: 24px 16px; cursor:pointer; text-align:center;
+                    background: rgba(106,90,205,0.06); transition: background 0.2s;
+                    min-height: 140px;">
+                    <span style="font-size:2rem;">📸</span>
+                    <span style="font-weight:700; font-size:0.9rem;">Upload Product Screenshot</span>
+                    <span style="font-size:0.75rem; opacity:0.6;">Screenshot from Amazon, ASOS, H&M etc.</span>
+                    <input type="file" id="dressUpload" accept="image/*" style="display:none;">
+                </label>
+
+                <!-- Preview box -->
+                <div id="dressPreviewBox" style="
+                    flex:1; min-width:200px; min-height:140px;
+                    border-radius:14px; overflow:hidden; display:none;
+                    background:#1e293b; position:relative;">
+                    <img id="dressPreviewImg" alt="Product preview"
+                         style="width:100%; height:100%; object-fit:cover; max-height:200px;">
+                </div>
+            </div>
+
+            <!-- Check button -->
+            <button id="dressCheckBtn" style="
+                background: linear-gradient(135deg,#6a5acd,#9c3fe0);
+                color:#fff; border:none; padding:12px 28px; border-radius:25px;
+                font-weight:700; font-size:0.95rem; cursor:pointer;
+                box-shadow:0 4px 15px rgba(106,90,205,0.4);
+                display:none; margin-bottom:16px;">
+                🎨 Check This Color
+            </button>
+
+            <!-- Result area -->
+            <div id="dressResult" style="display:none; border-radius:14px; padding:20px; margin-top:4px;"></div>
+        </div>
+
+    </div>
+</section>
+
 <section class="recommendations">
     <div class="recommend-card">
         <h3>Recommended Clothing Colors</h3>
@@ -367,9 +431,7 @@
     <div class="recommend-card" style="grid-column: 1 / -1; padding: 25px;" id="shopSection">
         <h3>🛍️ Shop Your Palette Matches</h3>
         <p class="shop-sub" style="margin-bottom: 24px;">Click the inner arrow sliders on each card to loop through all your recommended custom palette colors dynamically.</p>
-        
         <div class="shop-grid" id="shopGrid"></div>
-        
         <p class="shop-disclaimer" style="margin-top: 25px; font-size: 0.72rem; opacity: 0.5; text-align: center;">
             * These are search links to external retailers. We are not affiliated with these stores. Prices and availability vary.
         </p>
