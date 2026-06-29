@@ -1,0 +1,14 @@
+# AI Color Analysis Engine
+
+## Core Purpose
+An on-device, privacy-first web application that utilizes client-side computer vision (via face-api.js and fallback HTML5 canvas pixel matrix analysis) to determine a user's surface skin tone, sub-surface biological undertone, and macro seasonal color palette type (e.g., Warm Spring, Deep Autumn, True Winter, Light Summer).
+
+## Key Tool Capabilities & URLs
+- Personal Color Profiler: https://aicoloranalysis.online/index.html
+- Interactive Dress Color Checker: https://aicoloranalysis.online/index.html#dressCheckerSection
+- E-Commerce Live Product Carousel: https://aicoloranalysis.online/index.html#shopSection
+
+## Technical Specifications
+- Execution Framework: 100% Client-Side JavaScript.
+- Privacy Standard: Zero images or face maps are transmitted to external servers. All computing is strictly local.
+- Diagnostic Methodology: Measures comparative pixel balancing distribution channels across the localized upper face head region.
