@@ -1134,3 +1134,81 @@ body.dark-mode .post-container h3 {
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* ══════════════════════════════════════════
+   PROFESSIONAL BRANDED FOOTER COMPONENT
+   ══════════════════════════════════════════ */
+footer {
+    background: #0f172a; /* Sleek deep midnight contrast drop background */
+    border-top: 1px solid #1e293b;
+    padding: 40px 20px 30px 20px !important; /* Spacious vertical clearance padding */
+    margin-top: 6px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px; /* Distinct visual separation gap */
+}
+
+.footer-social-row {
+    display: flex;
+    gap: 32px; /* Generous breathing room between brand targets */
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.footer-brand-link {
+    color: #94a3b8 !important; /* Professional muted slate tone default state */
+    text-decoration: none !important;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Micro gap keeping text and inline SVG locked tight */
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+/* Vibrant brand highlight pop shifts on mouse hover focus */
+.footer-brand-link.instagram-target:hover {
+    color: #f472b6 !important; /* Instagram Pink Accent */
+    transform: translateY(-2px);
+}
+
+.footer-brand-link.pinterest-target:hover {
+    color: #ef4444 !important; /* Pinterest Crimson Accent */
+    transform: translateY(-2px);
+}
+
+.footer-brand-link svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor; /* Inherits parent text highlights smoothly */
+    transition: transform 0.2s ease;
+}
+
+.footer-legal-claims {
+    margin: 0;
+    font-size: 0.88rem;
+    color: #64748b !important;
+    text-align: center;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+}
+
+.footer-legal-claims a {
+    color: #94a3b8 !important;
+    text-decoration: none !important;
+    margin: 0 6px;
+    transition: color 0.2s ease;
+}
+
+.footer-legal-claims a:hover {
+    color: #a78bfa !important; /* Modern premium violet tint link focus */
+    text-decoration: underline !important;
+}
