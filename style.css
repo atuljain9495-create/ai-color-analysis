@@ -1212,3 +1212,24 @@ footer {
     color: #a78bfa !important; /* Modern premium violet tint link focus */
     text-decoration: underline !important;
 }
+.cta-box { 
+    border: 1px solid #1e293b; 
+    background: #0f172a; 
+    padding: 20px; 
+    border-radius: 8px; 
+    margin-top: 30px; 
+    text-align: center; 
+    color: #ffffff !important; /* Forces title text to be crisp white */
+}
+
+/* 🚀 ADD THIS NEW RULE BELOW TO FIX THE READABILITY ISSUE */
+.cta-box p { 
+    color: #f8fafc !important; /* Forces the description text to be clean, readable bright off-white */
+    opacity: 1 !important;
+}
+
+.cta-box a { 
+    color: #a78bfa; 
+    text-decoration: none; 
+    font-weight: bold; 
+}
