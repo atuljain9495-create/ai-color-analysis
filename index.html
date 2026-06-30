@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-39GV5CS3WD"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-39GV5CS3WD');
     </script>
 
@@ -19,21 +17,18 @@
     <link rel="canonical" href="https://aicoloranalysis.online/">
     <link rel="icon" type="image/png" href="favicon.png">
 
-    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="white">
     <meta property="og:url" content="https://aicoloranalysis.online/">
     <meta property="og:title" content="AI Color Analysis | Find Your Seasonal Palette">
     <meta property="og:description" content="Upload a selfie to analyze your skin tone, undertone, and seasonal type instantly in your browser. Get personalized style recommendations.">
     <meta property="og:image" content="https://aicoloranalysis.online/og-image.png">
 
-    <!-- X / Twitter Cards Structured Tags Fix -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://aicoloranalysis.online/">
     <meta name="twitter:title" content="AI Color Analysis | Find Your Seasonal Palette">
     <meta name="twitter:description" content="Discover your perfect seasonal color palette instantly in your browser using privacy-first AI face-mapping engines.">
     <meta name="twitter:image" content="https://aicoloranalysis.online/og-image.png">
 
-    <!-- Schema.org Identity Structured Data Fix -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -58,10 +53,119 @@
     </script>
 
     <link rel="stylesheet" href="style.css">
-
     <script async src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
     <style>
+        /* ── Header Optimization ── */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            position: relative;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        nav {
+            display: flex;
+            gap: 24px;
+        }
+        nav a {
+            text-decoration: none;
+            font-weight: 600;
+            color: var(--text-color, #333);
+            transition: color 0.2s;
+        }
+        #darkModeBtn {
+            background: transparent;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
+            user-select: none;
+        }
+
+        /* ── Stylized Premium Custom Upload Zone ── */
+        .custom-upload-zone {
+            border: 2px dashed var(--primary-color, #6a5acd);
+            background: rgba(106, 90, 205, 0.04);
+            border-radius: 14px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .custom-upload-zone:hover {
+            background: rgba(106, 90, 205, 0.08);
+        }
+        .custom-upload-zone .upload-icon {
+            font-size: 2.2rem;
+        }
+        .custom-upload-zone .upload-text {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-color, #333);
+        }
+        .custom-upload-zone .upload-subtext {
+            font-size: 0.78rem;
+            opacity: 0.65;
+        }
+
+        /* ── Consolidated Clean Action Layout Grid ── */
+        .tool-action-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            margin-bottom: 15px;
+            width: 100%;
+        }
+        #cameraBtn {
+            background: #4b5563;
+            color: #fff;
+            font-weight: 600;
+        }
+        #cameraSwitchBtn {
+            background: #374151;
+            color: #fff;
+            padding: 12px 16px;
+        }
+        #analyzeBtn {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            color: white;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+            border: none;
+            opacity: 0.6;
+            cursor: not-allowed;
+            transition: all 0.2s ease;
+        }
+        #analyzeBtn.active {
+            opacity: 1;
+            cursor: pointer;
+        }
+        #analyzeBtn.active:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(236, 72, 153, 0.45);
+        }
+
+        /* ── Hero Refinement for Mobile ── */
+        .hero h2 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
         /* ── Gender Badge ── */
         #genderResult {
             display: none;
@@ -76,9 +180,7 @@
         }
         #genderResult .gender-icon { font-size: 1.4rem; }
 
-        /* ==========================================================================
-           UPGRADED CAROUSEL COMPONENT & VIBRANT HIGH-CONTRAST STORE BUTTONS
-           ========================================================================== */
+        /* ── Upgraded Carousel & Store Styling ── */
         #shopSection {
             display: none;
             margin-top: 30px;
@@ -96,7 +198,7 @@
             width: 100%;
         }
         .shop-card {
-            background: #1e293b !important; /* Force sleek contrast against dark layout framework */
+            background: #1e293b !important;
             border: 1px solid #374151 !important;
             border-radius: 16px !important;
             padding: 20px !important;
@@ -126,8 +228,6 @@
             margin: 4px 0;
             line-height: 1.3;
         }
-
-        /* ── INTERACTIVE INNER SLIDER BAR CONTROLS ── */
         .card-slider-bar {
             display: flex;
             align-items: center;
@@ -156,8 +256,6 @@
             font-weight: 600;
             text-align: center;
         }
-
-        /* ── PREMIUM OUTGOING REDIRECT ACTION BUTTONS ── */
         .shop-links {
             display: flex;
             gap: 8px;
@@ -181,9 +279,7 @@
         .shop-link.asos    { background: linear-gradient(135deg, #4b5563, #374151); color: #ffffff !important; }
         .shop-link.hm      { background: linear-gradient(135deg, #dc2626, #ef4444); color: #ffffff !important; box-shadow: 0 4px 10px rgba(220,38,38,0.2); }
 
-        /* ==========================================================================
-           VIRAL POLAROID FRAME "SHARE MY SEASON" LIGHTBOX MODAL LAYOUT
-           ========================================================================== */
+        /* ── Share Lightbox Modal ── */
         .share-modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -243,39 +339,25 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        /* ==========================================================================
-           MOBILE RESPONSIVE HEADER OPTIMIZATION
-           ========================================================================== */
+        /* ── Mobile Optimization ── */
         @media (max-width: 768px) {
             header {
-                flex-direction: column;
-                gap: 12px;
-                padding: 15px 10px;
-                text-align: center;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                padding: 15px 20px;
             }
             .header-actions {
-                flex-direction: column;
-                gap: 12px;
-                width: 100%;
-                align-items: center;
+                gap: 14px;
             }
             nav {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                gap: 20px;
-                flex-wrap: wrap;
-                width: 100%;
+                gap: 12px;
             }
             nav a {
-                padding: 6px 10px;
-                font-size: 0.95rem;
-                font-weight: 600;
-                display: inline-block;
+                font-size: 0.9rem;
             }
-            #darkModeBtn {
-                margin-top: 2px;
-                padding: 6px 12px;
+            .hero h2 {
+                font-size: 1.5rem;
             }
         }
     </style>
@@ -302,30 +384,14 @@
     <p>Upload a photo and instantly get your skin tone, undertone, seasonal palette, gender-specific style recommendations, and real shopping links.</p>
 </section>
 
-<div class="privacy-notice-box">
-    <div class="privacy-header">
-        <span class="privacy-icon">🔒</span>
-        <h3>Photo Privacy & Data Security</h3>
-    </div>
-    <p class="privacy-text">Your privacy is our highest priority. Everything runs locally inside your browser.</p>
-    <ul class="privacy-points">
-        <li><strong>On-Device Processing:</strong> Your image is processed entirely inside your own browser.</li>
-        <li><strong>No Server Uploads:</strong> Your photo is never transmitted, saved, or stored anywhere.</li>
-        <li><strong>100% Temporary:</strong> Closing or refreshing the tab completely clears all image data.</li>
-    </ul>
-    <span class="privacy-tag">✓ Fully compliant with GDPR and modern data protection standards</span>
-</div>
-
 <section class="upload-section">
     <div class="card">
         <h3>Upload Your Photo</h3>
         
-        <!-- Interactive UX Helper Prompt Message Element -->
         <p style="font-size: 0.88rem; opacity: 0.75; margin-top: -6px; margin-bottom: 20px; line-height: 1.5; color: var(--text-color, #4b5563);">
-            📸 For the most accurate seasonal matchmaking profile results, kindly click or upload a clear portrait or selfie photo showing your face under indirect natural lighting.
+            📸 For the most accurate seasonal matchmaking profile results, kindly click or upload a clear portrait photo showing your face under indirect natural lighting.
         </p>
 
-        <!-- Gender Selector Buttons -->
         <div style="margin-bottom: 18px; text-align: left; width: 100%;">
             <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 10px; opacity: 0.85;">I am a:</label>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -344,12 +410,19 @@
             </div>
         </div>
 
-        <input type="file" id="imageUpload" accept="image/*">
-        <div class="camera-controls">
-            <button id="analyzeBtn">Analyze My Colors</button>
+        <label for="imageUpload" class="custom-upload-zone" id="uploadZone">
+            <span class="upload-icon">📁</span>
+            <span class="upload-text" id="uploadZoneText">Tap to Upload Photo</span>
+            <span class="upload-subtext">Supports PNG, JPG or JPEG format profiles</span>
+            <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+        </label>
+
+        <div class="tool-action-grid">
             <button id="cameraBtn" type="button">Open Camera</button>
-            <button id="cameraSwitchBtn" type="button" class="camera-switch-btn" aria-label="Switch camera">📷↺</button>
+            <button id="cameraSwitchBtn" type="button" aria-label="Switch camera">📷↺</button>
+            <button id="analyzeBtn" disabled>Analyze My Colors</button>
         </div>
+
         <p id="cameraStatus" class="camera-status"></p>
         <div class="camera-wrapper">
             <video id="video" autoplay playsinline muted></video>
@@ -360,6 +433,20 @@
         <div id="palette"></div>
     </div>
 </section>
+
+<div class="privacy-notice-box" style="margin-top: -10px; margin-bottom: 40px;">
+    <div class="privacy-header">
+        <span class="privacy-icon">🔒</span>
+        <h3>Photo Privacy & Data Security</h3>
+    </div>
+    <p class="privacy-text">Your privacy is our highest priority. Everything runs locally inside your browser.</p>
+    <ul class="privacy-points">
+        <li><strong>On-Device Processing:</strong> Your image is processed entirely inside your own browser.</li>
+        <li><strong>No Server Uploads:</strong> Your photo is never transmitted, saved, or stored anywhere.</li>
+        <li><strong>100% Temporary:</strong> Closing or refreshing the tab completely clears all image data.</li>
+    </ul>
+    <span class="privacy-tag">✓ Fully compliant with GDPR and modern data protection standards</span>
+</div>
 
 <section class="preview-section">
     <div class="preview-wrapper">
@@ -395,19 +482,13 @@
     </div>
 </section>
 
-<!-- ═══════════════════════════════════════
-     DRESS COLOR CHECKER FEATURE
-════════════════════════════════════════ -->
 <section class="recommendations" id="dressCheckerSection">
     <div class="recommend-card" style="grid-column: 1 / -1; padding: 28px;">
-
         <h3 style="font-size:1.3rem; font-weight:700; margin-bottom:6px;">👗 Test a Product Before You Buy!</h3>
         <p style="font-size:0.88rem; opacity:0.7; margin-bottom:20px; line-height:1.6;">
-            Screenshot any clothing item from Amazon, ASOS or H&M and upload it here.
-            We'll instantly tell you if that colour suits your personal palette.
+            Screenshot any clothing item from Amazon, ASOS or H&M and upload it here. We'll instantly tell you if that colour suits your personal palette.
         </p>
 
-        <!-- Requires skin analysis first -->
         <div id="dressCheckerLocked" style="display:flex; align-items:center; gap:12px; background:rgba(106,90,205,0.1); border:1px dashed #6a5acd; border-radius:12px; padding:16px 20px; margin-bottom:16px;">
             <span style="font-size:1.6rem;">🔒</span>
             <p style="font-size:0.88rem; opacity:0.8; margin:0;">
@@ -417,8 +498,6 @@
 
         <div id="dressCheckerActive" style="display:none;">
             <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; margin-bottom:16px;">
-
-                <!-- Upload box -->
                 <label for="dressUpload" id="dressUploadLabel" style="
                     flex:1; min-width:200px; display:flex; flex-direction:column;
                     align-items:center; justify-content:center; gap:10px;
@@ -431,18 +510,13 @@
                     <span style="font-size:0.75rem; opacity:0.6;">Screenshot from Amazon, ASOS, H&M etc.</span>
                     <input type="file" id="dressUpload" accept="image/*" style="display:none;">
                 </label>
-
-                <!-- Preview box -->
                 <div id="dressPreviewBox" style="
                     flex:1; min-width:200px; min-height:140px;
                     border-radius:14px; overflow:hidden; display:none;
                     background:#1e293b; position:relative;">
-                    <img id="dressPreviewImg" alt="Product preview"
-                         style="width:100%; height:100%; object-fit:cover; max-height:200px;">
+                    <img id="dressPreviewImg" alt="Product preview" style="width:100%; height:100%; object-fit:cover; max-height:200px;">
                 </div>
             </div>
-
-            <!-- Check button -->
             <button id="dressCheckBtn" style="
                 background: linear-gradient(135deg,#6a5acd,#9c3fe0);
                 color:#fff; border:none; padding:12px 28px; border-radius:25px;
@@ -451,11 +525,8 @@
                 display:none; margin-bottom:16px;">
                 🎨 Check This Color
             </button>
-
-            <!-- Result area -->
             <div id="dressResult" style="display:none; border-radius:14px; padding:20px; margin-top:4px;"></div>
         </div>
-
     </div>
 </section>
 
@@ -531,28 +602,17 @@
 </div>
 
 <footer>
-    <div class="footer-content">
-        
-        <div class="footer-social-row">
-            <a href="https://www.instagram.com/ai_color_analysis_online" target="_blank" rel="noopener" class="footer-brand-link instagram-target" title="Follow us on Instagram">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
-                </svg>
-                <span>Instagram</span>
+    <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 10px;">
+        <div class="social-links" style="display: flex; gap: 24px; align-items: center; justify-content: center; flex-wrap: wrap;">
+            <a href="https://www.instagram.com/ai_color_analysis_online" target="_blank" rel="noopener" style="color: inherit; text-decoration: none; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 6px;" title="Follow us on Instagram">
+                📸 Instagram
             </a>
-            
-            <a href="https://www.pinterest.com/aicoloranalysisonline/" target="_blank" rel="noopener" class="footer-brand-link pinterest-target" title="Follow us on Pinterest">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.965 1.406-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.569-.994 3.995-.283 1.194.415 2.169 1.592 2.169 1.91 0 3.375-2.4 3.375-5.252 0-2.164-1.428-3.79-4.16-3.79-3.044 0-4.94 2.268-4.94 4.811 0 .919.269 1.572.691 2.073.199.239.227.334.146.652-.048.19-.155.741-.202.94-.063.242-.258.324-.479.228-1.343-.599-1.979-2.203-1.979-3.996 0-2.986 2.525-6.52 7.498-6.52 3.99 0 6.643 2.89 6.643 6.002 0 4.214-2.355 7.359-5.834 7.359-1.168 0-2.27-.635-2.646-1.366 0 0-.629 2.493-.761 3.003-.23.882-.676 1.76-1.042 2.327 1.052.311 2.167.481 3.32.481 6.621 0 11.988-5.366 11.988-11.984C24.017 5.367 18.638 0 12.017 0z"/>
-                </svg>
-                <span>Pinterest</span>
+            <a href="https://www.pinterest.com/aicoloranalysisonline/" target="_blank" rel="noopener" style="color: inherit; text-decoration: none; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 6px;" title="Follow us on Pinterest">
+                📌 Pinterest
             </a>
         </div>
-        
-        <p class="footer-legal-claims">
-            © 2026 AI Color Analysis &nbsp;|&nbsp; 
-            <a href="privacy.html">Privacy Policy</a> &nbsp;·&nbsp; 
-            <a href="terms.html">Terms of Service</a>
+        <p style="margin: 0; font-size: 0.9rem; opacity: 0.8; text-align: center;">
+            © 2026 AI Color Analysis | <a href="privacy.html" style="color:inherit; text-decoration:none;">Privacy Policy</a> | <a href="terms.html" style="color:inherit; text-decoration:none;">Terms of Service</a>
         </p>
     </div>
 </footer>

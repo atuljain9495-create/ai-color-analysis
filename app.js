@@ -139,14 +139,11 @@ async function detectFaceData(imageElement) {
     return { faceBox: null, gender: null, age: null };
 }
 
-/* ── Localized Skin Pixel Detector ──
-   Focuses color checking strictly on the head/portrait region.
-   Completely bypasses side backdrops (like blue doors) and clothes. */
+/* ── Localized Skin Pixel Detector ── */
 function detectSkinPixels(imageElement) {
     const tc  = document.createElement("canvas");
     const ctx = tc.getContext("2d", { willReadFrequently: true });
     
-    // Sample only the top-center 40% area of the photo where faces sit
     const sampleWidth = Math.floor(imageElement.width * 0.4);
     const sampleHeight = Math.floor(imageElement.height * 0.4);
     const startX = Math.floor((imageElement.width - sampleWidth) / 2);
@@ -163,7 +160,6 @@ function detectSkinPixels(imageElement) {
         const r = data[i], g = data[i+1], b = data[i+2];
         total++;
 
-        // Skin pigment verification inside the face region (Red > Green > Blue)
         if (r > g && g > b && r > 45) {
             const Y  =  0.299*r + 0.587*g + 0.114*b;
             const Cb = -0.169*r - 0.331*g + 0.500*b + 128;
@@ -178,7 +174,7 @@ function detectSkinPixels(imageElement) {
     const skinRatio = skinCount / total;
     return {
         skinRatio: Math.round(skinRatio * 100),
-        hasSkin:   skinRatio >= 0.03  // 3% minimum validation inside the localized region
+        hasSkin:   skinRatio >= 0.03
     };
 }
 
@@ -218,17 +214,14 @@ async function validatePhoto(imageSrc) {
 
     const contrastLevel = getContrastLevel(data);
 
-    // Try face-api detection first
     await initFaceApi();
     const faceData = await detectFaceData(img);
 
-    // If AI explicitly tracks a face box, approve it instantly and bypass color counts
     if (faceData && faceData.faceBox) {
         if (faceStatusWarning) faceStatusWarning.style.display = "none";
         return { brightness, contrastLevel, skinRatio: 100, ...faceData };
     }
 
-    // Fallback region verification if face tracking failed completely
     const skinResult = detectSkinPixels(img);
     if (!skinResult.hasSkin) {
         if (faceStatusWarning) faceStatusWarning.style.display = "flex";
@@ -269,6 +262,7 @@ window.selectGender = function(gender) {
     });
 };
 
+// 🚀 UPGRADED CUSTOM UPLOAD BUTTON HANDLER & ACTIVATION INTERFACE LOGIC
 if (imageUpload) {
     imageUpload.addEventListener("click", function() {
         resetResults();
@@ -277,12 +271,24 @@ if (imageUpload) {
     imageUpload.addEventListener("change", function () {
         const file = this.files[0];
         if (!file) return;
+        
+        // Dynamically alter the custom drag zone title text parameters
+        const zoneText = document.getElementById("uploadZoneText");
+        if (zoneText) zoneText.textContent = `✓ ${file.name.substring(0, 20)}...`;
+
         const reader = new FileReader();
         reader.onload = function (e) {
             uploadedImage = e.target.result;
             previewImage.src = uploadedImage;
             previewWrapper.style.display = "flex";
             previewImage.style.display = "block";
+            
+            // Switch on the disabled custom analyze button row structure instantly
+            if (analyzeBtn) {
+                analyzeBtn.removeAttribute("disabled");
+                analyzeBtn.classList.add("active");
+            }
+            
             setValidationMessage("Photo uploaded. Ready to analyse.", "info");
         };
         reader.readAsDataURL(file);
@@ -314,6 +320,13 @@ if (captureBtn) {
         previewImage.src=uploadedImage; previewImage.style.display="block";
         previewWrapper.style.display="flex";
         setStatus("Photo captured!", "success");
+        
+        // Activate analyze button after camera snapshot capture as well
+        if (analyzeBtn) {
+            analyzeBtn.removeAttribute("disabled");
+            analyzeBtn.classList.add("active");
+        }
+        
         if (stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
         video.style.display="none"; captureBtn.style.display="none";
     });
