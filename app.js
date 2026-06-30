@@ -39,7 +39,17 @@ let ageGenderReady    = false;
 // Global memory state tracking arrays for individual card color slider positions
 let itemsToShopMatrix = [];
 
-const FACE_API_MODEL_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights/";
+const FACE_API_MODEL_URL = "https://cdn.jsdelivr.net/gh/cgarciagl/face-api.js/weights/";
+
+// 📊 Helper function to safely track shopping channel exit conversions
+window.trackShoppingClick = function(platform, itemType) {
+    if (typeof gtag === "function") {
+        gtag('event', 'click_shopping_link', {
+            'retailer': platform,
+            'item_category': itemType
+        });
+    }
+};
 
 function applyDarkModeUI() {
     if (!darkModeBtn) return;
@@ -262,7 +272,6 @@ window.selectGender = function(gender) {
     });
 };
 
-// 🚀 UPGRADED CUSTOM UPLOAD BUTTON HANDLER & ACTIVATION INTERFACE LOGIC
 if (imageUpload) {
     imageUpload.addEventListener("click", function() {
         resetResults();
@@ -272,7 +281,6 @@ if (imageUpload) {
         const file = this.files[0];
         if (!file) return;
         
-        // Dynamically alter the custom drag zone title text parameters
         const zoneText = document.getElementById("uploadZoneText");
         if (zoneText) zoneText.textContent = `✓ ${file.name.substring(0, 20)}...`;
 
@@ -283,7 +291,6 @@ if (imageUpload) {
             previewWrapper.style.display = "flex";
             previewImage.style.display = "block";
             
-            // Switch on the disabled custom analyze button row structure instantly
             if (analyzeBtn) {
                 analyzeBtn.removeAttribute("disabled");
                 analyzeBtn.classList.add("active");
@@ -321,7 +328,6 @@ if (captureBtn) {
         previewWrapper.style.display="flex";
         setStatus("Photo captured!", "success");
         
-        // Activate analyze button after camera snapshot capture as well
         if (analyzeBtn) {
             analyzeBtn.removeAttribute("disabled");
             analyzeBtn.classList.add("active");
@@ -342,6 +348,14 @@ if (darkModeBtn) {
 
 if (analyzeBtn) {
     analyzeBtn.addEventListener("click", async () => {
+        // 📊 GA4 Conversion Tracker Metric 1: Core Tool Click Analysis Trigger
+        if (typeof gtag === "function") {
+            gtag('event', 'click_analyze_colors', {
+                'event_category': 'Engagement',
+                'event_label': 'Analyze Colors Button Clicked'
+            });
+        }
+
         if (!uploadedImage) { setStatus("Please upload or capture a photo first.", "error"); return; }
         setStatus("Analysing your photo...", "info");
         skinToneDiv.innerHTML = "🔍 Detecting skin tone & features...";
@@ -416,14 +430,26 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         const contrastLevel=validationResult.contrastLevel||"medium";
         const seasonalType=getSeasonalType(undertone,skinToneCategory,contrastLevel);
 
-        const detectedAge=validationResult.age||null;
+        const detectedAge = validationResult.age || null;
+        const detectedGender = validationResult.gender || null; // 📊 Captures face-api's native AI prediction
 
-        let personType = window._selectedGender || "woman";
-        if (personType === "male")   personType = "man";
-        if (personType === "female") personType = "woman";
+        // 🧠 Smart Prioritization: Use AI detected face gender first, fallback to button selection
+        let personType = "woman"; 
+        if (detectedGender) {
+            personType = (detectedGender === "male") ? "man" : "woman";
+        } else {
+            personType = window._selectedGender || "woman";
+        }
+
+        // Child automatic safety filter override
         if (detectedAge !== null && detectedAge < 13) personType = "child";
 
         currentAnalyzedPersonType = personType;
+        
+        // Sync the manual UI button selection highlight state with the AI's live choice
+        if (typeof window.selectGender === "function") {
+            window.selectGender(personType);
+        }
 
         if (faceStatusWarning) faceStatusWarning.style.display = "none";
 
@@ -442,6 +468,15 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
 
         setStatus("Analysis complete.","success");
         setValidationMessage("Your personalised colour palette is ready below.","success");
+
+        // 📊 GA4 Conversion Tracker Metric 2: Successful Profile Matrix Generation Milestone
+        if (typeof gtag === "function") {
+            gtag('event', 'successful_analysis', {
+                'seasonal_type': seasonalType,
+                'skin_tone': skinTone,
+                'undertone': undertone
+            });
+        }
 
         generateRecommendations(undertone,skinToneCategory,contrastLevel);
         generateShoppingLinks(undertone,skinToneCategory,personType);
@@ -586,9 +621,9 @@ function buildSliderCards(prefix) {
             </div>
 
             <div class="shop-links">
-                <a class="shop-link amazon" href="https://www.amazon.com/s?k=${dynamicSearchTerm}&tag=aicolor-20" target="_blank" rel="noopener noreferrer">Amazon</a>
-                <a class="shop-link asos"   href="https://www.asos.com/search/?q=${dynamicSearchTerm}" target="_blank" rel="noopener noreferrer">ASOS</a>
-                <a class="shop-link hm"     href="https://www2.hm.com/en_us/search-results.html?q=${dynamicSearchTerm}" target="_blank" rel="noopener noreferrer">H&amp;M</a>
+                <a class="shop-link amazon" href="https://www.amazon.com/s?k=${dynamicSearchTerm}&tag=aicolor-20" target="_blank" rel="noopener noreferrer" onclick="trackShoppingClick('Amazon', '${card.type}')">Amazon</a>
+                <a class="shop-link asos"   href="https://www.asos.com/search/?q=${dynamicSearchTerm}" target="_blank" rel="noopener noreferrer" onclick="trackShoppingClick('ASOS', '${card.type}')">ASOS</a>
+                <a class="shop-link hm"     href="https://www2.hm.com/en_us/search-results.html?q=${dynamicSearchTerm}" target="_blank" rel="noopener noreferrer" onclick="trackShoppingClick('HM', '${card.type}')">H&amp;M</a>
             </div>
         `;
         shopGrid.appendChild(cardElement);
@@ -958,6 +993,14 @@ if (dressCheckBtn) {
         const dominant  = getDominantColor(img);
         const colorInfo = classifyColor(dominant.r, dominant.g, dominant.b);
         const verdict   = checkColorAgainstPalette(colorInfo, window._userPalette, window._userUndertone, window._userSeason);
+
+        // 📊 GA4 Conversion Tracker Metric 4: Product Dress Checker Matrix Verdict Calculated
+        if (typeof gtag === "function") {
+            gtag('event', 'use_dress_checker', {
+                'detected_color': colorInfo.name,
+                'match_verdict': verdict
+            });
+        }
 
         const verdictConfig = {
             perfect: {

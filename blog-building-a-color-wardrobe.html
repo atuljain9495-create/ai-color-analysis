@@ -27,12 +27,91 @@
 </head>
 <body>
     <header>
-        <div class="logo"><h1>AI Color Analysis</h1></div>
+        <div class="logo">
+            <h1>AI Color Analysis</h1>
+        </div>
         <div class="header-actions">
-            <nav><a href="index.html">Home</a><a href="blog.html">Blog</a><a href="About.html">About</a><a href="contact.html">Contact</a></nav>
+            <nav>
+                <a href="index.html">Home</a>
+                <a href="blog.html">Blog</a>
+                <a href="About.html">About</a>
+                <a href="contact.html">Contact</a>
+            </nav>
             <button id="darkModeBtn" type="button" aria-label="Toggle dark mode">🌙</button>
         </div>
     </header>
+
+    <style>
+        /* Modern mobile overrides applied strictly inside the media breakpoint query */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                padding: 20px 16px 14px 16px !important;
+                gap: 14px !important;
+                width: 100%;
+                box-sizing: border-box;
+                position: relative;
+            }
+            header .logo h1 {
+                font-size: 1.5rem !important;
+                margin: 0 !important;
+                text-align: center !important;
+                letter-spacing: -0.5px;
+            }
+            .header-actions {
+                flex-direction: column !important;
+                gap: 14px !important;
+                width: 100%;
+                align-items: center !important;
+            }
+            nav {
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                gap: 8px !important;
+                background: rgba(0, 0, 0, 0.04) !important;
+                padding: 10px 16px !important;
+                border-radius: 30px !important;
+                border: 1px solid rgba(0, 0, 0, 0.06) !important;
+                width: 100% !important;
+                max-width: 340px !important;
+                box-sizing: border-box !important;
+            }
+            body.dark-mode nav {
+                background: rgba(30, 41, 59, 0.6) !important;
+                border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            }
+            nav a {
+                font-size: 0.88rem !important;
+                font-weight: 700 !important;
+                padding: 2px 6px !important;
+                text-align: center;
+                flex: 1;
+            }
+            #darkModeBtn {
+                position: absolute !important;
+                top: 14px !important;
+                right: 14px !important;
+                background: rgba(0, 0, 0, 0.04) !important;
+                border: 1px solid rgba(0, 0, 0, 0.05) !important;
+                padding: 0 !important;
+                border-radius: 50% !important;
+                width: 38px !important;
+                height: 38px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 1.1rem !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+            }
+            body.dark-mode #darkModeBtn {
+                background: rgba(255, 255, 255, 0.08) !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            }
+        }
+    </style>
     <section class="page-content">
         <div class="post-container">
             <a href="blog.html" class="back-link">← Back to Blog Index</a>
