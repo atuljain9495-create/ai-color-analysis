@@ -1063,100 +1063,111 @@ function kMeansDominantColor(pixels, k) {
     };
 }
 
-function getDominantColor(img) {
+function getDominantColor(imageElement) {
     const tc  = document.createElement("canvas");
     const ctx = tc.getContext("2d", { willReadFrequently: true });
     const size = 150;
-    tc.width  = size;
-    tc.height = size;
+    tc.width = size; tc.height = size;
+    ctx.drawImage(imageElement, 0, 0, size, size);
+    const data = ctx.getImageData(0, 0, size, size).data;
 
-    ctx.drawImage(img, 0, 0, size, size);
-    const imgData = ctx.getImageData(0, 0, size, size).data;
-
-    // Estimate the actual backdrop colour from the four corners instead of
-    // assuming it's pure white — screenshots often have an off-white/light
-    // gray backdrop that a fixed ">242" cutoff won't catch.
-    const corner = 10;
+    // 🧠 1. DYNAMIC CORNER BACKDROP ESTIMATOR
+    // Samples the outer edges to detect the exact background wall color,
+    // whether it's studio white or a vibrant storefront brand color.
+    const edge = 8;
     let bgR = 0, bgG = 0, bgB = 0, bgCount = 0;
-    const corners = [[0,0],[size-corner,0],[0,size-corner],[size-corner,size-corner]];
-    corners.forEach(([cx, cy]) => {
-        for (let y = cy; y < cy + corner; y++) {
-            for (let x = cx; x < cx + corner; x++) {
-                const idx = (y * size + x) * 4;
-                bgR += imgData[idx]; bgG += imgData[idx+1]; bgB += imgData[idx+2];
+    const sampleZones = [[0,0], [size-edge, 0], [0, size-edge], [size-edge, size-edge]];
+    
+    sampleZones.forEach(([cx, cy]) => {
+        for (let y = cy; y < cy + edge; y++) {
+            for (let x = cx; x < cx + edge; x++) {
+                const i = (y * size + x) * 4;
+                bgR += data[i]; bgG += data[i+1]; bgB += data[i+2];
                 bgCount++;
             }
         }
     });
     bgR /= bgCount; bgG /= bgCount; bgB /= bgCount;
 
-    // Sample the inner crop (where product screenshots almost always place
-    // the garment), filter out background/skin/near-neutral pixels, and
-    // weight the survivors by how close they are to the centre of the crop
-    // — this is what lets K-Means favour the garment over UI chrome, price
-    // text, or shadow that leaks in near the edges.
-    const startRow = Math.floor(size * 0.10);
-    const endRow   = Math.floor(size * 0.90);
-    const startCol = Math.floor(size * 0.10);
-    const endCol   = Math.floor(size * 0.90);
-    const midX = (startCol + endCol) / 2, midY = (startRow + endRow) / 2;
-    const maxDist = Math.hypot(endCol - midX, endRow - midY);
+    // 🧠 2. INNER LAYER SEPARATION GENERATOR
+    const margin = Math.floor(size * 0.2);
+    const midX = size / 2;
+    const midY = size / 2;
+    const maxDist = Math.hypot(midX, midY);
 
-    const candidates = [];
-    for (let y = startRow; y < endRow; y++) {
-        for (let x = startCol; x < endCol; x++) {
-            const idx = (y * size + x) * 4;
-            const r = imgData[idx], g = imgData[idx+1], b = imgData[idx+2], a = imgData[idx+3];
+    const buckets = {};
+    const QUANT = 8; // Controlled pixel grid mapping resolution
 
-            if (a < 200) continue; // transparent
+    for (let y = margin; y < size - margin; y++) {
+        for (let x = margin; x < size - margin; x++) {
+            const i = (y * size + x) * 4;
+            const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
+            
+            if (a < 200) continue; 
 
-            // Skip pixels close to the *actual* detected backdrop colour
-            const dBg = Math.sqrt((r-bgR)**2 + (g-bgG)**2 + (b-bgB)**2);
-            if (dBg < 45) continue;
+            // Skip pixels matching the dynamically detected background wall color
+            const dBackground = Math.sqrt((r-bgR)**2 + (g-bgG)**2 + (b-bgB)**2);
+            if (dBackground < 42) continue;
 
-            // Skip bright near-neutral pixels (studio highlights/backdrop spill)
-            const mx = Math.max(r,g,b), mn = Math.min(r,g,b), avg = (r+g+b)/3;
-            if ((mx - mn) < 18 && avg > 205) continue;
+            // Skip default overexposure and deep framing borders
+            if (r > 248 && g > 248 && b > 248) continue;
+            if (r < 12 && g < 12 && b < 12) continue;
 
-            // Skip likely skin
-            if (isSkinTone(r, g, b)) continue;
+            // Skip face skin tones if visible in the frame box
+            if (typeof isSkinTone === "function" && isSkinTone(r, g, b)) continue;
 
+            // Weight center mass distribution
             const dist = Math.hypot(x - midX, y - midY);
-            const weight = 0.35 + 0.65 * (1 - dist / maxDist); // centre pixels count for more
-            candidates.push({ r, g, b, weight });
+            const weight = 1.0 - (dist / maxDist);
+
+            const rBin = Math.round(r / QUANT);
+            const gBin = Math.round(g / QUANT);
+            const bBin = Math.round(b / QUANT);
+            const key = `${rBin},${gBin},${bBin}`;
+
+            if (!buckets[key]) {
+                buckets[key] = { count: 0, rSum: 0, gSum: 0, bSum: 0, totalWeight: 0 };
+            }
+            buckets[key].count++;
+            buckets[key].rSum += r;
+            buckets[key].gSum += g;
+            buckets[key].bSum += b;
+            buckets[key].totalWeight += weight;
         }
     }
 
-    // Not enough surviving pixels for clustering to be meaningful — fall
-    // back to a plain average over every non-transparent pixel.
-    if (candidates.length < 25) {
-        let rSum = 0, gSum = 0, bSum = 0, count = 0;
-        for (let i = 0; i < imgData.length; i += 4) {
-            if (imgData[i+3] >= 200) {
-                rSum += imgData[i]; gSum += imgData[i+1]; bSum += imgData[i+2]; count++;
+    const clusters = Object.values(buckets);
+
+    // Absolute fallback state if filtering cleared out everything
+    if (clusters.length === 0) {
+        let rSum=0, gSum=0, bSum=0, count=0;
+        for (let y = margin; y < size - margin; y++) {
+            for (let x = margin; x < size - margin; x++) {
+                const i = (y * size + x) * 4;
+                if (data[i+3] >= 200) {
+                    rSum+=data[i]; gSum+=data[i+1]; bSum+=data[i+2]; count++;
+                }
             }
         }
         if (count === 0) count = 1;
-        const finalR = Math.round(rSum / count);
-        const finalG = Math.round(gSum / count);
-        const finalB = Math.round(bSum / count);
-        return { r: finalR, g: finalG, b: finalB, hex: rgbToHex(finalR, finalG, finalB) };
+        return { r: Math.round(rSum/count), g: Math.round(gSum/count), b: Math.round(bSum/count), hex: rgbToHex(Math.round(rSum/count), Math.round(gSum/count), Math.round(bSum/count)) };
     }
 
-    // K-Means over the filtered, centre-weighted candidates — this is the
-    // actual clustering step: the garment colour and any leftover
-    // background/shadow tones each collapse into their own cluster, and we
-    // keep whichever cluster carries the most weight.
-    const dominant = kMeansDominantColor(candidates, 3);
+    // Sort by weighted proximity value so the main shirt fabric always wins
+    clusters.sort((a, b) => b.totalWeight - a.totalWeight);
+    const topCluster = clusters[0];
+
+    const finalR = Math.round(topCluster.rSum / topCluster.count);
+    const finalG = Math.round(topCluster.gSum / topCluster.count);
+    const finalB = Math.round(topCluster.bSum / topCluster.count);
 
     return {
-        r: dominant.r,
-        g: dominant.g,
-        b: dominant.b,
-        hex: rgbToHex(dominant.r, dominant.g, dominant.b)
+        r: finalR,
+        g: finalG,
+        b: finalB,
+        hex: rgbToHex(finalR, finalG, finalB)
     };
 }
-
 // ── LAB colour space + Delta-E matching ──
 // Hue-bucket classification (the old approach) draws hard lines at fixed hue
 // angles, so visually-similar colours like Ivory/Cream/White or
@@ -1271,9 +1282,14 @@ function rgbToHsl(r, g, b) {
 // alone can't tell "dark and a little green" from "dark and no colour at
 // all" apart nearly as reliably as looking at hue directly.
 function colorFamilyBucket(h, s, l) {
-    if (s < 8)  return l > 88 ? "white" : l < 15 ? "black" : "gray";
-    if (s < 22 && h >= 20 && h < 100) return "olive_brown"; // desaturated khaki/olive
-    if (h < 15 || h >= 345) return (l > 62 && s < 85) ? "pink" : "red";
+    // 🧠 CRITICAL FIX: Saturated clothing rules check
+    // If lightness is extremely high or saturation is near-zero, lock it into flat neutrals early
+    if (s < 12) return l > 85 ? "white" : l < 24 ? "black" : "gray";
+    if (l > 93 && s < 20) return "white";
+    if (l < 18) return "black";
+
+    if (s < 22 && h >= 20 && h < 100) return "olive_brown"; 
+    if (h < 15 || h >= 345) return (l > 45 && s > 40) ? "pink" : "red";
     if (h < 45)  return "orange";
     if (h < 65)  return "yellow";
     if (h < 170) return "green";
