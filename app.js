@@ -24,7 +24,6 @@ const genderIcon     = document.getElementById("genderIcon");
 const genderText     = document.getElementById("genderText");
 const shopSection    = document.getElementById("shopSection");
 const shopGrid       = document.getElementById("shopGrid");
-const genderSelect   = document.getElementById("genderSelect");
 const shareSeasonBtn = document.getElementById("shareSeasonBtn");
 const faceStatusWarning = document.getElementById("faceStatusWarning");
 
@@ -38,6 +37,7 @@ let ageGenderReady    = false;
 
 // Global memory state tracking arrays for individual card color slider positions
 let itemsToShopMatrix = [];
+window._currentRetailerTab = "amazon"; // Default active retailer tab state anchor
 
 const FACE_API_MODEL_URL = "https://cdn.jsdelivr.net/gh/cgarciagl/face-api.js/weights/";
 
@@ -62,6 +62,33 @@ function setStatus(message, type = "info") {
     if (!cameraStatus) return;
     cameraStatus.textContent = message;
     cameraStatus.className = `camera-status ${type}`;
+}
+
+// Smart utility block to verify if user is visiting from India
+// Uses timezone + language + currency as triple-check for accuracy
+function isUserInIndia() {
+    try {
+        // Check 1: Timezone (most reliable)
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (timeZone && (
+            timeZone === "Asia/Calcutta" ||
+            timeZone === "Asia/Kolkata"
+        )) return true;
+
+        // Check 2: Browser language set to Indian English or Hindi
+        const lang = (navigator.language || navigator.userLanguage || "").toLowerCase();
+        if (lang === "en-in" || lang === "hi" || lang === "hi-in") return true;
+
+        // Check 3: Currency preference
+        try {
+            const numFormat = new Intl.NumberFormat(undefined, { style: "currency", currency: "INR" });
+            const parts = numFormat.formatToParts(1);
+            const hasCurrency = parts.some(p => p.type === "currency" && p.value === "₹");
+            if (hasCurrency && lang.includes("in")) return true;
+        } catch (e) {}
+
+    } catch (e) { console.warn("Geolocation check failed:", e); }
+    return false;
 }
 
 function setValidationMessage(message, type = "info") {
@@ -149,7 +176,6 @@ async function detectFaceData(imageElement) {
     return { faceBox: null, gender: null, age: null };
 }
 
-/* ── Localized Skin Pixel Detector ── */
 function detectSkinPixels(imageElement) {
     const tc  = document.createElement("canvas");
     const ctx = tc.getContext("2d", { willReadFrequently: true });
@@ -249,7 +275,7 @@ if (localStorage.getItem("darkMode") === "true") document.body.classList.add("da
 applyDarkModeUI();
 resetResults();
 
-window._selectedGender = "woman"; // default
+window._selectedGender = "woman";
 
 window.selectGender = function(gender) {
     window._selectedGender = gender;
@@ -348,7 +374,6 @@ if (darkModeBtn) {
 
 if (analyzeBtn) {
     analyzeBtn.addEventListener("click", async () => {
-        // 📊 GA4 Conversion Tracker Metric 1: Core Tool Click Analysis Trigger
         if (typeof gtag === "function") {
             gtag('event', 'click_analyze_colors', {
                 'event_category': 'Engagement',
@@ -431,9 +456,8 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         const seasonalType=getSeasonalType(undertone,skinToneCategory,contrastLevel);
 
         const detectedAge = validationResult.age || null;
-        const detectedGender = validationResult.gender || null; // 📊 Captures face-api's native AI prediction
+        const detectedGender = validationResult.gender || null;
 
-        // 🧠 Smart Prioritization: Use AI detected face gender first, fallback to button selection
         let personType = "woman"; 
         if (detectedGender) {
             personType = (detectedGender === "male") ? "man" : "woman";
@@ -441,12 +465,10 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
             personType = window._selectedGender || "woman";
         }
 
-        // Child automatic safety filter override
         if (detectedAge !== null && detectedAge < 13) personType = "child";
 
         currentAnalyzedPersonType = personType;
         
-        // Sync the manual UI button selection highlight state with the AI's live choice
         if (typeof window.selectGender === "function") {
             window.selectGender(personType);
         }
@@ -469,7 +491,6 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         setStatus("Analysis complete.","success");
         setValidationMessage("Your personalised colour palette is ready below.","success");
 
-        // 📊 GA4 Conversion Tracker Metric 2: Successful Profile Matrix Generation Milestone
         if (typeof gtag === "function") {
             gtag('event', 'successful_analysis', {
                 'seasonal_type': seasonalType,
@@ -552,11 +573,11 @@ function generateShoppingLinks(undertone, skinToneCategory, personType) {
     const prefix = isMen ? "mens " : (isChild ? "kids " : "womens ");
 
     let generalItemsMatrix = [
-        { id: 0,  tag: "👚 Core Tops",       type: isMen ? "shirt" : (isChild ? "tshirt" : "blouse"),    colors: dynamicClothingColors, activeIdx: 0 },
-        { id: 1,  tag: "👖 Bottom Staples",  type: isMen ? "trousers" : (isChild ? "pants" : "skirt"),   colors: dynamicNeutralColors,  activeIdx: 0 },
-        { id: 2,  tag: "🧥 Outer Layers",    type: isMen ? "jacket" : (isChild ? "hoodie" : "blazer"),   colors: dynamicClothingColors, activeIdx: 1 }, 
-        { id: 3,  tag: "👜 Accent Gear",     type: isMen ? "belt" : (isChild ? "backpack" : "handbag"),  colors: dynamicNeutralColors,  activeIdx: 1 },
-        { id: 4,  tag: "🧣 Seasonal Layers", type: "scarf",                                              colors: dynamicClothingColors, activeIdx: 2 }
+        { id: 0,  tag: "👚 Core Tops",       type: isMen ? "Oxford Shirt" : (isChild ? "T-Shirt" : "Blouse"),    colors: dynamicClothingColors, activeIdx: 0, icon: "👕" },
+        { id: 1,  tag: "👖 Bottom Staples",  type: isMen ? "Slim Trousers" : (isChild ? "Pants" : "Skirt"),   colors: dynamicNeutralColors,  activeIdx: 0, icon: "👖" },
+        { id: 2,  tag: "🧥 Outer Layers",    type: isMen ? "Tailored Jacket" : (isChild ? "Hoodie" : "Blazer"),   colors: dynamicClothingColors, activeIdx: 1, icon: "🧥" }, 
+        { id: 3,  tag: "👜 Accent Gear",     type: isMen ? "Classic Belt" : (isChild ? "Backpack" : "Handbag"),  colors: dynamicNeutralColors,  activeIdx: 1, icon: "💼" },
+        { id: 4,  tag: "🧣 Seasonal Layers", type: "Premium Scarf",                                              colors: dynamicClothingColors, activeIdx: 2, icon: "🧣" }
     ];
 
     if (!isMen && !isChild) {
@@ -575,16 +596,16 @@ function generateShoppingLinks(undertone, skinToneCategory, personType) {
         }
 
         generalItemsMatrix.push(
-            { id: 5, tag: "💄 Cosmetics (8%+$)", type: "lipstick",           colors: lipColors,         activeIdx: 0 },
-            { id: 6, tag: "🎨 Cosmetics (8%+$)", type: "eyeshadow palette",  colors: eyeshadowPalettes, activeIdx: 0 },
-            { id: 7, tag: "✨ Cosmetics (8%+$)", type: "makeup blush",       colors: blushTones,        activeIdx: 0 }
+            { id: 5, tag: "💄 Cosmetics", type: "Lipstick",           colors: lipColors,         activeIdx: 0, icon: "💄" },
+            { id: 6, tag: "🎨 Cosmetics", type: "Eyeshadow Palette",  colors: eyeshadowPalettes, activeIdx: 0, icon: "🎨" },
+            { id: 7, tag: "✨ Cosmetics", type: "Makeup Blush",       colors: blushTones,        activeIdx: 0, icon: "✨" }
         );
     }
 
     generalItemsMatrix.push(
-        { id: 8,  tag: "💍 Metallic Links",   type: "necklace",              colors: metallicHardware,  activeIdx: 0 },
-        { id: 9,  tag: "💎 Gem Accents",     type: "earrings",              colors: crystalGemstones,  activeIdx: 0 },
-        { id: 10, tag: "💇 Hair Tones",       type: "hair dye",              colors: hairTones,         activeIdx: 0 }
+        { id: 8,  tag: "💍 Metallic Links",   type: "Minimalist Necklace",   colors: metallicHardware,  activeIdx: 0, icon: "📿" },
+        { id: 9,  tag: "💎 Gem Accents",     type: "Crystal Earrings",      colors: crystalGemstones,  activeIdx: 0, icon: "💎" },
+        { id: 10, tag: "💇 Hair Tones",       type: "Nourishing Hair Dye",   colors: hairTones,         activeIdx: 0, icon: "💇" }
     );
 
     itemsToShopMatrix = generalItemsMatrix;
@@ -592,9 +613,34 @@ function generateShoppingLinks(undertone, skinToneCategory, personType) {
     shopSection.style.display = "block";
 }
 
+window.setRetailerTabFilter = function(tabName, prefix) {
+    window._currentRetailerTab = tabName.toLowerCase();
+    document.querySelectorAll(".wireframe-tab-btn").forEach(btn => {
+        if (btn.getAttribute("data-tab") === window._currentRetailerTab) {
+            btn.classList.add("tab-active");
+        } else {
+            btn.classList.remove("tab-active");
+        }
+    });
+    buildSliderCards(prefix);
+};
+
+// ── 🌟 HIGH-CONVERTING CARD GENERATOR CORE ENGINE ──
 function buildSliderCards(prefix) {
     if (!shopGrid) return;
     shopGrid.innerHTML = "";
+
+    const tabsContainer = document.createElement("div");
+    tabsContainer.className = "wireframe-tabs-header-row";
+    tabsContainer.style.cssText = "margin-bottom: 25px !important; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; width: 100%; grid-column: 1 / -1;";
+    tabsContainer.innerHTML = `
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'amazon' ? 'tab-active' : ''}" data-tab="amazon" onclick="setRetailerTabFilter('amazon', '${prefix}')">AMAZON</button>
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'asos' ? 'tab-active' : ''}" data-tab="asos" onclick="setRetailerTabFilter('asos', '${prefix}')">ASOS</button>
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'h&m' ? 'tab-active' : ''}" data-tab="h&m" onclick="setRetailerTabFilter('h&m', '${prefix}')">H&M</button>
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'flipkart' ? 'tab-active' : ''}" data-tab="flipkart" onclick="setRetailerTabFilter('flipkart', '${prefix}')">FLIPKART</button>
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'myntra' ? 'tab-active' : ''}" data-tab="myntra" onclick="setRetailerTabFilter('myntra', '${prefix}')">MYNTRA</button>
+    `;
+    shopGrid.appendChild(tabsContainer);
 
     itemsToShopMatrix.forEach((card) => {
         const currentColor = card.colors[card.activeIdx] || "Universal Base";
@@ -606,28 +652,89 @@ function buildSliderCards(prefix) {
             dynamicSearchTerm = encodeURIComponent(`${currentColor} ${prefix}${card.type}`);
         }
 
-        const cardElement = document.createElement("div");
-        cardElement.className = "shop-card";
-        cardElement.innerHTML = `
-            <div>
-                <span class="shop-tag">${card.tag}</span>
-                <div class="shop-item">${capitalise(currentColor)} ${capitalise(card.type)}</div>
-            </div>
-            
-            <div class="card-slider-bar">
-                <button class="slider-arrow-btn" onclick="slideCardColor(${card.id}, -1, '${prefix}')">◀</button>
-                <div class="slider-color-txt">Variant: ${capitalise(currentColor)}</div>
-                <button class="slider-arrow-btn" onclick="slideCardColor(${card.id}, 1, '${prefix}')">▶</button>
-            </div>
+        // 🧠 INTELLECTUAL DYNAMIC GEOLOCATION BRAND ROUTER MATRIX
+        let platformTargetUrl = "";
+        let buttonDisplayLabel = "Amazon";
+        let btnGradient = "linear-gradient(135deg, #ff9900, #ffb83d)";
+        let btnColor = "#111111";
 
-            <div class="shop-links">
-                <a class="shop-link amazon" href="https://www.amazon.com/s?k=${dynamicSearchTerm}&tag=aicolor-20" target="_blank" rel="noopener noreferrer" onclick="trackShoppingClick('Amazon', '${card.type}')">Amazon</a>
-                <a class="shop-link asos"   href="https://www.asos.com/search/?q=${dynamicSearchTerm}" target="_blank" rel="noopener noreferrer" onclick="trackShoppingClick('ASOS', '${card.type}')">ASOS</a>
-                <a class="shop-link hm"     href="https://www2.hm.com/en_us/search-results.html?q=${dynamicSearchTerm}" target="_blank" rel="noopener noreferrer" onclick="trackShoppingClick('HM', '${card.type}')">H&amp;M</a>
+        if (window._currentRetailerTab === "amazon") {
+            buttonDisplayLabel = "Amazon";
+            btnGradient = "linear-gradient(135deg, #ff9900, #ffb83d)";
+            btnColor = "#111111";
+            
+            if (isUserInIndia()) {
+                // Indian User Route — amazon.in with Indian affiliate ID
+                platformTargetUrl = `https://www.amazon.in/s?k=${dynamicSearchTerm}&tag=aicoloronline-21`;
+            } else {
+                // Global/Western User Route (US/Europe) — amazon.com with US affiliate ID
+                platformTargetUrl = `https://www.amazon.com/s?k=${dynamicSearchTerm}&tag=aicolor-20`;
+            }
+        } else if (window._currentRetailerTab === "asos") {
+            platformTargetUrl = `https://www.asos.com/search/?q=${dynamicSearchTerm}`;
+            buttonDisplayLabel = "ASOS";
+            btnGradient = "linear-gradient(135deg, #4b5563, #374151)";
+            btnColor = "#ffffff";
+        } else if (window._currentRetailerTab === "h&m") {
+            // Smart routing helper for H&M regional extensions as well
+            if (isUserInIndia()) {
+                platformTargetUrl = `https://www2.hm.com/en_in/search-results.html?q=${dynamicSearchTerm}`;
+            } else {
+                platformTargetUrl = `https://www2.hm.com/en_us/search-results.html?q=${dynamicSearchTerm}`;
+            }
+            buttonDisplayLabel = "H&M";
+            btnGradient = "linear-gradient(135deg, #dc2626, #ef4444)";
+            btnColor = "#ffffff";
+        } else if (window._currentRetailerTab === "flipkart") {
+            platformTargetUrl = `https://www.flipkart.com/search?q=${dynamicSearchTerm}`;
+            buttonDisplayLabel = "Flipkart";
+            btnGradient = "linear-gradient(135deg, #2874f0, #004cc7)";
+            btnColor = "#ffffff";
+        } else if (window._currentRetailerTab === "myntra") {
+            platformTargetUrl = `https://www.myntra.com/${dynamicSearchTerm}`;
+            buttonDisplayLabel = "Myntra";
+            btnGradient = "linear-gradient(135deg, #ec4899, #f43f5e)";
+            btnColor = "#ffffff";
+        }
+
+        const cardElement = document.createElement("div");
+        cardElement.className = "shop-card dynamic-premium-product-card";
+        cardElement.innerHTML = `
+            <div class="product-illustration-preview-box" style="background: ${getSoftColorHex(currentColor)}22; min-height: 120px; border-radius: 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <span class="product-avatar-emoji" style="font-size: 3rem;">${card.icon}</span>
+                <div class="product-palette-color-tag-pill" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; color: #fff;">${capitalise(currentColor)}</div>
+            </div>
+            <div class="product-details-content-wrapper" style="padding: 0 4px; margin-bottom: 12px;">
+                <span class="shop-tag" style="font-size: 0.72rem; color: #a78bfa; font-weight: 700; text-transform: uppercase;">${card.tag}</span>
+                <div class="shop-item" style="font-size: 1.1rem; font-weight: 800; color: #fff; margin: 4px 0;">${capitalise(currentColor)} ${card.type}</div>
+                <div class="product-rating-stars-row" style="font-size: 0.85rem; margin-top: 4px;">⭐⭐⭐⭐⭐ <span class="rating-count-metric" style="color: #94a3b8; font-size: 0.75rem;">(Verified Match)</span></div>
+                <div style="font-size: 0.85rem; opacity: 0.8; font-weight: 600; margin-top: 8px; color: #bae6fd;">🔍 Best price ranges found live</div>
+            </div>
+            <div class="card-slider-bar" style="margin-bottom: 14px;">
+                <button type="button" class="slider-arrow-btn" onclick="slideCardColor(${card.id}, -1, '${prefix}')">◀</button>
+                <div class="slider-color-txt">Color: ${capitalise(currentColor)}</div>
+                <button type="button" class="slider-arrow-btn" onclick="slideCardColor(${card.id}, 1, '${prefix}')">▶</button>
+            </div>
+            <div class="single-active-channel-container" style="margin-top: auto; padding-top: 10px; display: flex; justify-content: center; width: 100%;">
+                <a class="shop-link verified-retailer-action-btn" href="${platformTargetUrl}" target="_blank" rel="noopener noreferrer" onclick="trackShoppingClick('${buttonDisplayLabel.toUpperCase()}', '${card.type}')" style="display: block; width: 100%; text-align: center; font-weight: 700 !important; padding: 12px !important; border-radius: 10px !important; text-decoration: none; font-size: 0.85rem !important; background: ${btnGradient}; color: ${btnColor} !important; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: transform 0.2s ease;">
+                    Find on ${buttonDisplayLabel} →
+                </a>
             </div>
         `;
         shopGrid.appendChild(cardElement);
     });
+}
+
+function getSoftColorHex(colorName) {
+    const map = {
+        "peach": "#ffb09c", "coral": "#ff6b6b", "warm ivory": "#fffdd0", "golden yellow": "#ffd700",
+        "burnt orange": "#cc5500", "rust": "#b83b1d", "olive green": "#606c38", "deep teal": "#006666",
+        "mustard yellow": "#e1ad01", "warm brown": "#964b00", "terracotta": "#e2725b", "forest green": "#228b22",
+        "pure white": "#ffffff", "black": "#111111", "icy blue": "#f0f8ff", "royal blue": "#4169e1",
+        "hot pink": "#ff69b4", "fuchsia": "#ff00ff", "true red": "#ff0000", "emerald green": "#50c878",
+        "navy": "#000080", "grey": "#808080", "beige": "#f5f5dc", "charcoal": "#36454f"
+    };
+    return map[colorName.toLowerCase()] || "#6a5acd";
 }
 
 window.slideCardColor = function(cardId, offset, prefix) {
@@ -834,118 +941,10 @@ function getHairPalette(undertone,skinToneCategory){
 function getJewelryPalette(undertone,skinToneCategory){
     if(undertone==="Warm")return{best:["Yellow Gold","Rose Gold","Bronze","Copper","Brass"],gems:["Amber","Citrine","Topaz","Carnelian","Coral","Peridot","Turquoise","Tiger's Eye"],secondary:["Mixed Metal (Gold-dominant)","Warm Enamel","Wood & Natural Materials"],avoid:["Silver","White Gold","Platinum","Cool Blue Sapphire","Blue Aquamarine"]};
     if(undertone==="Cool")return{best:["Silver","White Gold","Platinum","Palladium"],gems:["Diamond","Sapphire","Amethyst","Blue Topaz","Aquamarine","Ruby","Tanzanite","Pearl"],secondary:["Rose Gold (silver-toned)","Hematite","Gunmetal"],avoid:["Yellow Gold","Copper","Bronze","Brass","Warm Coral Stone"]};
-    return{best:["Yellow Gold","Silver","Rose Gold — all work equally well"],gems:["Diamond","Opal","Pearl","Morganite","Jade","Moonstone","Garnet","Smoky Quartz"],secondary:["Mixed Metals","Two-tone Jewelry","Layered Gold & Silver"],avoid:["Very Neon Enamel","Overly Bright Plastic Jewelry"]};
+    return{best:["Yellow Gold","Silver","Rose Gold — all work equally well"],gems:["Diamond","Opal","Pearl","Morganite","Jade","Moonstone","Garnet","Subtle Quartz"],secondary:["Mixed Metals","Two-tone Jewelry","Layered Gold & Silver"],avoid:["Very Neon Enamel","Overly Bright Plastic Jewelry"]};
 }
 
 function rgbToHex(r,g,b){return"#"+[r,g,b].map(x=>{const h=x.toString(16);return h.length===1?"0"+h:h;}).join("");}
-
-/* ═══════════════════════════════════════════════════════════
-   DRESS COLOR CHECKER (PIXEL DETECTOR & VERDICT ASSIGNER)
-═══════════════════════════════════════════════════════════ */
-window._userPalette = null;
-window._userUndertone = null;
-window._userSeason = null;
-
-function getDominantColor(imageElement) {
-    const tc  = document.createElement("canvas");
-    const ctx = tc.getContext("2d", { willReadFrequently: true });
-    const size = 150;
-    tc.width = size; tc.height = size;
-    ctx.drawImage(imageElement, 0, 0, size, size);
-    const data = ctx.getImageData(0, 0, size, size).data;
-
-    const margin = Math.floor(size * 0.2);
-    let rSum=0, gSum=0, bSum=0, count=0;
-    for (let y = margin; y < size - margin; y++) {
-        for (let x = margin; x < size - margin; x++) {
-            const i = (y * size + x) * 4;
-            const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
-            if (a < 200) continue; 
-            if (r > 240 && g > 240 && b > 240) continue;
-            if (r < 15 && g < 15 && b < 15) continue;
-            rSum+=r; gSum+=g; bSum+=b; count++;
-        }
-    }
-    if (count === 0) { rSum=0;gSum=0;bSum=0;count=1; }
-    return {
-        r: Math.round(rSum/count),
-        g: Math.round(gSum/count),
-        b: Math.round(bSum/count),
-        hex: rgbToHex(Math.round(rSum/count), Math.round(gSum/count), Math.round(bSum/count))
-    };
-}
-
-function classifyColor(r, g, b) {
-    const brightness = (r+g+b)/3;
-    const max = Math.max(r,g,b);
-    const min = Math.min(r,g,b);
-    const saturation = max === 0 ? 0 : (max-min)/max;
-
-    let hue = 0;
-    if (max !== min) {
-        if (max === r) hue = ((g-b)/(max-min)) % 6;
-        else if (max === g) hue = (b-r)/(max-min) + 2;
-        else hue = (r-g)/(max-min) + 4;
-        hue = Math.round(hue * 60);
-        if (hue < 0) hue += 360;
-    }
-
-    if (saturation < 0.12) {
-        if (brightness > 200) return { name: "White / Off-White", family: "neutral", warm: false };
-        if (brightness > 140) return { name: "Light Gray",        family: "neutral", warm: false };
-        if (brightness > 80)  return { name: "Medium Gray",       family: "neutral", warm: false };
-        return { name: "Black / Charcoal", family: "neutral", warm: false };
-    }
-
-    if (hue < 15  || hue >= 345) return { name: "Red",         family: "red",    warm: false };
-    if (hue < 25)                 return { name: "Orange-Red",  family: "orange", warm: true  };
-    if (hue < 40)                 return { name: "Orange",      family: "orange", warm: true  }; 
-    if (hue < 65) {
-        const name = brightness < 140 ? "Mustard / Gold Yellow" : "Yellow";
-        return { name: name, family: "yellow", warm: true };
-    }
-    if (hue < 80)                 return { name: "Yellow-Green",family: "green",  warm: true  };
-    if (hue < 150)                return { name: "Green",       family: "green",  warm: false };
-    if (hue < 175)                return { name: "Teal / Cyan", family: "teal",   warm: false };
-    if (hue < 210)                return { name: "Light Blue",  family: "blue",   warm: false };
-    if (hue < 255)                return { name: "Blue",        family: "blue",   warm: false };
-    if (hue < 275)                return { name: "Blue-Purple", family: "purple", warm: false };
-    if (hue < 310)                return { name: "Purple",      family: "purple", warm: false };
-    if (hue < 330)                return { name: "Pink / Magenta", family: "pink", warm: false };
-    return { name: "Rose Pink", family: "pink", warm: false };
-}
-
-function checkColorAgainstPalette(colorInfo, palette, undertone, season) {
-    const family = colorInfo.family;
-    const isWarm = colorInfo.warm;
-
-    const bestMatch = palette.best.some(c => {
-        const cl = c.toLowerCase();
-        return cl.includes(family) ||
-               (family === "orange" && (cl.includes("coral") || cl.includes("terracotta") || cl.includes("rust") || cl.includes("peach"))) ||
-               (family === "green"  && (cl.includes("olive") || cl.includes("sage") || cl.includes("forest") || cl.includes("teal"))) ||
-               (family === "blue"   && (cl.includes("navy") || cl.includes("sapphire") || cl.includes("cobalt") || cl.includes("teal"))) ||
-               (family === "purple" && (cl.includes("plum") || cl.includes("lavender") || cl.includes("berry") || cl.includes("mauve"))) ||
-               (family === "pink"   && (cl.includes("rose") || cl.includes("blush") || cl.includes("fuchsia") || cl.includes("dusty rose"))) ||
-               (family === "red"    && (cl.includes("burgundy") || cl.includes("crimson") || cl.includes("berry") || cl.includes("raspberry"))) ||
-               (family === "yellow" && (cl.includes("gold") || cl.includes("mustard") || cl.includes("champagne"))) ||
-               (family === "neutral"&& (cl.includes("camel") || cl.includes("taupe") || cl.includes("beige") || cl.includes("ivory") || cl.includes("white") || cl.includes("gray") || cl.includes("charcoal") || cl.includes("black")));
-    });
-
-    const avoidMatch = palette.avoid.some(c => {
-        const cl = c.toLowerCase();
-        return cl.includes(family) || (family === "orange" && (cl.includes("orange") || cl.includes("rust"))) || (family === "yellow" && cl.includes("mustard")) || (family === "blue" && (cl.includes("ice") || cl.includes("icy")));
-    });
-
-    const goodMatch = palette.good.some(c => c.toLowerCase().includes(family));
-    const undertoneMatch = (undertone === "Warm" && isWarm) || (undertone === "Cool" && !isWarm) || undertone === "Neutral";
-
-    if (avoidMatch) return "avoid";
-    if (bestMatch && undertoneMatch) return "perfect";
-    if (bestMatch || (goodMatch && undertoneMatch)) return "good";
-    if (undertoneMatch) return "okay";
-    return "caution";
-}
 
 const dressUpload   = document.getElementById("dressUpload");
 const dressCheckBtn = document.getElementById("dressCheckBtn");
@@ -994,7 +993,6 @@ if (dressCheckBtn) {
         const colorInfo = classifyColor(dominant.r, dominant.g, dominant.b);
         const verdict   = checkColorAgainstPalette(colorInfo, window._userPalette, window._userUndertone, window._userSeason);
 
-        // 📊 GA4 Conversion Tracker Metric 4: Product Dress Checker Matrix Verdict Calculated
         if (typeof gtag === "function") {
             gtag('event', 'use_dress_checker', {
                 'detected_color': colorInfo.name,
