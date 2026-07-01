@@ -1233,3 +1233,18 @@ footer {
     text-decoration: none; 
     font-weight: bold; 
 }
+/* ── Dynamic Light/Dark Mode Logo Switcher ── */
+        .logo-light-mode {
+            display: inline-block;
+        }
+        .logo-dark-mode {
+            display: none;
+        }
+
+        /* When the parent body has the dark-mode class toggled active */
+        body.dark-mode .logo-light-mode {
+            display: none;
+        }
+        body.dark-mode .logo-dark-mode {
+            display: inline-block;
+        }
