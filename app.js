@@ -980,74 +980,101 @@ function colorDistance(c1, c2) {
     return Math.sqrt(dr*dr + dg*dg + db*db);
 }
 
-// ── 🎯 HIGH-ACCURACY CENTER-MASS CLUSTERING ENGINE ──
+// Detects likely human-skin pixels (arms/neck/face/hands commonly visible in
+// "model wearing the item" screenshots) so they don't get mixed into the
+// garment colour average.
+function isSkinTone(r, g, b) {
+    return r > 95 && g > 40 && b > 20 &&
+           (Math.max(r, g, b) - Math.min(r, g, b)) > 15 &&
+           Math.abs(r - g) > 15 && r > g && r > b;
+}
+
 function getDominantColor(img) {
     const tc  = document.createElement("canvas");
     const ctx = tc.getContext("2d", { willReadFrequently: true });
-    
-    // Sample at a precise calculation grid resolution
     const size = 150;
     tc.width  = size;
     tc.height = size;
+
     ctx.drawImage(img, 0, 0, size, size);
     const imgData = ctx.getImageData(0, 0, size, size).data;
 
-    const buckets = {};
-    const QUANT = 12; // Controls pixel clustering color-bin size
+    // Estimate the actual backdrop colour from the four corners instead of
+    // assuming it's pure white — screenshots often have an off-white/light
+    // gray backdrop that a fixed ">242" cutoff won't catch.
+    const corner = 10;
+    let bgR = 0, bgG = 0, bgB = 0, bgCount = 0;
+    const corners = [[0,0],[size-corner,0],[0,size-corner],[size-corner,size-corner]];
+    corners.forEach(([cx, cy]) => {
+        for (let y = cy; y < cy + corner; y++) {
+            for (let x = cx; x < cx + corner; x++) {
+                const idx = (y * size + x) * 4;
+                bgR += imgData[idx]; bgG += imgData[idx+1]; bgB += imgData[idx+2];
+                bgCount++;
+            }
+        }
+    });
+    bgR /= bgCount; bgG /= bgCount; bgB /= bgCount;
 
-    // Focus on the inner 65% center area of the screenshot to automatically
-    // clip out site headers, pricing sidebars, UI elements, and app menus.
-    const startRow = Math.floor(size * 0.18);
-    const endRow   = Math.floor(size * 0.82);
-    const startCol = Math.floor(size * 0.18);
-    const endCol   = Math.floor(size * 0.82);
+    // Quantized colour-histogram: instead of one blended average (which
+    // gets dragged toward gray by mixed skin/background/shadow pixels),
+    // find the single most common colour cluster — this is far more
+    // robust to photos where the garment isn't perfectly centered.
+    const startRow = Math.floor(size * 0.10);
+    const endRow   = Math.floor(size * 0.90);
+    const startCol = Math.floor(size * 0.10);
+    const endCol   = Math.floor(size * 0.90);
+    const buckets = new Map();
 
     for (let y = startRow; y < endRow; y++) {
         for (let x = startCol; x < endCol; x++) {
             const idx = (y * size + x) * 4;
-            const r = imgData[idx];
-            const g = imgData[idx + 1];
-            const b = imgData[idx + 2];
-            const a = imgData[idx + 3];
+            const r = imgData[idx], g = imgData[idx+1], b = imgData[idx+2], a = imgData[idx+3];
 
-            if (a < 220) continue; // Skip alpha channels / clear edges
+            if (a < 200) continue; // transparent
 
-            // Intelligent Studio Light/Shadow Filter: Discard pure e-commerce white backdrops
-            // and bottom border product shadows that throw off the color palette profile.
-            if (r > 240 && g > 240 && b > 240) continue; 
-            if (r < 25 && g < 25 && b < 25) continue;    
+            // Skip pixels close to the *actual* detected backdrop colour
+            const dBg = Math.sqrt((r-bgR)**2 + (g-bgG)**2 + (b-bgB)**2);
+            if (dBg < 45) continue;
 
-            // Quantize RGB space into mathematical clusters
-            const rBin = Math.round(r / QUANT);
-            const gBin = Math.round(g / QUANT);
-            const bBin = Math.round(b / QUANT);
-            const key = `${rBin},${gBin},${bBin}`;
+            // Skip bright near-neutral pixels (studio highlights/backdrop spill)
+            const mx = Math.max(r,g,b), mn = Math.min(r,g,b), avg = (r+g+b)/3;
+            if ((mx - mn) < 18 && avg > 205) continue;
 
-            if (!buckets[key]) {
-                buckets[key] = { count: 0, rSum: 0, gSum: 0, bSum: 0 };
-            }
-            buckets[key].count++;
-            buckets[key].rSum += r;
-            buckets[key].gSum += g;
-            buckets[key].bSum += b;
+            // Skip likely skin
+            if (isSkinTone(r, g, b)) continue;
+
+            const key = (r >> 4) + "_" + (g >> 4) + "_" + (b >> 4);
+            let bucket = buckets.get(key);
+            if (!bucket) { bucket = { count: 0, r: 0, g: 0, b: 0 }; buckets.set(key, bucket); }
+            bucket.count++; bucket.r += r; bucket.g += g; bucket.b += b;
         }
     }
 
-    const clusters = Object.values(buckets);
-    
-    // Fallback block if the clothing matches white backdrop tones exactly
-    if (clusters.length === 0) {
-        const midIdx = (Math.floor(size / 2) * size + Math.floor(size / 2)) * 4;
-        return { r: imgData[midIdx], g: imgData[midIdx+1], b: imgData[midIdx+2], hex: rgbToHex(imgData[midIdx], imgData[midIdx+1], imgData[midIdx+2]) };
+    let best = null;
+    for (const bucket of buckets.values()) {
+        if (!best || bucket.count > best.count) best = bucket;
     }
 
-    // Sort clusters by size so the actual product fabric density wins over backdrop leftovers
-    clusters.sort((a, b) => b.count - a.count);
-    const dominantCluster = clusters[0];
+    // Fallback: if everything got filtered out (e.g. a very plain flat-lay
+    // photo), fall back to a simple average over non-transparent pixels.
+    if (!best) {
+        let rSum = 0, gSum = 0, bSum = 0, count = 0;
+        for (let i = 0; i < imgData.length; i += 4) {
+            if (imgData[i+3] >= 200) {
+                rSum += imgData[i]; gSum += imgData[i+1]; bSum += imgData[i+2]; count++;
+            }
+        }
+        if (count === 0) count = 1;
+        const finalR = Math.round(rSum / count);
+        const finalG = Math.round(gSum / count);
+        const finalB = Math.round(bSum / count);
+        return { r: finalR, g: finalG, b: finalB, hex: rgbToHex(finalR, finalG, finalB) };
+    }
 
-    const finalR = Math.round(dominantCluster.rSum / dominantCluster.count);
-    const finalG = Math.round(dominantCluster.gSum / dominantCluster.count);
-    const finalB = Math.round(dominantCluster.bSum / dominantCluster.count);
+    const finalR = Math.round(best.r / best.count);
+    const finalG = Math.round(best.g / best.count);
+    const finalB = Math.round(best.b / best.count);
 
     return {
         r: finalR,
@@ -1057,11 +1084,12 @@ function getDominantColor(img) {
     };
 }
 
+
 function classifyColor(r, g, b) {
-    if (r > 232 && g > 232 && b > 232) {
+    if (r > 230 && g > 230 && b > 230) {
         return { name: "White", family: "white", warmth: "neutral", hue: 0, saturation: 0, lightness: 96, r, g, b, hex: rgbToHex(r, g, b) };
     }
-    if (r < 28 && g < 28 && b < 28) {
+    if (r < 25 && g < 25 && b < 25) {
         return { name: "Black", family: "black", warmth: "neutral", hue: 0, saturation: 0, lightness: 4, r, g, b, hex: rgbToHex(r, g, b) };
     }
 
@@ -1086,21 +1114,28 @@ function classifyColor(r, g, b) {
 
     if (lPct < 12) { name = "Black"; family = "black"; warmth = "neutral"; }
     else if (lPct > 92 && sPct < 12) { name = "White"; family = "white"; warmth = "neutral"; }
-    else if (sPct < 10) { name = "Gray"; family = "gray"; warmth = "cool"; }
+    else if (sPct < 12) { name = "Gray"; family = "gray"; warmth = "cool"; }
     
-    // 🧠 INTELLECTUAL MULTI-SPACE INTERCEPTOR
-    // Captures muted olive, military khaki, and dark sage shades where red and green elements blend.
-    else if (g > b && g >= (r - 15) && h >= 35 && h <= 78) {
+    // 🎯 INTELLECTUAL OLIVE & KHAKI OVERRIDE INTERCEPTOR
+    // True brown requires Red to clearly dominate over Green (R >> G). 
+    // In Olive, Green is higher than or nearly equal to Red, and much higher than Blue (G >= R-15 && G > B).
+    else if (g > b && g >= (r - 15) && h >= 35 && h <= 75) {
         name = "Green"; family = "green"; warmth = "neutral";
     }
     
-    // Standard chromatic bounds mapping
-    else if (sPct < 28 && h >= 20 && h <= 65) { name = lPct < 38 ? "Brown" : "Beige"; family = "brown"; warmth = "warm"; }
+    // Standard color family mappings
+    else if (sPct < 32 && h >= 12 && h <= 65) { name = lPct < 35 ? "Brown" : "Beige"; family = "brown"; warmth = "warm"; }
+    // 🎯 PALE-RED OVERRIDE: a light, warm red-family hue reads as Pink to
+    // the eye, not Red — Red needs both the hue AND enough depth/saturation.
+    else if ((h < 20 || h >= 330) && lPct > 55) { name = "Pink"; family = "pink"; warmth = "warm"; }
     else if (h < 15 || h >= 345) { name = "Red"; family = "red"; warmth = "warm"; }
     else if (h < 45) { name = "Orange"; family = "orange"; warmth = "warm"; }
     else if (h < 65) { name = "Yellow"; family = "yellow"; warmth = "warm"; }
     else if (h < 150) { name = "Green"; family = "green"; warmth = "neutral"; }
     else if (h < 195) { name = "Teal"; family = "teal"; warmth = "cool"; }
+    // 🎯 DARK NAVY OVERRIDE: deep, dark blue-purples read as Navy to the eye,
+    // not Purple — true Purple needs some lightness to be perceived as such.
+    else if (h < 300 && lPct < 32) { name = "Navy Blue"; family = "blue"; warmth = "cool"; }
     else if (h < 255) { name = "Blue"; family = "blue"; warmth = "cool"; }
     else if (h < 290) { name = "Purple"; family = "purple"; warmth = "cool"; }
     else { name = "Pink"; family = "pink"; warmth = "warm"; }
@@ -1114,7 +1149,7 @@ function checkColorAgainstPalette(colorInfo, palette, undertone, season) {
     const nameLower   = colorInfo.name.toLowerCase();
     const familyLower = colorInfo.family.toLowerCase();
 
-    // Checked list fragment analyzer validation
+    // 🧠 FIXED: Bulletproof match system checking both strict arrays and token fragments
     const listHasMatch = (list) => {
         if (!list || !Array.isArray(list)) return false;
         return list.some(item => {
@@ -1130,6 +1165,7 @@ function checkColorAgainstPalette(colorInfo, palette, undertone, season) {
     if (listHasMatch(palette.best)) return "perfect";
     if (listHasMatch(palette.good) || listHasMatch(palette.accent) || listHasMatch(palette.neutrals)) return "good";
 
+    // Warmth fallback check if it's outside the main seasonal tables
     if (colorInfo.warmth === "neutral") return "okay";
     if (undertone.toLowerCase() === "warm" && colorInfo.warmth === "warm") return "okay";
     if (undertone.toLowerCase() === "cool" && colorInfo.warmth === "cool") return "okay";
