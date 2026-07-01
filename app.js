@@ -983,10 +983,84 @@ function colorDistance(c1, c2) {
 // Detects likely human-skin pixels (arms/neck/face/hands commonly visible in
 // "model wearing the item" screenshots) so they don't get mixed into the
 // garment colour average.
+//
+// NOTE: an earlier version used a simple "r > g > b with some gap" RGB rule,
+// but that also matches saturated pink/red *fabric* (hot pink and red both
+// have r >> g,b too), which was wrongly discarding the actual garment pixels
+// on pink/red screenshots. Converting to YCbCr and checking against the
+// standard skin-tone chrominance range (Cb 77–127, Cr 133–173) is the
+// well-established fix: real skin clusters tightly in that band regardless
+// of lighting, while saturated clothing colours fall well outside it.
 function isSkinTone(r, g, b) {
-    return r > 95 && g > 40 && b > 20 &&
-           (Math.max(r, g, b) - Math.min(r, g, b)) > 15 &&
-           Math.abs(r - g) > 15 && r > g && r > b;
+    const y  = 0.299*r + 0.587*g + 0.114*b;
+    const cb = 128 - 0.168736*r - 0.331264*g + 0.5*b;
+    const cr = 128 + 0.5*r - 0.418688*g - 0.081312*b;
+    return cb >= 77 && cb <= 127 && cr >= 133 && cr <= 173 && y > 60;
+}
+
+// ── Lightweight client-side K-Means (no dependencies) ──
+// Groups candidate garment pixels into `k` colour clusters and returns the
+// cluster with the highest *weighted* pixel count (weight favours pixels
+// near the centre of the crop, where the garment usually sits). This is far
+// more robust than a single running average, because a cluster of, say,
+// leftover white-background pixels can no longer silently drag a green
+// shirt's average toward grey — it simply loses to the green cluster.
+function kMeansDominantColor(pixels, k) {
+    if (!pixels.length) return null;
+    k = Math.min(k, pixels.length);
+
+    // Seed centroids by spreading picks evenly across the pixel list — a
+    // cheap stand-in for k-means++.
+    const step = Math.max(1, Math.floor(pixels.length / k));
+    let centroids = [];
+    for (let i = 0; i < k; i++) {
+        const p = pixels[Math.min(i * step, pixels.length - 1)];
+        centroids.push({ r: p.r, g: p.g, b: p.b });
+    }
+
+    const assignments = new Array(pixels.length).fill(0);
+
+    for (let iter = 0; iter < 6; iter++) {
+        // Assign step
+        for (let i = 0; i < pixels.length; i++) {
+            const p = pixels[i];
+            let bestIdx = 0, bestDist = Infinity;
+            for (let c = 0; c < centroids.length; c++) {
+                const dr = p.r - centroids[c].r, dg = p.g - centroids[c].g, db = p.b - centroids[c].b;
+                const dist = dr*dr + dg*dg + db*db;
+                if (dist < bestDist) { bestDist = dist; bestIdx = c; }
+            }
+            assignments[i] = bestIdx;
+        }
+        // Update step (weighted centroid)
+        const sums = centroids.map(() => ({ r: 0, g: 0, b: 0, w: 0 }));
+        for (let i = 0; i < pixels.length; i++) {
+            const p = pixels[i], s = sums[assignments[i]], w = p.weight;
+            s.r += p.r * w; s.g += p.g * w; s.b += p.b * w; s.w += w;
+        }
+        for (let c = 0; c < centroids.length; c++) {
+            if (sums[c].w > 0) {
+                centroids[c] = { r: sums[c].r / sums[c].w, g: sums[c].g / sums[c].w, b: sums[c].b / sums[c].w };
+            }
+        }
+    }
+
+    // Score clusters by total weight (pixel count × centrality), not just
+    // raw count, so a small-but-central garment beats a large-but-peripheral
+    // background remnant.
+    const clusterWeight = new Array(centroids.length).fill(0);
+    for (let i = 0; i < pixels.length; i++) clusterWeight[assignments[i]] += pixels[i].weight;
+
+    let bestC = 0;
+    for (let c = 1; c < centroids.length; c++) {
+        if (clusterWeight[c] > clusterWeight[bestC]) bestC = c;
+    }
+
+    return {
+        r: Math.round(centroids[bestC].r),
+        g: Math.round(centroids[bestC].g),
+        b: Math.round(centroids[bestC].b)
+    };
 }
 
 function getDominantColor(img) {
@@ -1016,16 +1090,19 @@ function getDominantColor(img) {
     });
     bgR /= bgCount; bgG /= bgCount; bgB /= bgCount;
 
-    // Quantized colour-histogram: instead of one blended average (which
-    // gets dragged toward gray by mixed skin/background/shadow pixels),
-    // find the single most common colour cluster — this is far more
-    // robust to photos where the garment isn't perfectly centered.
+    // Sample the inner crop (where product screenshots almost always place
+    // the garment), filter out background/skin/near-neutral pixels, and
+    // weight the survivors by how close they are to the centre of the crop
+    // — this is what lets K-Means favour the garment over UI chrome, price
+    // text, or shadow that leaks in near the edges.
     const startRow = Math.floor(size * 0.10);
     const endRow   = Math.floor(size * 0.90);
     const startCol = Math.floor(size * 0.10);
     const endCol   = Math.floor(size * 0.90);
-    const buckets = new Map();
+    const midX = (startCol + endCol) / 2, midY = (startRow + endRow) / 2;
+    const maxDist = Math.hypot(endCol - midX, endRow - midY);
 
+    const candidates = [];
     for (let y = startRow; y < endRow; y++) {
         for (let x = startCol; x < endCol; x++) {
             const idx = (y * size + x) * 4;
@@ -1044,21 +1121,15 @@ function getDominantColor(img) {
             // Skip likely skin
             if (isSkinTone(r, g, b)) continue;
 
-            const key = (r >> 4) + "_" + (g >> 4) + "_" + (b >> 4);
-            let bucket = buckets.get(key);
-            if (!bucket) { bucket = { count: 0, r: 0, g: 0, b: 0 }; buckets.set(key, bucket); }
-            bucket.count++; bucket.r += r; bucket.g += g; bucket.b += b;
+            const dist = Math.hypot(x - midX, y - midY);
+            const weight = 0.35 + 0.65 * (1 - dist / maxDist); // centre pixels count for more
+            candidates.push({ r, g, b, weight });
         }
     }
 
-    let best = null;
-    for (const bucket of buckets.values()) {
-        if (!best || bucket.count > best.count) best = bucket;
-    }
-
-    // Fallback: if everything got filtered out (e.g. a very plain flat-lay
-    // photo), fall back to a simple average over non-transparent pixels.
-    if (!best) {
+    // Not enough surviving pixels for clustering to be meaningful — fall
+    // back to a plain average over every non-transparent pixel.
+    if (candidates.length < 25) {
         let rSum = 0, gSum = 0, bSum = 0, count = 0;
         for (let i = 0; i < imgData.length; i += 4) {
             if (imgData[i+3] >= 200) {
@@ -1072,75 +1143,192 @@ function getDominantColor(img) {
         return { r: finalR, g: finalG, b: finalB, hex: rgbToHex(finalR, finalG, finalB) };
     }
 
-    const finalR = Math.round(best.r / best.count);
-    const finalG = Math.round(best.g / best.count);
-    const finalB = Math.round(best.b / best.count);
+    // K-Means over the filtered, centre-weighted candidates — this is the
+    // actual clustering step: the garment colour and any leftover
+    // background/shadow tones each collapse into their own cluster, and we
+    // keep whichever cluster carries the most weight.
+    const dominant = kMeansDominantColor(candidates, 3);
 
     return {
-        r: finalR,
-        g: finalG,
-        b: finalB,
-        hex: rgbToHex(finalR, finalG, finalB)
+        r: dominant.r,
+        g: dominant.g,
+        b: dominant.b,
+        hex: rgbToHex(dominant.r, dominant.g, dominant.b)
     };
 }
 
+// ── LAB colour space + Delta-E matching ──
+// Hue-bucket classification (the old approach) draws hard lines at fixed hue
+// angles, so visually-similar colours like Ivory/Cream/White or
+// Olive/Forest/Sage all collapse into one bucket. Converting to CIE LAB and
+// measuring Delta-E against a curated named-colour palette instead picks the
+// *perceptually closest* named colour, and gives a genuine confidence score
+// for free (small Delta-E = very close match).
 
-function classifyColor(r, g, b) {
-    if (r > 230 && g > 230 && b > 230) {
-        return { name: "White", family: "white", warmth: "neutral", hue: 0, saturation: 0, lightness: 96, r, g, b, hex: rgbToHex(r, g, b) };
-    }
-    if (r < 25 && g < 25 && b < 25) {
-        return { name: "Black", family: "black", warmth: "neutral", hue: 0, saturation: 0, lightness: 4, r, g, b, hex: rgbToHex(r, g, b) };
-    }
+function srgbChannelToLinear(c) {
+    c /= 255;
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
 
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    const d = max - min;
-    const lPct = ((max + min) / 2 / 255) * 100;
-    let sPct = 0;
-    if (d !== 0) sPct = (d / (255 - Math.abs(max + min - 255))) * 100;
+function rgbToLab(r, g, b) {
+    const rl = srgbChannelToLinear(r), gl = srgbChannelToLinear(g), bl = srgbChannelToLinear(b);
 
-    let h = 0;
+    let x = rl * 0.4124 + gl * 0.3576 + bl * 0.1805;
+    let y = rl * 0.2126 + gl * 0.7152 + bl * 0.0722;
+    let z = rl * 0.0193 + gl * 0.1192 + bl * 0.9505;
+
+    x /= 0.95047; y /= 1.0; z /= 1.08883;
+    const f = t => t > 0.008856 ? Math.cbrt(t) : (7.787 * t + 16 / 116);
+    const fx = f(x), fy = f(y), fz = f(z);
+
+    return { L: 116 * fy - 16, A: 500 * (fx - fy), B: 200 * (fy - fz) };
+}
+
+function deltaE(lab1, lab2) {
+    const dL = lab1.L - lab2.L, dA = lab1.A - lab2.A, dB = lab1.B - lab2.B;
+    return Math.sqrt(dL*dL + dA*dA + dB*dB);
+}
+
+function hexToRgbTriplet(hex) {
+    hex = hex.replace("#", "");
+    return {
+        r: parseInt(hex.substring(0, 2), 16),
+        g: parseInt(hex.substring(2, 4), 16),
+        b: parseInt(hex.substring(4, 6), 16)
+    };
+}
+
+// Curated palette: distinct enough entries per family that near-neighbours
+// (Ivory vs Cream vs White, Olive vs Forest vs Sage vs Emerald) resolve to
+// different names instead of collapsing into one hue bucket.
+const NAMED_COLOR_PALETTE = [
+    { name: "White",           family: "white",  warmth: "neutral", hex: "#FFFFFF" },
+    { name: "Ivory",           family: "white",  warmth: "warm",    hex: "#FFFFF0" },
+    { name: "Cream",           family: "white",  warmth: "warm",    hex: "#FFFDD0" },
+    { name: "Snow White",      family: "white",  warmth: "cool",    hex: "#F8F8FF" },
+    { name: "Black",           family: "black",  warmth: "neutral", hex: "#0A0A0A" },
+    { name: "Charcoal",        family: "black",  warmth: "neutral", hex: "#36454F" },
+    { name: "Gray",            family: "gray",   warmth: "neutral", hex: "#808080" },
+    { name: "Silver",          family: "gray",   warmth: "cool",    hex: "#C0C0C0" },
+    { name: "Navy Blue",       family: "blue",   warmth: "cool",    hex: "#1B2A4A" },
+    { name: "Royal Blue",      family: "blue",   warmth: "cool",    hex: "#4169E1" },
+    { name: "Sky Blue",        family: "blue",   warmth: "cool",    hex: "#87CEEB" },
+    { name: "Denim Blue",      family: "blue",   warmth: "cool",    hex: "#3B5998" },
+    { name: "Teal",            family: "teal",   warmth: "cool",    hex: "#008080" },
+    { name: "Turquoise",       family: "teal",   warmth: "cool",    hex: "#40E0D0" },
+    { name: "Forest Green",    family: "green",  warmth: "neutral", hex: "#228B22" },
+    { name: "Olive Green",     family: "green",  warmth: "warm",    hex: "#6B8E23" },
+    { name: "Dark Olive",      family: "green",  warmth: "warm",    hex: "#4A4A2E" },
+    { name: "Sage Green",      family: "green",  warmth: "neutral", hex: "#9CAF88" },
+    { name: "Emerald",         family: "green",  warmth: "cool",    hex: "#50C878" },
+    { name: "Mint",            family: "green",  warmth: "cool",    hex: "#98FF98" },
+    { name: "Khaki",           family: "brown",  warmth: "warm",    hex: "#C3B091" },
+    { name: "Red",             family: "red",    warmth: "warm",    hex: "#D1233C" },
+    { name: "Burgundy",        family: "red",    warmth: "warm",    hex: "#800020" },
+    { name: "Coral",           family: "red",    warmth: "warm",    hex: "#FF7F50" },
+    { name: "Orange",          family: "orange", warmth: "warm",    hex: "#FFA500" },
+    { name: "Rust",            family: "orange", warmth: "warm",    hex: "#B7410E" },
+    { name: "Yellow",          family: "yellow", warmth: "warm",    hex: "#FFD700" },
+    { name: "Mustard",         family: "yellow", warmth: "warm",    hex: "#E1AD01" },
+    { name: "Purple",          family: "purple", warmth: "cool",    hex: "#800080" },
+    { name: "Lavender",        family: "purple", warmth: "cool",    hex: "#B497BD" },
+    { name: "Plum",            family: "purple", warmth: "cool",    hex: "#8E4585" },
+    { name: "Pink",            family: "pink",   warmth: "warm",    hex: "#F4A6C6" },
+    { name: "Hot Pink",        family: "pink",   warmth: "warm",    hex: "#FF69B4" },
+    { name: "Dusty Rose",      family: "pink",   warmth: "warm",    hex: "#DCAE96" },
+    { name: "Beige",           family: "brown",  warmth: "warm",    hex: "#E8D9B5" },
+    { name: "Tan",             family: "brown",  warmth: "warm",    hex: "#D2B48C" },
+    { name: "Brown",           family: "brown",  warmth: "warm",    hex: "#7B4B27" },
+    { name: "Chocolate Brown", family: "brown",  warmth: "warm",    hex: "#4A2C17" }
+];
+NAMED_COLOR_PALETTE.forEach(c => {
+    const rgb = hexToRgbTriplet(c.hex);
+    c.lab = rgbToLab(rgb.r, rgb.g, rgb.b);
+});
+
+function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    let h = 0, s = 0;
+    const l = (mx + mn) / 2;
+    const d = mx - mn;
     if (d !== 0) {
-        switch (max) {
+        s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+        switch (mx) {
             case r: h = ((g - b) / d) % 6; break;
             case g: h = (b - r) / d + 2; break;
             default: h = (r - g) / d + 4; break;
         }
-        h = Math.round(h * 60);
-        if (h < 0) h += 360;
+        h *= 60; if (h < 0) h += 360;
+    }
+    return { h, s: s * 100, l: l * 100 };
+}
+
+// Coarse hue/saturation/lightness bucket, checked BEFORE any Delta-E math.
+// This is what keeps a dark, desaturated, but still clearly-green-hued
+// pixel (e.g. a shadowed olive shirt) from ever being compared against
+// unrelated neutrals like Gray in the first place — Euclidean LAB distance
+// alone can't tell "dark and a little green" from "dark and no colour at
+// all" apart nearly as reliably as looking at hue directly.
+function colorFamilyBucket(h, s, l) {
+    if (s < 8)  return l > 88 ? "white" : l < 15 ? "black" : "gray";
+    if (s < 22 && h >= 20 && h < 100) return "olive_brown"; // desaturated khaki/olive
+    if (h < 15 || h >= 345) return (l > 62 && s < 85) ? "pink" : "red";
+    if (h < 45)  return "orange";
+    if (h < 65)  return "yellow";
+    if (h < 170) return "green";
+    if (h < 195) return "teal";
+    if (h < 255) return "blue";
+    if (h < 290) return "purple";
+    return "pink";
+}
+
+// Which named swatches are eligible candidates for each bucket. Buckets can
+// span more than one palette `family` tag (e.g. desaturated warm-greens
+// legitimately might read as either an olive/khaki brown or a muted green).
+const FAMILY_BUCKET_NAMES = {
+    white:       ["White", "Ivory", "Cream", "Snow White"],
+    black:       ["Black", "Charcoal"],
+    gray:        ["Gray", "Silver", "Charcoal"],
+    olive_brown: ["Khaki", "Beige", "Tan", "Brown", "Chocolate Brown", "Olive Green", "Dark Olive", "Sage Green"],
+    pink:        ["Pink", "Hot Pink", "Dusty Rose", "Coral"],
+    red:         ["Red", "Burgundy", "Rust"],
+    orange:      ["Orange", "Rust", "Coral"],
+    yellow:      ["Yellow", "Mustard"],
+    green:       ["Forest Green", "Olive Green", "Dark Olive", "Sage Green", "Emerald", "Mint"],
+    teal:        ["Teal", "Turquoise"],
+    blue:        ["Navy Blue", "Royal Blue", "Sky Blue", "Denim Blue"],
+    purple:      ["Purple", "Lavender", "Plum"]
+};
+
+function classifyColor(r, g, b) {
+    const lab = rgbToLab(r, g, b);
+    const { h, s, l } = rgbToHsl(r, g, b);
+    const bucket = colorFamilyBucket(h, s, l);
+    const eligibleNames = FAMILY_BUCKET_NAMES[bucket] || [];
+    const candidates = NAMED_COLOR_PALETTE.filter(c => eligibleNames.includes(c.name));
+    const pool = candidates.length ? candidates : NAMED_COLOR_PALETTE; // safety net
+
+    let best = pool[0], bestDist = Infinity;
+    for (const candidate of pool) {
+        const d = deltaE(lab, candidate.lab);
+        if (d < bestDist) { bestDist = d; best = candidate; }
     }
 
-    let name, family, warmth;
+    // Delta-E of ~2.3 or less is "imperceptible to the human eye"; anything
+    // past ~25 is a genuinely different colour. Map that onto a 35–99%
+    // confidence band so the UI can show something meaningful.
+    const confidence = Math.max(35, Math.min(99, Math.round(100 - bestDist * 1.4)));
 
-    if (lPct < 12) { name = "Black"; family = "black"; warmth = "neutral"; }
-    else if (lPct > 92 && sPct < 12) { name = "White"; family = "white"; warmth = "neutral"; }
-    else if (sPct < 12) { name = "Gray"; family = "gray"; warmth = "cool"; }
-    
-    // 🎯 INTELLECTUAL OLIVE & KHAKI OVERRIDE INTERCEPTOR
-    // True brown requires Red to clearly dominate over Green (R >> G). 
-    // In Olive, Green is higher than or nearly equal to Red, and much higher than Blue (G >= R-15 && G > B).
-    else if (g > b && g >= (r - 15) && h >= 35 && h <= 75) {
-        name = "Green"; family = "green"; warmth = "neutral";
-    }
-    
-    // Standard color family mappings
-    else if (sPct < 32 && h >= 12 && h <= 65) { name = lPct < 35 ? "Brown" : "Beige"; family = "brown"; warmth = "warm"; }
-    // 🎯 PALE-RED OVERRIDE: a light, warm red-family hue reads as Pink to
-    // the eye, not Red — Red needs both the hue AND enough depth/saturation.
-    else if ((h < 20 || h >= 330) && lPct > 55) { name = "Pink"; family = "pink"; warmth = "warm"; }
-    else if (h < 15 || h >= 345) { name = "Red"; family = "red"; warmth = "warm"; }
-    else if (h < 45) { name = "Orange"; family = "orange"; warmth = "warm"; }
-    else if (h < 65) { name = "Yellow"; family = "yellow"; warmth = "warm"; }
-    else if (h < 150) { name = "Green"; family = "green"; warmth = "neutral"; }
-    else if (h < 195) { name = "Teal"; family = "teal"; warmth = "cool"; }
-    // 🎯 DARK NAVY OVERRIDE: deep, dark blue-purples read as Navy to the eye,
-    // not Purple — true Purple needs some lightness to be perceived as such.
-    else if (h < 300 && lPct < 32) { name = "Navy Blue"; family = "blue"; warmth = "cool"; }
-    else if (h < 255) { name = "Blue"; family = "blue"; warmth = "cool"; }
-    else if (h < 290) { name = "Purple"; family = "purple"; warmth = "cool"; }
-    else { name = "Pink"; family = "pink"; warmth = "warm"; }
-
-    return { name, family, warmth, hue: h, saturation: sPct, lightness: lPct, r, g, b, hex: rgbToHex(r, g, b) };
+    return {
+        name: best.name,
+        family: best.family,
+        warmth: best.warmth,
+        r, g, b,
+        hex: rgbToHex(r, g, b),
+        deltaE: Math.round(bestDist * 10) / 10,
+        confidence
+    };
 }
 
 function checkColorAgainstPalette(colorInfo, palette, undertone, season) {
@@ -1263,7 +1451,7 @@ if (dressCheckBtn) {
                     <div style="width:52px;height:52px;border-radius:10px;background:${dominant.hex};border:2px solid rgba(255,255,255,0.3);flex-shrink:0;"></div>
                     <div>
                         <div style="font-size:1.1rem;font-weight:800;color:#fff;">${v.emoji} ${v.title}</div>
-                        <div style="font-size:0.78rem;opacity:0.7;color:#fff;">Detected colour: ${colorInfo.name} &nbsp;·&nbsp; HEX ${dominant.hex}</div>
+                        <div style="font-size:0.78rem;opacity:0.7;color:#fff;">Detected colour: ${colorInfo.name} &nbsp;·&nbsp; HEX ${dominant.hex} &nbsp;·&nbsp; ${colorInfo.confidence}% confidence</div>
                     </div>
                 </div>
                 <p style="color:#fff;font-size:0.88rem;line-height:1.7;margin:0;">${v.msg}</p>
