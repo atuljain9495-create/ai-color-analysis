@@ -64,32 +64,56 @@ function setStatus(message, type = "info") {
     cameraStatus.className = `camera-status ${type}`;
 }
 
-// Smart utility block to verify if user is visiting from India
-// Uses timezone + language + currency as triple-check for accuracy
-function isUserInIndia() {
+// ── IP-based Geolocation (accurate, works through VPN too) ──
+// Stores result so we only call the API once per session
+let _userCountryCode = null;
+
+async function getUserCountry() {
+    // Return cached result if already fetched
+    if (_userCountryCode !== null) return _userCountryCode;
+
+    // Check sessionStorage first (persists across page interactions)
+    const cached = sessionStorage.getItem("uca_country");
+    if (cached) { _userCountryCode = cached; return cached; }
+
     try {
-        // Check 1: Timezone (most reliable)
-        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (timeZone && (
-            timeZone === "Asia/Calcutta" ||
-            timeZone === "Asia/Kolkata"
-        )) return true;
-
-        // Check 2: Browser language set to Indian English or Hindi
-        const lang = (navigator.language || navigator.userLanguage || "").toLowerCase();
-        if (lang === "en-in" || lang === "hi" || lang === "hi-in") return true;
-
-        // Check 3: Currency preference
+        // ipwho.is — free, no API key needed, HTTPS + CORS supported (unlike
+        // ip-api.com's free tier, which is HTTP-only and gets blocked as
+        // mixed content on any site served over HTTPS).
+        const res  = await fetch("https://ipwho.is/?fields=country_code", { signal: AbortSignal.timeout(3000) });
+        const data = await res.json();
+        const code = (data.country_code || "US").toUpperCase();
+        _userCountryCode = code;
+        sessionStorage.setItem("uca_country", code);
+        return code;
+    } catch (e) {
+        // If API fails, fallback to timezone as backup
         try {
-            const numFormat = new Intl.NumberFormat(undefined, { style: "currency", currency: "INR" });
-            const parts = numFormat.formatToParts(1);
-            const hasCurrency = parts.some(p => p.type === "currency" && p.value === "₹");
-            if (hasCurrency && lang.includes("in")) return true;
-        } catch (e) {}
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (tz === "Asia/Kolkata" || tz === "Asia/Calcutta") {
+                _userCountryCode = "IN";
+                return "IN";
+            }
+        } catch (e2) {}
+        _userCountryCode = "US"; // safe default
+        return "US";
+    }
+}
 
-    } catch (e) { console.warn("Geolocation check failed:", e); }
+function isUserInIndia() {
+    // Synchronous check using cached value only
+    // Always use getUserCountry() for fresh async check
+    if (_userCountryCode === "IN") return true;
+    const cached = sessionStorage.getItem("uca_country");
+    if (cached === "IN") return true;
     return false;
 }
+
+// Kick off the IP-based country lookup as soon as the script loads, so the
+// result is cached (via _userCountryCode / sessionStorage) well before the
+// user finishes uploading a photo and clicking "Analyze" — isUserInIndia()
+// only reads that cache and never triggers the lookup itself.
+getUserCountry();
 
 function setValidationMessage(message, type = "info") {
     if (!validationMessage) return;
@@ -402,7 +426,7 @@ let currentAnalyzedPersonType = "woman";
 
 function analyzeSkinTone(imageSrc, validationResult = {}) {
     const img = new Image();
-    img.onload = function () {
+    img.onload = async function () {
         const tc=document.createElement("canvas");
         const ctx=tc.getContext("2d",{willReadFrequently:true});
         tc.width=img.width; tc.height=img.height;
@@ -500,6 +524,7 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         }
 
         generateRecommendations(undertone,skinToneCategory,contrastLevel);
+        await getUserCountry();
         generateShoppingLinks(undertone,skinToneCategory,personType);
 
         if (shareSeasonBtn) shareSeasonBtn.style.display = "inline-block";
@@ -945,6 +970,172 @@ function getJewelryPalette(undertone,skinToneCategory){
 }
 
 function rgbToHex(r,g,b){return"#"+[r,g,b].map(x=>{const h=x.toString(16);return h.length===1?"0"+h:h;}).join("");}
+
+// ── Product / Dress Color Checker helpers ──
+// Samples the dominant colour of an uploaded product photo, classifies it,
+// and compares it against the user's stored seasonal colour palette.
+
+function colorDistance(c1, c2) {
+    const dr = c1.r - c2.r, dg = c1.g - c2.g, db = c1.b - c2.b;
+    return Math.sqrt(dr*dr + dg*dg + db*db);
+}
+
+// ── 🎯 HIGH-ACCURACY CENTER-MASS CLUSTERING ENGINE ──
+function getDominantColor(img) {
+    const tc  = document.createElement("canvas");
+    const ctx = tc.getContext("2d", { willReadFrequently: true });
+    
+    // Sample at a precise calculation grid resolution
+    const size = 150;
+    tc.width  = size;
+    tc.height = size;
+    ctx.drawImage(img, 0, 0, size, size);
+    const imgData = ctx.getImageData(0, 0, size, size).data;
+
+    const buckets = {};
+    const QUANT = 12; // Controls pixel clustering color-bin size
+
+    // Focus on the inner 65% center area of the screenshot to automatically
+    // clip out site headers, pricing sidebars, UI elements, and app menus.
+    const startRow = Math.floor(size * 0.18);
+    const endRow   = Math.floor(size * 0.82);
+    const startCol = Math.floor(size * 0.18);
+    const endCol   = Math.floor(size * 0.82);
+
+    for (let y = startRow; y < endRow; y++) {
+        for (let x = startCol; x < endCol; x++) {
+            const idx = (y * size + x) * 4;
+            const r = imgData[idx];
+            const g = imgData[idx + 1];
+            const b = imgData[idx + 2];
+            const a = imgData[idx + 3];
+
+            if (a < 220) continue; // Skip alpha channels / clear edges
+
+            // Intelligent Studio Light/Shadow Filter: Discard pure e-commerce white backdrops
+            // and bottom border product shadows that throw off the color palette profile.
+            if (r > 240 && g > 240 && b > 240) continue; 
+            if (r < 25 && g < 25 && b < 25) continue;    
+
+            // Quantize RGB space into mathematical clusters
+            const rBin = Math.round(r / QUANT);
+            const gBin = Math.round(g / QUANT);
+            const bBin = Math.round(b / QUANT);
+            const key = `${rBin},${gBin},${bBin}`;
+
+            if (!buckets[key]) {
+                buckets[key] = { count: 0, rSum: 0, gSum: 0, bSum: 0 };
+            }
+            buckets[key].count++;
+            buckets[key].rSum += r;
+            buckets[key].gSum += g;
+            buckets[key].bSum += b;
+        }
+    }
+
+    const clusters = Object.values(buckets);
+    
+    // Fallback block if the clothing matches white backdrop tones exactly
+    if (clusters.length === 0) {
+        const midIdx = (Math.floor(size / 2) * size + Math.floor(size / 2)) * 4;
+        return { r: imgData[midIdx], g: imgData[midIdx+1], b: imgData[midIdx+2], hex: rgbToHex(imgData[midIdx], imgData[midIdx+1], imgData[midIdx+2]) };
+    }
+
+    // Sort clusters by size so the actual product fabric density wins over backdrop leftovers
+    clusters.sort((a, b) => b.count - a.count);
+    const dominantCluster = clusters[0];
+
+    const finalR = Math.round(dominantCluster.rSum / dominantCluster.count);
+    const finalG = Math.round(dominantCluster.gSum / dominantCluster.count);
+    const finalB = Math.round(dominantCluster.bSum / dominantCluster.count);
+
+    return {
+        r: finalR,
+        g: finalG,
+        b: finalB,
+        hex: rgbToHex(finalR, finalG, finalB)
+    };
+}
+
+function classifyColor(r, g, b) {
+    if (r > 232 && g > 232 && b > 232) {
+        return { name: "White", family: "white", warmth: "neutral", hue: 0, saturation: 0, lightness: 96, r, g, b, hex: rgbToHex(r, g, b) };
+    }
+    if (r < 28 && g < 28 && b < 28) {
+        return { name: "Black", family: "black", warmth: "neutral", hue: 0, saturation: 0, lightness: 4, r, g, b, hex: rgbToHex(r, g, b) };
+    }
+
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const d = max - min;
+    const lPct = ((max + min) / 2 / 255) * 100;
+    let sPct = 0;
+    if (d !== 0) sPct = (d / (255 - Math.abs(max + min - 255))) * 100;
+
+    let h = 0;
+    if (d !== 0) {
+        switch (max) {
+            case r: h = ((g - b) / d) % 6; break;
+            case g: h = (b - r) / d + 2; break;
+            default: h = (r - g) / d + 4; break;
+        }
+        h = Math.round(h * 60);
+        if (h < 0) h += 360;
+    }
+
+    let name, family, warmth;
+
+    if (lPct < 12) { name = "Black"; family = "black"; warmth = "neutral"; }
+    else if (lPct > 92 && sPct < 12) { name = "White"; family = "white"; warmth = "neutral"; }
+    else if (sPct < 10) { name = "Gray"; family = "gray"; warmth = "cool"; }
+    
+    // 🧠 INTELLECTUAL MULTI-SPACE INTERCEPTOR
+    // Captures muted olive, military khaki, and dark sage shades where red and green elements blend.
+    else if (g > b && g >= (r - 15) && h >= 35 && h <= 78) {
+        name = "Green"; family = "green"; warmth = "neutral";
+    }
+    
+    // Standard chromatic bounds mapping
+    else if (sPct < 28 && h >= 20 && h <= 65) { name = lPct < 38 ? "Brown" : "Beige"; family = "brown"; warmth = "warm"; }
+    else if (h < 15 || h >= 345) { name = "Red"; family = "red"; warmth = "warm"; }
+    else if (h < 45) { name = "Orange"; family = "orange"; warmth = "warm"; }
+    else if (h < 65) { name = "Yellow"; family = "yellow"; warmth = "warm"; }
+    else if (h < 150) { name = "Green"; family = "green"; warmth = "neutral"; }
+    else if (h < 195) { name = "Teal"; family = "teal"; warmth = "cool"; }
+    else if (h < 255) { name = "Blue"; family = "blue"; warmth = "cool"; }
+    else if (h < 290) { name = "Purple"; family = "purple"; warmth = "cool"; }
+    else { name = "Pink"; family = "pink"; warmth = "warm"; }
+
+    return { name, family, warmth, hue: h, saturation: sPct, lightness: lPct, r, g, b, hex: rgbToHex(r, g, b) };
+}
+
+function checkColorAgainstPalette(colorInfo, palette, undertone, season) {
+    if (!palette) return "okay";
+
+    const nameLower   = colorInfo.name.toLowerCase();
+    const familyLower = colorInfo.family.toLowerCase();
+
+    // Checked list fragment analyzer validation
+    const listHasMatch = (list) => {
+        if (!list || !Array.isArray(list)) return false;
+        return list.some(item => {
+            const itemLower = item.toLowerCase();
+            return itemLower.includes(nameLower) || 
+                   itemLower.includes(familyLower) || 
+                   nameLower.includes(itemLower) ||
+                   familyLower.includes(itemLower);
+        });
+    };
+
+    if (listHasMatch(palette.avoid)) return "avoid";
+    if (listHasMatch(palette.best)) return "perfect";
+    if (listHasMatch(palette.good) || listHasMatch(palette.accent) || listHasMatch(palette.neutrals)) return "good";
+
+    if (colorInfo.warmth === "neutral") return "okay";
+    if (undertone.toLowerCase() === "warm" && colorInfo.warmth === "warm") return "okay";
+    if (undertone.toLowerCase() === "cool" && colorInfo.warmth === "cool") return "okay";
+
+    return "caution";
+}
 
 const dressUpload   = document.getElementById("dressUpload");
 const dressCheckBtn = document.getElementById("dressCheckBtn");
