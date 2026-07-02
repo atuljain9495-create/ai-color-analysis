@@ -1087,24 +1087,51 @@ if (shareSeasonBtn) {
             });
 
             // 🧠 DRAW PALETTE BAR MATRIX ROW
+            // 🧠 DRAW PALETTE BAR MATRIX ROW (FIXED COLOR REPETITION BUG)
             sCtx.fillStyle = textColor;
             sCtx.font = "bold 32px system-ui, sans-serif";
             sCtx.fillText("🎨 YOUR OPTIMAL MOLECULAR COLOR PALETTE", 60, 770);
 
             const swatchWidth = 125;
             const swatchHeight = 90;
+            
+            // Comprehensive, calibrated color token dictionary mapping all calculated recommendation states
             const styleColorMap = {
-                "peach": "#ffb09c", "coral": "#ff6b6b", "aqua": "#4edcd6", "ivory": "#fffff0",
-                "orange": "#ff9233", "rust": "#b83b1d", "olive": "#606c38", "teal": "#2a9d8f",
-                "fuchsia": "#ff007f", "mint": "#a8dadc", "lavender": "#e0b0ff", "gold": "#d4af37",
-                "sapphire": "#0f52ba", "emerald": "#50c878", "plum": "#dda0dd", "rose": "#ff007f",
-                "navy blue": "#1b2a4a", "royal blue": "#4169e1", "charcoal": "#36454f", "white": "#ffffff", "black": "#0a0a0a"
+                // Autumn Tones
+                "burnt orange": "#cc5500", "rust": "#b83b1d", "olive green": "#606c38", "deep teal": "#006666",
+                "mustard yell": "#e1ad01", "mustard": "#e1ad01", "warm brown": "#964b00", "terracotta": "#e2725b", 
+                "forest green": "#228b22", "camel": "#c19a6b", "dark gold": "#b8860b", "bronze": "#cd7f32",
+                "copper": "#b87333", "dark olive": "#556b2f", "khaki": "#f0e68c", "warm burgundy": "#800020",
+                "chocolate": "#d2691e", "paprika red": "#e2583e", "deep turquoise": "#00ced1", "dark coral": "#cd5c5c",
+                
+                // Spring Tones
+                "peach": "#ffb09c", "coral": "#ff6b6b", "warm ivory": "#fffdd0", "golden yellow": "#ffd700",
+                "bright turqu": "#00e5ff", "bright turquoise": "#00e5ff", "salmon pink": "#ff8d94", "light orange": "#ffa726",
+                "apple green": "#8ebd60", "soft coral": "#ff8a80", "light golden yellow": "#fff9c4", "mint green": "#a7ffeb",
+                "soft salmon": "#ffa07a", "butter yellow": "#fff59d", "light peach pink": "#ffchb4",
+                
+                // Summer Tones
+                "dusty rose": "#dcae96", "soft lavende": "#e1bee7", "soft lavender": "#e1bee7", "powder blue": "#b0e0e6",
+                "warm taupe": "#b38f8f", "soft sage": "#b2dfdb", "muted mauve": "#ce93d8", "nude blush": "#f8bbd0",
+                "soft teal": "#80cbc4", "soft gray": "#b0bec5", "blush": "#ffc107", "light navy": "#1a237e",
+                "cool white": "#f8fafc", "muted plum": "#9c27b0", "soft lilac": "#f3e5f5", "cool taupe": "#90a4ae",
+                "slate blue": "#708090", "dusty lavender": "#b39ddb", "muted teal": "#009688", "soft raspberry": "#e91e63",
+                
+                // Winter Tones
+                "pure white": "#ffffff", "black": "#0a0a0a", "icy blue": "#e3f2fd", "royal blue": "#4169e1",
+                "hot pink": "#ff69b4", "fuchsia": "#ff00ff", "true red": "#d50000", "emerald green": "#00c853",
+                "navy blue": "#1a237e", "bright purple": "#aa00ff", "cobalt": "#0091ea", "cool gray": "#78909c",
+                "silver": "#b0bec5", "raspberry": "#c2185b", "bright teal": "#00bfa5", "sapphire blue": "#0d47a1",
+                "emerald": "#00e676", "berry red": "#ad1457", "crimson": "#b71c1c", "plum": "#4a148c"
             };
 
             colorSwatches.forEach((color, i) => {
                 const sx = 60 + (i * 135);
-                let hexFill = "#6a5acd";
-                const token = Object.keys(styleColorMap).find(k => color.toLowerCase().includes(k));
+                let hexFill = "#6a5acd"; // Standard default fallback
+                
+                // Match the clean lowercase text fragments cleanly
+                const normalizedColorName = color.toLowerCase().trim();
+                const token = Object.keys(styleColorMap).find(k => normalizedColorName.includes(k));
                 if (token) hexFill = styleColorMap[token];
 
                 sCtx.fillStyle = hexFill;
