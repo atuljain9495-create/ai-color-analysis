@@ -59,74 +59,148 @@
     <script async src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
     <style>
-        /* Modern mobile overrides applied strictly inside the media breakpoint query to match About.html exactly */
-        @media (max-width: 768px) {
-            header {
-                flex-direction: column !important;
-                align-items: center !important;
-                justify-content: center !important;
-                padding: 20px 16px 14px 16px !important;
-                gap: 14px !important;
-                width: 100%;
-                box-sizing: border-box;
-                position: relative;
-            }
-            header .logo h1 {
-                font-size: 1.5rem !important;
-                margin: 0 !important;
-                text-align: center !important;
-                letter-spacing: -0.5px;
-            }
-            .header-actions {
-                flex-direction: column !important;
-                gap: 14px !important;
-                width: 100%;
-                align-items: center !important;
-            }
-            nav {
-                display: flex !important;
-                justify-content: center !important;
-                align-items: center !important;
-                gap: 8px !important;
-                background: rgba(0, 0, 0, 0.04) !important;
-                padding: 10px 16px !important;
-                border-radius: 30px !important;
-                border: 1px solid rgba(0, 0, 0, 0.06) !important;
-                width: 100% !important;
-                max-width: 340px !important;
-                box-sizing: border-box !important;
-            }
-            body.dark-mode nav {
-                background: rgba(30, 41, 59, 0.6) !important;
-                border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            }
-            nav a {
-                font-size: 0.88rem !important;
-                font-weight: 700 !important;
-                padding: 2px 6px !important;
-                text-align: center;
-                flex: 1;
-            }
-            #darkModeBtn {
-                position: absolute !important;
-                top: 14px !important;
-                right: 14px !important;
-                background: rgba(0, 0, 0, 0.04) !important;
-                border: 1px solid rgba(0, 0, 0, 0.05) !important;
-                padding: 0 !important;
-                border-radius: 50% !important;
-                width: 38px !important;
-                height: 38px !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                font-size: 1.1rem !important;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
-            }
-            body.dark-mode #darkModeBtn {
-                background: rgba(255, 255, 255, 0.08) !important;
-                border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            }
+        /* ── 💎 ACCORDION COLLAPSIBLE ARCHITECTURE CRADLES ── */
+        /* ── 💎 ACCORDION COLLAPSIBLE ARCHITECTURE CRADLES ── */
+        .collapsible-results-container {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 85;
+            max-width: 85% !important; /* Expanded to match the width of your main tool cards */
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .accordion-item-wrapper {
+            background: var(--card-bg, #ffffff);
+            border: 1px solid rgba(106, 90, 205, 0.15);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        body.dark-mode .accordion-item-wrapper {
+            background: #1e293b;
+            border: 1px solid #334155;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .accordion-header-trigger {
+            width: 100%;
+            padding: 18px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+            text-align: left;
+        }
+        .accordion-header-title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .accordion-header-title-group span {
+            font-size: 1.4rem;
+        }
+        .accordion-header-title-group h3 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text-color, #1f2937);
+            margin: 0;
+        }
+        body.dark-mode .accordion-header-title-group h3 {
+            color: #f8fafc;
+        }
+        .accordion-arrow-chevron {
+            font-size: 0.95rem;
+            color: #6a5acd;
+            font-weight: bold;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        body.dark-mode .accordion-arrow-chevron {
+            color: #a78bfa;
+        }
+        .accordion-content-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(106, 90, 205, 0.01);
+        }
+        body.dark-mode .accordion-content-panel {
+            background: rgba(15, 23, 42, 0.2);
+        }
+        .accordion-inner-body {
+            padding: 4px 24px 24px 24px;
+        }
+
+        /* Active opening transition modifications */
+        .accordion-item-wrapper.panel-opened {
+            border-color: #6a5acd;
+        }
+        body.dark-mode .accordion-item-wrapper.panel-opened {
+            border-color: #7c3aed;
+        }
+        .accordion-item-wrapper.panel-opened .accordion-arrow-chevron {
+            transform: rotate(180deg);
+        }
+        .accordion-item-wrapper.panel-opened .accordion-content-panel {
+            max-height: 2000px;
+        }
+        
+        /* Clean list styling inside accordions */
+        .accordion-inner-body ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+        }
+        .accordion-inner-body ul li.recommendation-heading {
+            grid-column: 1 / -1;
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: #6a5acd;
+            margin-top: 14px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(106, 90, 205, 0.1);
+            padding-bottom: 4px;
+        }
+        body.dark-mode .accordion-inner-body ul li.recommendation-heading {
+            color: #a78bfa;
+            border-bottom: 1px solid #334155;
+        }
+        .accordion-inner-body ul li:not(.recommendation-heading) {
+            background: rgba(0,0,0,0.03);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        body.dark-mode .accordion-inner-body ul li:not(.recommendation-heading) {
+            background: #0f172a;
+            color: #cbd5e1;
+        }
+
+        /* ── Dynamic Light/Dark Mode Logo Switcher ── */
+        .logo-light-mode {
+            display: inline-block;
+        }
+        .logo-dark-mode {
+            display: none;
+        }
+        body.dark-mode .logo-light-mode {
+            display: none;
+        }
+        body.dark-mode .logo-dark-mode {
+            display: inline-block;
         }
 
         /* ── Stylized Premium Custom Upload Zone ── */
@@ -220,17 +294,7 @@
         }
         #genderResult .gender-icon { font-size: 1.4rem; }
 
-        /* ── Upgraded Carousel & Store Styling ── */
-        #shopSection {
-            display: none;
-            margin-top: 30px;
-        }
-        #shopSection h3 {
-            font-size: 1.4rem;
-            margin-bottom: 6px;
-            color: var(--primary-color, #6a5acd);
-            font-weight: 700;
-        }
+        /* ── Store Layout Engine Grid ── */
         .shop-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -389,6 +453,7 @@
                 gap: 14px !important;
                 width: 100%;
                 box-sizing: border-box;
+                position: relative;
             }
             header .logo h1 {
                 font-size: 1.5rem !important;
@@ -454,6 +519,60 @@
                 padding: 0 10px;
                 margin-top: 10px;
             }
+            /* ── 🛍️ FIXED SIZING BRAND LOGO TABS ── */
+      /* ── 🛍️ COMPACT BUTTON LOGO TAB MATRIX ── */
+        .wireframe-tabs-header-row {
+            display: flex !important;
+            gap: 12px !important;
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+            width: 100% !important;
+            margin-top: 10px !important;
+            margin-bottom: 25px !important;
+        }
+        .wireframe-tab-btn {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: #1e293b !important;
+            border: 2px solid #334155 !important;
+            border-radius: 12px !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            width: 110px !important;  /* Strict compact button width */
+            height: 46px !important;  /* Strict compact button height */
+            box-sizing: border-box !important;
+            padding: 6px !important;
+        }
+        body.dark-mode .wireframe-tab-btn {
+            background: #0f172a !important;
+            border-color: #1e293b !important;
+        }
+        .wireframe-tab-btn.tab-active {
+            background: #ffffff !important;
+            border-color: #6a5acd !important;
+            box-shadow: 0 4px 12px rgba(106, 90, 205, 0.15) !important;
+        }
+        body.dark-mode .wireframe-tab-btn.tab-active {
+            background: #1e293b !important;
+            border-color: #a78bfa !important;
+            box-shadow: 0 4px 12px rgba(167, 139, 250, 0.2) !important;
+        }
+        .brand-tab-logo-img {
+            max-height: 20px !important; /* Locks small image scale */
+            max-width: 85px !important;  /* Locks small image scale */
+            width: auto !important;
+            height: auto !important;
+            object-fit: contain !important;
+            filter: grayscale(1) brightness(1.3);
+        }
+        .wireframe-tab-btn.tab-active .brand-tab-logo-img,
+        .wireframe-tab-btn:hover .brand-tab-logo-img {
+            filter: grayscale(0) brightness(1) !important;
+        }
+        body.dark-mode .wireframe-tab-btn:not(.tab-active) .brand-tab-logo-img {
+            filter: grayscale(1) invert(1) brightness(1.8) !important;
+        }
         }
     </style>
 </head>
@@ -463,7 +582,6 @@
     <div class="logo" style="display: flex; align-items: center; gap: 12px;">
         <img src="favicon.png" class="logo-light-mode" alt="AI Color Analysis Light Logo" style="width: 38px; height: 38px; object-fit: contain; border-radius: 50%;">
         <img src="favicon1.png" class="logo-dark-mode" alt="AI Color Analysis Dark Logo" style="width: 38px; height: 38px; object-fit: contain; border-radius: 50%;">
-        
         <h1>AI Color Analysis</h1>
     </div>
     <div class="header-actions">
@@ -478,8 +596,8 @@
 </header>
 
 <section class="hero">
-    <h2>Discover Your Perfect Colors Using AI</h2>
-    <p>Upload a photo and instantly get your skin tone, undertone, seasonal palette, gender-specific style recommendations, and real shopping links.</p>
+    <h2>Find Your Perfect Color Palette in 10 Seconds</h2>
+    <p>AI analyzes your skin tone and recommends clothes, makeup, jewelry, and hair colors that actually suit you.</p>
 </section>
 
 <section class="upload-section">
@@ -522,8 +640,8 @@
         </label>
 
         <div class="tool-action-grid">
-            <button id="cameraBtn" type="button">Open Camera</button>
-            <button id="cameraSwitchBtn" type="button" aria-label="Switch camera">📷↺</button>
+            <button id="cameraBtn" type="button" onclick="toggleMainCameraOpenClose()">Open Camera</button>
+            <button id="cameraSwitchBtn" type="button" aria-label="Switch camera" style="display: none; width: 44px; background: #374151; color: #fff; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">🔄</button>
             <button id="analyzeBtn" disabled>Analyze My Colors</button>
         </div>
 
@@ -560,6 +678,7 @@
 
 <section class="results">
     <div class="result-card">
+
         <h2>Your Results</h2>
 
         <div id="genderResult">
@@ -589,9 +708,13 @@
 <section class="recommendations" id="dressCheckerSection">
     <div class="recommend-card" style="grid-column: 1 / -1; padding: 28px;">
         <h3 style="font-size:1.3rem; font-weight:700; margin-bottom:6px;">👗 Test a Product Before You Buy!</h3>
-        <p style="font-size:0.88rem; opacity:0.7; margin-bottom:20px; line-height:1.6;">
-            Screenshot any clothing item from Amazon, ASOS or H&M and upload it here. We'll instantly tell you if that colour suits your personal palette.
+        <p style="font-size:0.88rem; opacity:0.7; margin-bottom:12px; line-height:1.6;">
+            Screenshot any clothing item from Amazon, ASOS or H&M, or snap a live picture of a garment. We'll instantly tell you if that colour suits your personal palette.
         </p>
+
+        <div style="display: inline-block; margin-bottom: 20px; font-size: 0.78rem; padding: 4px 12px; background: #fffbeb; color: #b45309; font-weight: 700; border-radius: 20px; border: 1px solid #fef3c7;">
+            ⚠️ IMPORTANT: Click pictures under clear, proper lighting to get highly accurate results.
+        </div>
 
         <div id="dressCheckerLocked" style="display:flex; align-items:center; gap:12px; background:rgba(106,90,205,0.1); border:1px dashed #6a5acd; border-radius:12px; padding:16px 20px; margin-bottom:16px;">
             <span style="font-size:1.6rem;">🔒</span>
@@ -601,26 +724,39 @@
         </div>
 
         <div id="dressCheckerActive" style="display:none;">
-            <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; margin-bottom:16px;">
-                <label for="dressUpload" id="dressUploadLabel" style="
-                    flex:1; min-width:200px; display:flex; flex-direction:column;
-                    align-items:center; justify-content:center; gap:10px;
-                    border: 2px dashed #6a5acd; border-radius:14px;
-                    padding: 24px 16px; cursor:pointer; text-align:center;
-                    background: rgba(106,90,206,0.06); transition: background 0.2s;
-                    min-height: 140px;">
-                    <span style="font-size:2rem;">📸</span>
-                    <span style="font-weight:700; font-size:0.9rem;">Upload Product Screenshot</span>
-                    <span style="font-size:0.75rem; opacity:0.6;">Screenshot from Amazon, ASOS, H&M etc.</span>
-                    <input type="file" id="dressUpload" accept="image/*" style="display:none;">
-                </label>
-                <div id="dressPreviewBox" style="
-                    flex:1; min-width:200px; min-height:140px;
-                    border-radius:14px; overflow:hidden; display:none;
-                    background:#1e293b; position:relative;">
-                    <img id="dressPreviewImg" alt="Product preview" style="width:100%; height:100%; object-fit:cover; max-height:200px;">
+            <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:stretch; margin-bottom:16px; width: 100%;">
+                
+                <div style="flex:1; min-width: 280px; display: flex; flex-direction: column; gap: 12px; justify-content: space-between;">
+                    <label for="dressUpload" id="dressUploadLabel" style="
+                        display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+                        border: 2px dashed #6a5acd; border-radius:14px; padding: 24px 16px; cursor:pointer; text-align:center;
+                        background: rgba(106,90,206,0.06); transition: background 0.2s; flex: 1;">
+                        <span style="font-size:1.8rem;">📁</span>
+                        <span style="font-weight:700; font-size:0.9rem;">Upload Product Screenshot</span>
+                        <span style="font-size:0.75rem; opacity:0.6;">Supports Amazon, ASOS, H&M etc.</span>
+                        <input type="file" id="dressUpload" accept="image/*" style="display:none;">
+                    </label>
+
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" id="dressCameraOpenBtn" onclick="openDressCheckerCamera()" style="flex: 2; background: #4b5563; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">📷 Open Camera</button>
+                        <button type="button" id="dressCameraFlipBtn" onclick="toggleDressCheckerCameraLens()" style="display: none; background: #374151; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; width: 44px;" title="Flip Camera">🔄</button>
+                        <button type="button" id="dressCaptureBtn" onclick="captureDressCheckerPhoto()" style="display: none; flex: 2; background: #10b981; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">📸 Capture Picture</button>
+                    </div>
+                </div>
+
+                <div style="flex:1; min-width:280px; max-width: 100%; border-radius:14px; overflow:hidden; background:#1e293b; position:relative; min-height: 180px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.05);">
+                    <video id="dressVideo" autoplay playsinline muted style="display: none; width:100%; height:100%; object-fit:cover; position: absolute; top:0; left:0;"></video>
+                    
+                    <div id="dressPreviewBox" style="display: none; width: 100%; height: 100%; position: absolute; top:0; left:0;">
+                        <img id="dressPreviewImg" alt="Product preview" style="width:100%; height:100%; object-fit:contain; background: #0f172a;">
+                    </div>
+                    
+                    <div id="dressPlaceholderText" style="color: #64748b; font-size: 0.8rem; font-weight: 600; text-align: center; padding: 16px; max-width: 240px; z-index: 1;">
+                        Media viewer active.<br><span style="font-weight: normal; opacity: 0.7;">Upload a file or tap the camera button.</span>
+                    </div>
                 </div>
             </div>
+
             <button id="dressCheckBtn" style="
                 background: linear-gradient(135deg,#6a5acd,#9c3fe0);
                 color:#fff; border:none; padding:12px 28px; border-radius:25px;
@@ -634,31 +770,68 @@
     </div>
 </section>
 
-<section class="recommendations">
-    <div class="recommend-card">
-        <h3>Recommended Clothing Colors</h3>
-        <ul id="clothingColors"></ul>
-    </div>
-    <div class="recommend-card">
-        <h3>Recommended Hair Colors</h3>
-        <ul id="hairColors"></ul>
-    </div>
-    <div class="recommend-card">
-        <h3>Recommended Jewelry</h3>
-        <ul id="jewelryColors"></ul>
-    </div>
-</section>
+<div class="collapsible-results-container">
 
-<section class="recommendations">
+    <div class="accordion-item-wrapper" id="panelClothing">
+        <button type="button" class="accordion-header-trigger" onclick="toggleAccordionPanel('panelClothing')">
+            <div class="accordion-header-title-group">
+                <span>👗</span>
+                <h3>Clothing Color Recommendations</h3>
+            </div>
+            <div class="accordion-arrow-chevron">▼</div>
+        </button>
+        <div class="accordion-content-panel">
+            <div class="accordion-inner-body">
+                <ul id="clothingColors"></ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item-wrapper" id="panelHair">
+        <button type="button" class="accordion-header-trigger" onclick="toggleAccordionPanel('panelHair')">
+            <div class="accordion-header-title-group">
+                <span>💇</span>
+                <h3>Personalised Hair Colors</h3>
+            </div>
+            <div class="accordion-arrow-chevron">▼</div>
+        </button>
+        <div class="accordion-content-panel">
+            <div class="accordion-inner-body">
+                <ul id="hairColors"></ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item-wrapper" id="panelJewelry">
+        <button type="button" class="accordion-header-trigger" onclick="toggleAccordionPanel('panelJewelry')">
+            <div class="accordion-header-title-group">
+                <span>💍</span>
+                <h3>Jewelry & Metal Direction</h3>
+            </div>
+            <div class="accordion-arrow-chevron">▼</div>
+        </button>
+        <div class="accordion-content-panel">
+            <div class="accordion-inner-body">
+                <ul id="jewelryColors"></ul>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<section class="recommendations" style="margin-top: 25px; width: 100%;">
     <div class="recommend-card" style="grid-column: 1 / -1; padding: 25px;" id="shopSection">
         <h3>🛍️ Shop Your Palette Matches</h3>
-        <p class="shop-sub" style="margin-bottom: 24px;">Click the inner arrow sliders on each card to loop through all your recommended custom palette colors dynamically.</p>
+        <p class="shop-sub" style="margin-bottom: 24px; font-size: 0.88rem; opacity: 0.8;">
+            Click the inner arrow sliders on each card to loop through all your recommended custom palette colors dynamically.
+        </p>
         <div class="shop-grid" id="shopGrid"></div>
-        <p class="shop-disclaimer" style="margin-top: 25px; font-size: 0.72rem; opacity: 0.5; text-align: center;">
+        <p class="shop-disclaimer" style="margin-top: 25px; font-size: 0.72rem; opacity: 0.5; text-align: center; width: 100%;">
             * Some shopping links are affiliate links. We may earn a commission if you purchase through them, at no extra cost to you. Prices and availability may vary by retailer.
         </p>
     </div>
 </section>
+</div>
 
 <div class="faq-container">
     <div class="faq-hero">

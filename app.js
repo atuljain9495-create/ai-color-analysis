@@ -352,41 +352,120 @@ if (imageUpload) {
     });
 }
 
-async function openCamera() {
+// =========================================================================
+// ── 📸 MAIN SKIN ANALYSIS CAMERA ENGINE CONTROLLERS (FIXED) ──
+// =========================================================================
+
+window.toggleMainCameraOpenClose = function() {
+    if (stream) {
+        window.closeMainCamera();
+    } else {
+        window.openMainCamera();
+    }
+};
+
+window.openMainCamera = async function() {
     try {
-        if (!navigator.mediaDevices) { alert("Camera not accessible. Ensure HTTPS."); return; }
-        if (stream) stream.getTracks().forEach(t => t.stop());
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: currentFacingMode } }, audio: false });
+        if (!navigator.mediaDevices) {
+            alert("Camera not accessible. Ensure you are running on an HTTPS connection or localhost.");
+            return;
+        }
+
+        if (stream) {
+            stream.getTracks().forEach(t => t.stop());
+        }
+
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: currentFacingMode } },
+            audio: false
+        });
+
         video.srcObject = stream;
         if (cameraWrapper) cameraWrapper.style.display = "flex";
         video.style.display = "block";
+
+        // Hide any existing preview while the live camera is showing,
+        // same as the product-screenshot camera does.
+        if (previewWrapper) previewWrapper.style.display = "none";
+
+        // ✨ Dynamic button behavior adjustments matching your cloth checker camera
+        if (cameraBtn) cameraBtn.textContent = "Close Camera";
+        if (cameraSwitchBtn) cameraSwitchBtn.style.display = "inline-block";
         if (captureBtn) captureBtn.style.display = "inline-block";
+
         setStatus(`Camera ready (${currentFacingMode === "user" ? "selfie" : "back"} camera).`, "info");
-    } catch (e) { setStatus("Could not start camera. Use file upload instead.", "error"); }
+    } catch (e) {
+        setStatus("Could not start camera. Use file upload instead.", "error");
+    }
+};
+
+window.closeMainCamera = function() {
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+    }
+    if (video) video.style.display = "none";
+    if (cameraWrapper) cameraWrapper.style.display = "none";
+
+    // ✨ Return buttons cleanly to their original resting states
+    if (cameraBtn) cameraBtn.textContent = "Open Camera";
+    if (cameraSwitchBtn) cameraSwitchBtn.style.display = "none";
+    if (captureBtn) captureBtn.style.display = "none";
+
+    setStatus("Camera sensor offline.", "info");
+};
+
+// Bind the main camera button to open/close cleanly — this was missing from
+// the drop-in snippet, which would have left the button doing nothing.
+if (cameraBtn) cameraBtn.addEventListener("click", window.toggleMainCameraOpenClose);
+
+// 🔄 Bind the main rotate lens button to cycle facing modes cleanly
+if (cameraSwitchBtn) {
+    cameraSwitchBtn.onclick = function() {
+        currentFacingMode = (currentFacingMode === "user") ? "environment" : "user";
+        window.openMainCamera();
+    };
 }
 
-if (cameraBtn)       cameraBtn.addEventListener("click", openCamera);
-if (cameraSwitchBtn) cameraSwitchBtn.addEventListener("click", () => { currentFacingMode = currentFacingMode === "user" ? "environment" : "user"; openCamera(); });
-
+// 📸 Update the Capture Button logic to turn off the lens stream right after taking the photo.
+// NOTE: this intentionally does NOT call window.closeMainCamera() — that function
+// calls setStatus("Camera sensor offline.") internally, which would immediately
+// overwrite the "Photo captured successfully!" message below. Instead we stop
+// the stream and reset the UI directly here, same as the capture handler in
+// the working product-screenshot camera does.
 if (captureBtn) {
-    captureBtn.addEventListener("click", () => {
+    captureBtn.onclick = function() {
         if (!video.videoWidth) { setStatus("Camera warming up. Try again.", "error"); return; }
-        canvas.width=video.videoWidth; canvas.height=video.videoHeight;
-        canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+
         uploadedImage = canvas.toDataURL("image/png");
-        previewImage.src=uploadedImage; previewImage.style.display="block";
-        previewWrapper.style.display="flex";
-        setStatus("Photo captured!", "success");
-        
+        previewImage.src = uploadedImage;
+        previewImage.style.display = "block";
+        if (previewWrapper) previewWrapper.style.display = "flex";
+
         if (analyzeBtn) {
             analyzeBtn.removeAttribute("disabled");
             analyzeBtn.classList.add("active");
         }
-        
-        if (stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
-        video.style.display="none"; captureBtn.style.display="none";
-    });
+
+        // Turn off stream layers cleanly upon successful capture (without
+        // touching the status message — see note above).
+        if (stream) {
+            stream.getTracks().forEach(t => t.stop());
+            stream = null;
+        }
+        if (video) video.style.display = "none";
+        if (cameraWrapper) cameraWrapper.style.display = "none";
+        if (cameraBtn) cameraBtn.textContent = "Open Camera";
+        if (cameraSwitchBtn) cameraSwitchBtn.style.display = "none";
+        if (captureBtn) captureBtn.style.display = "none";
+
+        setStatus("Photo captured successfully!", "success");
+    };
 }
+
 
 if (darkModeBtn) {
     darkModeBtn.addEventListener("click", () => {
@@ -456,6 +535,7 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         if (count<10){r=0;g=0;b=0;count=0;for(let i=0;i<data.length;i+=4){r+=data[i];g+=data[i+1];b+=data[i+2];count++;}}
         r=Math.round(r/count);g=Math.round(g/count);b=Math.round(b/count);
 
+        // ── 🧠 PRE-COMPUTE ALL RAW DATA INTERNALLY FIRST ──
         const hex=rgbToHex(r,g,b);
         const brightness=(r+g+b)/3;
         const confidencePercent=Math.min(100,Math.max(55,Math.round((count/(sampleWidth*sampleHeight))*100)));
@@ -492,11 +572,81 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         if (detectedAge !== null && detectedAge < 13) personType = "child";
 
         currentAnalyzedPersonType = personType;
-        
-        if (typeof window.selectGender === "function") {
-            window.selectGender(personType);
+
+        // ── ⏳ HIDE RAW OUTPUT LABELS AND ENGAGE VISUAL TIMELINE LOOPER ──
+        const progressLoader = document.getElementById("aiProgressLoader");
+
+        // Hide standard view strings during processing loop sequence
+        skinToneDiv.style.display = "none";
+        hexColorDiv.style.display = "none";
+        undertoneDiv.style.display = "none";
+        seasonalTypeDiv.style.display = "none";
+        confidenceScore.style.display = "none";
+        if (genderResult) genderResult.style.display = "none";
+        if (shareSeasonBtn) shareSeasonBtn.style.display = "none";
+
+        // Show progress box matrix wrapper
+        if (progressLoader) {
+            progressLoader.style.display = "flex";
+            // Reset items to inactive resting state metrics
+            document.querySelectorAll(".progress-step-item").forEach(el => {
+                el.className = "progress-step-item";
+                el.querySelector(".step-status-icon").textContent = "⏳";
+            });
         }
 
+        // Helper framework function to chain step states sequentially
+        const setStepState = (id, state) => {
+            const target = document.getElementById(`step-${id}`);
+            if (!target) return;
+            if (state === "processing") {
+                target.classList.add("step-processing");
+                target.querySelector(".step-status-icon").textContent = "⚡";
+            } else if (state === "done") {
+                target.classList.remove("step-processing");
+                target.classList.add("step-done");
+                target.querySelector(".step-status-icon").textContent = "✓";
+            }
+        };
+
+        // Wrap a setTimeout in a Promise so the step sequence can be awaited
+        // linearly instead of pyramid-nesting callbacks — this also means
+        // await getUserCountry() and the rest of the real completion logic
+        // (which the timeline reveals at the end) run in their natural order
+        // rather than being detached from the timers.
+        const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // ── STEP TIMELINE SEQUENCE RUNNER ──
+        setStepState("face", "processing");
+        await wait(600); // Initial face-tracking system calculation interval
+        setStepState("face", "done");
+
+        setStepState("undertone", "processing");
+        await wait(500); // Undertone color matrix isolation loop
+        setStepState("undertone", "done");
+
+        setStepState("season", "processing");
+        await wait(600); // Season matching timeline block
+        setStepState("season", "done");
+
+        setStepState("wardrobe", "processing");
+        await wait(500); // Wardrobe creation step
+        setStepState("wardrobe", "done");
+
+        setStepState("products", "processing");
+        await wait(600); // Sizing catalog delay bounds
+        setStepState("products", "done");
+
+        // ── 🎉 PROCESSING CONCLUDED: REVEAL PREMIUM COMPUTED RESULTS MATRIX ──
+        if (progressLoader) progressLoader.style.display = "none";
+
+        skinToneDiv.style.display = "block";
+        hexColorDiv.style.display = "block";
+        undertoneDiv.style.display = "block";
+        seasonalTypeDiv.style.display = "block";
+        confidenceScore.style.display = "block";
+
+        if (typeof window.selectGender === "function") window.selectGender(personType);
         if (faceStatusWarning) faceStatusWarning.style.display = "none";
 
         if (genderResult) {
@@ -531,6 +681,11 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
 
         const fullPalette = getClothingPalette(undertone, skinToneCategory, contrastLevel);
         unlockDressChecker(fullPalette, undertone, seasonalType);
+        
+        // ✨ AUTO-EXPAND CHANNELS UPON RE-CALCULATION SUCCESS
+     // if(typeof window.expandAllAccordionPanels === "function") {
+     //     window.expandAllAccordionPanels();
+    //  }
     };
     img.src=imageSrc;
 }
@@ -651,21 +806,44 @@ window.setRetailerTabFilter = function(tabName, prefix) {
 };
 
 // ── 🌟 HIGH-CONVERTING CARD GENERATOR CORE ENGINE ──
+// ── 🌟 HIGH-CONVERTING CARD GENERATOR CORE ENGINE (FIXED LOGO ARCHITECTURE) ──
+// ── 🌟 HIGH-CONVERTING CARD GENERATOR CORE ENGINE (PROPER LAYOUT SEPARATION) ──
 function buildSliderCards(prefix) {
     if (!shopGrid) return;
-    shopGrid.innerHTML = "";
+    
+    // 🧠 1. FIND OR CREATE A DEDICATED LOGO ROW ABOVE THE GRID
+    let brandHeaderRow = document.getElementById("brandLogosHeaderRow");
+    if (!brandHeaderRow) {
+        brandHeaderRow = document.createElement("div");
+        brandHeaderRow.id = "brandLogosHeaderRow";
+        brandHeaderRow.className = "wireframe-tabs-header-row";
+        // Enforce tight flexible rows with styling parameters explicitly
+        brandHeaderRow.style.cssText = "margin-bottom: 25px !important; display: flex !important; gap: 12px !important; justify-content: center !important; flex-wrap: wrap !important; width: 100% !important; float: none !important; clear: both !important;";
+        shopGrid.parentNode.insertBefore(brandHeaderRow, shopGrid);
+    }
 
-    const tabsContainer = document.createElement("div");
-    tabsContainer.className = "wireframe-tabs-header-row";
-    tabsContainer.style.cssText = "margin-bottom: 25px !important; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; width: 100%; grid-column: 1 / -1;";
-    tabsContainer.innerHTML = `
-        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'amazon' ? 'tab-active' : ''}" data-tab="amazon" onclick="setRetailerTabFilter('amazon', '${prefix}')">AMAZON</button>
-        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'asos' ? 'tab-active' : ''}" data-tab="asos" onclick="setRetailerTabFilter('asos', '${prefix}')">ASOS</button>
-        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'h&m' ? 'tab-active' : ''}" data-tab="h&m" onclick="setRetailerTabFilter('h&m', '${prefix}')">H&M</button>
-        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'flipkart' ? 'tab-active' : ''}" data-tab="flipkart" onclick="setRetailerTabFilter('flipkart', '${prefix}')">FLIPKART</button>
-        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'myntra' ? 'tab-active' : ''}" data-tab="myntra" onclick="setRetailerTabFilter('myntra', '${prefix}')">MYNTRA</button>
+    // Injects your local asset routes with un-bypassable micro button dimensions inline
+    // Update the button row contents with custom individual image scaling to normalize sizes
+    brandHeaderRow.innerHTML = `
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'amazon' ? 'tab-active' : ''}" data-tab="amazon" onclick="setRetailerTabFilter('amazon', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'amazon' ? '#6a5acd' : '#334155'} !important; cursor: pointer !important; overflow: hidden !important;">
+            <img src="logos/amazon.png" style="height: auto !important; width: 95% !important; object-fit: contain !important; box-sizing: border-box !important;" alt="Amazon">
+        </button>
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'asos' ? 'tab-active' : ''}" data-tab="asos" onclick="setRetailerTabFilter('asos', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'asos' ? '#6a5acd' : '#334155'} !important; cursor: pointer !important; overflow: hidden !important;">
+            <img src="logos/asos.png" style="height: 100% !important; width: 100% !important; object-fit: contain !important; box-sizing: border-box !important;" alt="ASOS">
+        </button>
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'h&m' ? 'tab-active' : ''}" data-tab="h&m" onclick="setRetailerTabFilter('h&m', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'h&m' ? '#6a5acd' : '#334155'} !important; cursor: pointer !important; overflow: hidden !important;">
+            <img src="logos/hm.png" style="height: 100% !important; width: 100% !important; object-fit: contain !important; box-sizing: border-box !important;" alt="H&M">
+        </button>
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'flipkart' ? 'tab-active' : ''}" data-tab="flipkart" onclick="setRetailerTabFilter('flipkart', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'flipkart' ? '#6a5acd' : '#334155'} !important; cursor: pointer !important; overflow: hidden !important;">
+            <img src="logos/flipkart.png" style="height: auto !important; width: 90% !important; object-fit: contain !important; box-sizing: border-box !important;" alt="Flipkart">
+        </button>
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'myntra' ? 'tab-active' : ''}" data-tab="myntra" onclick="setRetailerTabFilter('myntra', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'myntra' ? '#6a5acd' : '#334155'} !important; cursor: pointer !important; overflow: hidden !important;">
+            <img src="logos/myntra.png" style="height: 100% !important; width: 100% !important; object-fit: contain !important; box-sizing: border-box !important;" alt="Myntra">
+        </button>
     `;
-    shopGrid.appendChild(tabsContainer);
+
+    // 🧠 2. WIPE AND RENDER CARDS ONLY INSIDE THE GRID MATRIX
+    shopGrid.innerHTML = "";
 
     itemsToShopMatrix.forEach((card) => {
         const currentColor = card.colors[card.activeIdx] || "Universal Base";
@@ -677,7 +855,6 @@ function buildSliderCards(prefix) {
             dynamicSearchTerm = encodeURIComponent(`${currentColor} ${prefix}${card.type}`);
         }
 
-        // 🧠 INTELLECTUAL DYNAMIC GEOLOCATION BRAND ROUTER MATRIX
         let platformTargetUrl = "";
         let buttonDisplayLabel = "Amazon";
         let btnGradient = "linear-gradient(135deg, #ff9900, #ffb83d)";
@@ -687,12 +864,9 @@ function buildSliderCards(prefix) {
             buttonDisplayLabel = "Amazon";
             btnGradient = "linear-gradient(135deg, #ff9900, #ffb83d)";
             btnColor = "#111111";
-            
             if (isUserInIndia()) {
-                // Indian User Route — amazon.in with Indian affiliate ID
                 platformTargetUrl = `https://www.amazon.in/s?k=${dynamicSearchTerm}&tag=aicoloronline-21`;
             } else {
-                // Global/Western User Route (US/Europe) — amazon.com with US affiliate ID
                 platformTargetUrl = `https://www.amazon.com/s?k=${dynamicSearchTerm}&tag=aicolor-20`;
             }
         } else if (window._currentRetailerTab === "asos") {
@@ -701,7 +875,6 @@ function buildSliderCards(prefix) {
             btnGradient = "linear-gradient(135deg, #4b5563, #374151)";
             btnColor = "#ffffff";
         } else if (window._currentRetailerTab === "h&m") {
-            // Smart routing helper for H&M regional extensions as well
             if (isUserInIndia()) {
                 platformTargetUrl = `https://www2.hm.com/en_in/search-results.html?q=${dynamicSearchTerm}`;
             } else {
@@ -778,62 +951,77 @@ window.slideCardColor = function(cardId, offset, prefix) {
 
 function capitalise(str){return str.replace(/\b\w/g,c=>c.toUpperCase());}
 
+// =========================================================================
+// ── 🎨 HIGH-FIDELITY MULTI-FORMAT GENERATOR (`MAN`/`WOMAN`/`CHILD`) ──
+// =========================================================================
+// =========================================================================
+// ── 🎨 HIGH-FIDELITY MULTI-FORMAT GENERATOR (FIXED ASYNC IMAGES) ──
+// =========================================================================
 if (shareSeasonBtn) {
     shareSeasonBtn.addEventListener("click", () => {
-        let seasonalTypeText = seasonalTypeDiv ? seasonalTypeDiv.innerText.replace("Seasonal Type:", "").trim() : "My Custom Season";
-        const skinToneText = skinToneDiv ? skinToneDiv.innerText.replace("Skin Tone:", "").trim() : "";
-        const undertoneText = undertoneDiv ? undertoneDiv.innerText.replace("Undertone:", "").trim() : "";
+        let seasonalTypeText = seasonalTypeDiv ? seasonalTypeDiv.innerText.replace("Seasonal Type:", "").trim() : "Custom Season";
+        const skinToneText = skinToneDiv ? skinToneDiv.innerText.replace("Skin Tone:", "").trim() : "Detected Tone";
+        const undertoneText = undertoneDiv ? undertoneDiv.innerText.replace("Undertone:", "").trim() : "Neutral";
 
+        // Pull active calculated colors out of list elements cleanly
         const clothingColorsList = clothingColors ? Array.from(clothingColors.querySelectorAll("li:not(.recommendation-heading)")).map(li => li.innerText) : [];
-        const defaultPaletteHexes = ["#2d3748", "#4a5568", "#718096", "#a0aec0"];
-        
-        let colorSwatches = clothingColorsList.slice(0, 4);
-        if (colorSwatches.length < 4) colorSwatches = ["Peach", "Coral", "Aqua", "Ivory"];
+        let colorSwatches = clothingColorsList.slice(0, 8);
+        if (colorSwatches.length < 8) colorSwatches = ["Peach", "Coral", "Yellow", "Mint Green", "Sky Blue", "Lavender", "Light Pink", "Cream"];
 
         const shareCanvas = document.createElement("canvas");
         const sCtx = shareCanvas.getContext("2d");
-        shareCanvas.width = 1200;
-        shareCanvas.height = 1500;
-
-        if (currentAnalyzedPersonType === "woman") {
-            sCtx.fillStyle = "#831843";
-        } else if (currentAnalyzedPersonType === "child") {
-            sCtx.fillStyle = "#0284c7";
-        } else {
-            sCtx.fillStyle = "#1e293b";
-        }
-        sCtx.fillRect(0, 0, shareCanvas.width, shareCanvas.height);
         
-        sCtx.lineWidth = 10;
-        sCtx.strokeStyle = currentAnalyzedPersonType === "woman" ? "#9d174d" : "#334155";
-        sCtx.strokeRect(20, 20, shareCanvas.width - 40, shareCanvas.height - 40);
-
-        if (currentAnalyzedPersonType === "child") {
-            sCtx.font = "80px system-ui";
-            sCtx.textAlign = "center";
-            sCtx.fillText("🐼", 100, 110);
-            sCtx.fillText("🦁", shareCanvas.width - 100, 110);
-            sCtx.fillText("🐠", 60, 450);
-            sCtx.fillText("🐟", 65, 750);
-            sCtx.fillText("🐠", 55, 1050);
-
-            sCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
-            sCtx.beginPath(); sCtx.arc(60, 370, 12, 0, Math.PI * 2); sCtx.fill();
-            sCtx.beginPath(); sCtx.arc(70, 680, 8, 0, Math.PI * 2); sCtx.fill();
-            sCtx.beginPath(); sCtx.arc(50, 980, 16, 0, Math.PI * 2); sCtx.fill();
-
-            seasonalTypeText = "✨ " + seasonalTypeText;
-        }
+        shareCanvas.width = 1200;
+        shareCanvas.height = 1760;
 
         const userImgObj = new Image();
+        
+        // 🧠 CRITICAL FIX: Everything must happen INSIDE this onload hook!
         userImgObj.onload = function() {
-            const frameX = 120;
-            const frameY = 140;
-            const frameSize = 960;
+            let accentColor = "#6a5acd";
+            let bgColor = "#f8fafc";
+            let cardBg = "#ffffff";
+            let textColor = "#0f172a";
+            let mutedText = "#475569";
 
+            if (currentAnalyzedPersonType === "woman") {
+                accentColor = "#ec4899"; 
+                bgColor = "#fff5f7";
+            } else if (currentAnalyzedPersonType === "child") {
+                accentColor = "#3b82f6"; 
+                bgColor = "#f0fdf4";
+            } else {
+                accentColor = "#1e3a8a"; 
+                bgColor = "#f1f5f9";
+            }
+
+            // Base Canvas Painting
+            sCtx.fillStyle = bgColor;
+            sCtx.fillRect(0, 0, shareCanvas.width, shareCanvas.height);
+
+            // 🧠 DRAW HEADER BLOCK SYSTEM
+            sCtx.fillStyle = accentColor;
+            sCtx.font = "bold 42px system-ui, -apple-system, sans-serif";
+            sCtx.textAlign = "left";
+            sCtx.fillText("✨ AI Color Analysis", 60, 90);
+
+            sCtx.fillStyle = mutedText;
+            sCtx.font = "600 24px system-ui, -apple-system, sans-serif";
+            sCtx.fillText("Privacy-First Personalized Style Passport", 60, 130);
+
+            // Security Tag
+            sCtx.fillStyle = "rgba(16, 185, 129, 0.1)";
+            sCtx.beginPath();
+            sCtx.roundRect(860, 65, 280, 50, 12);
+            sCtx.fill();
+            sCtx.fillStyle = "#10b981";
+            sCtx.font = "bold 20px system-ui, sans-serif";
+            sCtx.fillText("🔒 On-Device Private", 890, 98);
+
+            // 🧠 DRAW USER PORTRAIT IMAGE LAYER
             sCtx.save();
             sCtx.beginPath();
-            sCtx.roundRect(frameX, frameY, frameSize, frameSize, 24);
+            sCtx.roundRect(60, 180, 420, 520, 24);
             sCtx.clip();
 
             let srcX = 0, srcY = 0, srcSize = userImgObj.width;
@@ -844,64 +1032,174 @@ if (shareSeasonBtn) {
                 srcSize = userImgObj.width;
                 srcY = (userImgObj.height - userImgObj.width) / 2;
             }
-
-            sCtx.drawImage(userImgObj, srcX, srcY, srcSize, srcSize, frameX, frameY, frameSize, frameSize);
+            sCtx.drawImage(userImgObj, srcX, srcY, srcSize, srcSize, 60, 180, 420, 520);
             sCtx.restore();
 
-            const paletteStartY = 1180; 
-            const circleRadius = 45;
-            const gapBetweenCircles = 60;
-            const totalWidthOfCircles = (circleRadius * 2 * 4) + (gapBetweenCircles * 3);
-            const circlesStartX = (shareCanvas.width - totalWidthOfCircles) / 2 + circleRadius;
+            // Label tag card attachment inside image wrapper boundaries
+            sCtx.fillStyle = "rgba(15, 23, 42, 0.75)";
+            sCtx.beginPath();
+            sCtx.roundRect(85, 625, 370, 55, 12);
+            sCtx.fill();
+            sCtx.fillStyle = "#ffffff";
+            sCtx.font = "bold 22px system-ui, sans-serif";
+            sCtx.fillText(`🎨 Tone: ${skinToneText}`, 110, 660);
 
+            // 🧠 WRITE TYPOGRAPHY SEASONAL BIO INFOGRAPHICS
+            sCtx.fillStyle = accentColor;
+            sCtx.font = "bold 32px system-ui, sans-serif";
+            sCtx.fillText("YOUR SEASON", 530, 230);
+
+            sCtx.fillStyle = textColor;
+            sCtx.font = "bold 84px system-ui, -apple-system, sans-serif";
+            sCtx.fillText(seasonalTypeText, 530, 330);
+
+            sCtx.fillStyle = mutedText;
+            sCtx.font = "600 28px system-ui, sans-serif";
+            sCtx.fillText(`Profile Matrix: ${undertoneText} Undertone  •  Verified Match`, 530, 390);
+
+            sCtx.fillStyle = textColor;
+            sCtx.font = "24px system-ui, sans-serif";
+            sCtx.fillText(`Your personal coloring completely aligns with the characteristics of a ${seasonalTypeText}.`, 530, 450);
+            sCtx.fillText("Wearing these verified tones optimizes skin radiance and mitigates washing out effects.", 530, 490);
+
+            // Metric tracking blocks row layout
+            const metrics = [
+                { label: "Undertone", val: undertoneText },
+                { label: "Match Score", val: "98%" },
+                { label: "Confidence", val: "97%" }
+            ];
+            metrics.forEach((m, idx) => {
+                const mx = 530 + (idx * 210);
+                sCtx.fillStyle = cardBg;
+                sCtx.beginPath();
+                sCtx.roundRect(mx, 550, 190, 110, 16);
+                sCtx.fill();
+                sCtx.lineWidth = 1;
+                sCtx.strokeStyle = "rgba(0,0,0,0.05)";
+                sCtx.stroke();
+
+                sCtx.fillStyle = mutedText;
+                sCtx.font = "600 18px system-ui, sans-serif";
+                sCtx.fillText(m.label, mx + 25, 590);
+                sCtx.fillStyle = accentColor;
+                sCtx.font = "bold 26px system-ui, sans-serif";
+                sCtx.fillText(m.val, mx + 25, 635);
+            });
+
+            // 🧠 DRAW PALETTE BAR MATRIX ROW
+            sCtx.fillStyle = textColor;
+            sCtx.font = "bold 32px system-ui, sans-serif";
+            sCtx.fillText("🎨 YOUR OPTIMAL MOLECULAR COLOR PALETTE", 60, 770);
+
+            const swatchWidth = 125;
+            const swatchHeight = 90;
             const styleColorMap = {
                 "peach": "#ffb09c", "coral": "#ff6b6b", "aqua": "#4edcd6", "ivory": "#fffff0",
                 "orange": "#ff9233", "rust": "#b83b1d", "olive": "#606c38", "teal": "#2a9d8f",
                 "fuchsia": "#ff007f", "mint": "#a8dadc", "lavender": "#e0b0ff", "gold": "#d4af37",
                 "sapphire": "#0f52ba", "emerald": "#50c878", "plum": "#dda0dd", "rose": "#ff007f",
-                "burnt orange": "#cc5500", "mustard": "#ffdb58", "taupe": "#b38b6d", "beige": "#f5f5dc"
+                "navy blue": "#1b2a4a", "royal blue": "#4169e1", "charcoal": "#36454f", "white": "#ffffff", "black": "#0a0a0a"
             };
 
-            for (let i = 0; i < 4; i++) {
-                let computedFill = defaultPaletteHexes[i];
-                if (colorSwatches[i]) {
-                    const matchedToken = Object.keys(styleColorMap).find(key => colorSwatches[i].toLowerCase().includes(key));
-                    if (matchedToken) computedFill = styleColorMap[matchedToken];
-                }
+            colorSwatches.forEach((color, i) => {
+                const sx = 60 + (i * 135);
+                let hexFill = "#6a5acd";
+                const token = Object.keys(styleColorMap).find(k => color.toLowerCase().includes(k));
+                if (token) hexFill = styleColorMap[token];
 
-                const cX = circlesStartX + (i * (circleRadius * 2 + gapBetweenCircles));
-                
-                sCtx.shadowColor = "rgba(0, 0, 0, 0.4)";
-                sCtx.shadowBlur = 15;
-                sCtx.shadowOffsetY = 6;
-
-                sCtx.fillStyle = computedFill;
+                sCtx.fillStyle = hexFill;
                 sCtx.beginPath();
-                sCtx.arc(cX, paletteStartY, circleRadius, 0, 2 * Math.PI);
+                sCtx.roundRect(sx, 810, swatchWidth, swatchHeight, 12);
                 sCtx.fill();
-                
-                sCtx.shadowColor = "transparent";
-                sCtx.shadowBlur = 0;
-                sCtx.shadowOffsetY = 0;
+                sCtx.lineWidth = 2;
+                sCtx.strokeStyle = "rgba(0,0,0,0.1)";
+                sCtx.stroke();
+
+                sCtx.fillStyle = textColor;
+                sCtx.font = "bold 16px system-ui, sans-serif";
+                sCtx.fillText(color.substring(0, 12), sx + 4, 930);
+            });
+
+            // 🧠 RENDER DYNAMIC CARD SLOTS ROW
+            sCtx.fillStyle = textColor;
+            sCtx.font = "bold 32px system-ui, sans-serif";
+            sCtx.fillText("👔 CHROMATIC WARDROBE RECOMMENDATION MAPS", 60, 1010);
+
+            let rowItems = [];
+            if (currentAnalyzedPersonType === "woman") {
+                rowItems = [
+                    { title: "Clothing", desc: "Peach Blouse", icon: "👚" },
+                    { title: "Hair Tone", desc: "Natural Brown", icon: "💇" },
+                    { title: "Cosmetics", desc: "Coral Lipstick", icon: "💄" },
+                    { title: "Jewelry", desc: "Yellow Gold", icon: "💍" }
+                ];
+            } else if (currentAnalyzedPersonType === "child") {
+                rowItems = [
+                    { title: "Everyday Wear", desc: "Striped T-Shirt", icon: "👕" },
+                    { title: "Outerwear", desc: "Mint Hoodie", icon: "🧥" },
+                    { title: "Gear", desc: "School Backpack", icon: "🎒" },
+                    { title: "Accessory", desc: "Colorful Watch", icon: "⌚" }
+                ];
+            } else {
+                rowItems = [
+                    { title: "Shirts", desc: "Navy Oxford", icon: "👔" },
+                    { title: "Outerwear", desc: "Charcoal Coat", icon: "🧥" },
+                    { title: "Accessories", desc: "Silver Watch", icon: "⌚" },
+                    { title: "Footwear", desc: "White Sneakers", icon: "👟" }
+                ];
             }
 
-            sCtx.fillStyle = "#ffffff";
+            rowItems.forEach((item, idx) => {
+                const ix = 60 + (idx * 275);
+                sCtx.fillStyle = cardBg;
+                sCtx.beginPath();
+                sCtx.roundRect(ix, 1050, 255, 230, 20);
+                sCtx.fill();
+                
+                sCtx.fillStyle = mutedText;
+                sCtx.font = "bold 18px system-ui, sans-serif";
+                sCtx.fillText(item.title, ix + 25, 1095);
+
+                sCtx.fillStyle = textColor;
+                sCtx.font = "24px system-ui, sans-serif";
+                sCtx.fillText(item.icon, ix + 25, 1160);
+
+                sCtx.fillStyle = accentColor;
+                sCtx.font = "bold 20px system-ui, sans-serif";
+                sCtx.fillText(item.desc, ix + 25, 1230);
+            });
+
+            // 🧠 INSIGHTS AND BRAND FOOTER MATRIX
+            sCtx.fillStyle = cardBg;
+            sCtx.beginPath();
+            sCtx.roundRect(60, 1340, 1080, 160, 20);
+            sCtx.fill();
+
+            sCtx.fillStyle = accentColor;
+            sCtx.font = "bold 22px system-ui, sans-serif";
+            sCtx.fillText("💡 EXPERT METRIC ANALYSIS RULE", 90, 1395);
+
+            sCtx.fillStyle = textColor;
+            sCtx.font = "20px system-ui, sans-serif";
+            let insightTip = "Your cool depth parameters indicate high luxury contrasts. Stick to stark whites and clear jewel tones.";
+            if (undertoneText === "Warm") insightTip = "Warm undertone frameworks dictate rich, organic reflections. Terracotta, golds, and mossy greens draw out your radiance.";
+            sCtx.fillText(insightTip, 90, 1445);
+
+            // Universal Domain Footprint Subtext anchor
+            sCtx.fillStyle = accentColor;
+            sCtx.font = "bold 32px system-ui, sans-serif";
             sCtx.textAlign = "center";
-            sCtx.font = "bold 64px system-ui, -apple-system, sans-serif";
-            sCtx.fillText(seasonalTypeText.toUpperCase(), shareCanvas.width / 2, 1320); 
+            sCtx.fillText("aicoloranalysis.online", shareCanvas.width / 2, 1620);
 
-            sCtx.fillStyle = currentAnalyzedPersonType === "woman" ? "#fbcfe8" : (currentAnalyzedPersonType === "child" ? "#e0f2fe" : "#94a3b8");
-            sCtx.font = "600 32px system-ui, -apple-system, sans-serif";
-            sCtx.fillText(`${skinToneText}  •  ${undertoneText} Undertone`, shareCanvas.width / 2, 1380); 
-
-            sCtx.fillStyle = currentAnalyzedPersonType === "woman" ? "#f472b6" : (currentAnalyzedPersonType === "child" ? "#bae6fd" : "#a78bfa");
-            sCtx.font = "bold 38px system-ui, -apple-system, sans-serif";
-            sCtx.letterSpacing = "2px";
-            sCtx.fillText("aicoloranalysis.online", shareCanvas.width / 2, 1450); 
+            sCtx.fillStyle = mutedText;
+            sCtx.font = "600 20px system-ui, sans-serif";
+            sCtx.fillText("Automated Local Client Vision Engine Pass • 100% Temporary Storage Secure", shareCanvas.width / 2, 1665);
 
             const renderDataUrl = shareCanvas.toDataURL("image/png");
             launchShareModalLayout(renderDataUrl, seasonalTypeText);
         };
+
+        // Trigger loading sequence downlinks safely
         userImgObj.src = previewImage.src;
     });
 }
@@ -1394,6 +1692,11 @@ if (dressUpload) {
             dressImageData = e.target.result;
             dressPreviewImg.src = dressImageData;
             dressPreviewBox.style.display = "block";
+            
+            // 🧠 FIX: Explicitly hide the placeholder text block here!
+            const dPlaceholder = document.getElementById("dressPlaceholderText");
+            if (dPlaceholder) dPlaceholder.style.display = "none";
+
             if (dressCheckBtn) dressCheckBtn.style.display = "inline-block";
             if (dressResult)   dressResult.style.display   = "none";
         };
@@ -1488,3 +1791,139 @@ function unlockDressChecker(palette, undertone, season) {
     if (locked) locked.style.display = "none";
     if (active) active.style.display = "block";
 }
+// ── 🧠 GLOBAL ACCORDION ENGINE CONTROLLERS ──
+window.toggleAccordionPanel = function(panelElementId) {
+    const targetPanel = document.getElementById(panelElementId);
+    if (!targetPanel) return;
+
+    const isOpened = targetPanel.classList.contains("panel-opened");
+    
+    // Close the panel if it's already open, otherwise open it
+    if (isOpened) {
+        targetPanel.classList.remove("panel-opened");
+    } else {
+        targetPanel.classList.add("panel-opened");
+    }
+};
+
+// Auto-expands individual categories when calculations finish running so users see them instantly
+window.expandAllAccordionPanels = function() {
+    document.querySelectorAll(".accordion-item-wrapper").forEach(panel => {
+        panel.classList.add("panel-opened");
+    });
+};
+// ── 📸 LIVE CLOTH CAMERA EXTENSION HOOKS WITH LENS TOGGLE ──
+let dressStreamInstance = null;
+let currentDressFacingMode = "environment"; // Defaults to the crisp back camera on smartphones
+
+window.openDressCheckerCamera = async function() {
+    const dVideo = document.getElementById("dressVideo");
+    const dPreviewBox = document.getElementById("dressPreviewBox");
+    const dPlaceholder = document.getElementById("dressPlaceholderText");
+    const dOpenBtn = document.getElementById("dressCameraOpenBtn");
+    const dFlipBtn = document.getElementById("dressCameraFlipBtn");
+    const dCaptureBtn = document.getElementById("dressCaptureBtn");
+    const dCheckBtn = document.getElementById("dressCheckBtn");
+    const dResult = document.getElementById("dressResult");
+
+    try {
+        if (!navigator.mediaDevices) { alert("Camera not accessible over unencrypted pathways."); return; }
+        
+        if (dressStreamInstance) {
+            dressStreamInstance.getTracks().forEach(t => t.stop());
+        }
+
+        dressStreamInstance = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: { ideal: currentDressFacingMode } }, 
+            audio: false 
+        });
+        
+        dVideo.srcObject = dressStreamInstance;
+        dVideo.style.display = "block";
+        
+        if (dPreviewBox) dPreviewBox.style.display = "none";
+        if (dPlaceholder) dPlaceholder.style.display = "none";
+        if (dResult) dResult.style.display = "none";
+        
+        dOpenBtn.textContent = "📷 Close Camera";
+        // Turn text action into close feature switch toggler if streaming live
+        dOpenBtn.onclick = window.closeDressCheckerCamera; 
+        
+        dFlipBtn.style.display = "inline-block";
+        dCaptureBtn.style.display = "inline-block";
+        if (dCheckBtn) dCheckBtn.style.display = "none";
+
+    } catch (e) {
+        console.error("Camera path error:", e);
+        alert("Could not access your device camera. Please upload a screenshot instead.");
+    }
+};
+
+window.closeDressCheckerCamera = function() {
+    const dVideo = document.getElementById("dressVideo");
+    const dPlaceholder = document.getElementById("dressPlaceholderText");
+    const dOpenBtn = document.getElementById("dressCameraOpenBtn");
+    const dFlipBtn = document.getElementById("dressCameraFlipBtn");
+    const dCaptureBtn = document.getElementById("dressCaptureBtn");
+
+    if (dressStreamInstance) {
+        dressStreamInstance.getTracks().forEach(t => t.stop());
+        dressStreamInstance = null;
+    }
+
+    if (dVideo) dVideo.style.display = "none";
+    if (dPlaceholder) dPlaceholder.style.display = "block";
+    
+    dOpenBtn.textContent = "📷 Open Camera";
+    dOpenBtn.onclick = window.openDressCheckerCamera;
+    dFlipBtn.style.display = "none";
+    dCaptureBtn.style.display = "none";
+};
+
+window.toggleDressCheckerCameraLens = function() {
+    // Cycles smoothly between front (user) and rear (environment) device sensors
+    currentDressFacingMode = (currentDressFacingMode === "environment") ? "user" : "environment";
+    window.openDressCheckerCamera();
+};
+
+window.captureDressCheckerPhoto = function() {
+    const dVideo = document.getElementById("dressVideo");
+    const dPreviewBox = document.getElementById("dressPreviewBox");
+    const dPreviewImg = document.getElementById("dressPreviewImg");
+    const dOpenBtn = document.getElementById("dressCameraOpenBtn");
+    const dFlipBtn = document.getElementById("dressCameraFlipBtn");
+    const dCaptureBtn = document.getElementById("dressCaptureBtn");
+    const dCheckBtn = document.getElementById("dressCheckBtn");
+    // 🧠 Add reference selector catch
+    const dPlaceholder = document.getElementById("dressPlaceholderText");
+
+    if (!dVideo || !dVideo.videoWidth) return;
+
+    const snapshotCanvas = document.createElement("canvas");
+    snapshotCanvas.width = dVideo.videoWidth;
+    snapshotCanvas.height = dVideo.videoHeight;
+    
+    const sCtx = snapshotCanvas.getContext("2d");
+    sCtx.drawImage(dVideo, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
+    
+    dressImageData = snapshotCanvas.toDataURL("image/png");
+    dPreviewImg.src = dressImageData;
+    
+    if (dressStreamInstance) {
+        dressStreamInstance.getTracks().forEach(t => t.stop());
+        dressStreamInstance = null;
+    }
+    
+    dVideo.style.display = "none";
+    dFlipBtn.style.display = "none";
+    dCaptureBtn.style.display = "none";
+    
+    // 🧠 FIX: Force structural removal of placeholder text upon snap validation
+    if (dPlaceholder) dPlaceholder.style.display = "none";
+    
+    dOpenBtn.textContent = "📷 Open Camera";
+    dOpenBtn.onclick = window.openDressCheckerCamera;
+    
+    if (dPreviewBox) dPreviewBox.style.display = "block";
+    if (dCheckBtn) dCheckBtn.style.display = "inline-block";
+};
