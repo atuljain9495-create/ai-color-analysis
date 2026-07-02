@@ -957,6 +957,9 @@ function capitalise(str){return str.replace(/\b\w/g,c=>c.toUpperCase());}
 // =========================================================================
 // ── 🎨 HIGH-FIDELITY MULTI-FORMAT GENERATOR (FIXED ASYNC IMAGES) ──
 // =========================================================================
+// =========================================================================
+// ── 🎨 HIGH-FIDELITY MULTI-FORMAT GENERATOR (BUGPUSH ACCURATE FIX) ──
+// =========================================================================
 if (shareSeasonBtn) {
     shareSeasonBtn.addEventListener("click", () => {
         let seasonalTypeText = seasonalTypeDiv ? seasonalTypeDiv.innerText.replace("Seasonal Type:", "").trim() : "Custom Season";
@@ -976,7 +979,7 @@ if (shareSeasonBtn) {
 
         const userImgObj = new Image();
         
-        // 🧠 CRITICAL FIX: Everything must happen INSIDE this onload hook!
+        // Everything runs inside the safety of the async onload hook
         userImgObj.onload = function() {
             let accentColor = "#6a5acd";
             let bgColor = "#f8fafc";
@@ -1087,7 +1090,6 @@ if (shareSeasonBtn) {
             });
 
             // 🧠 DRAW PALETTE BAR MATRIX ROW
-            // 🧠 DRAW PALETTE BAR MATRIX ROW (FIXED COLOR REPETITION BUG)
             sCtx.fillStyle = textColor;
             sCtx.font = "bold 32px system-ui, sans-serif";
             sCtx.fillText("🎨 YOUR OPTIMAL MOLECULAR COLOR PALETTE", 60, 770);
@@ -1095,43 +1097,50 @@ if (shareSeasonBtn) {
             const swatchWidth = 125;
             const swatchHeight = 90;
             
-            // Comprehensive, calibrated color token dictionary mapping all calculated recommendation states
+            // Cleaned, validated color hex dictionary mapping all dynamic text names
             const styleColorMap = {
                 // Autumn Tones
                 "burnt orange": "#cc5500", "rust": "#b83b1d", "olive green": "#606c38", "deep teal": "#006666",
                 "mustard yell": "#e1ad01", "mustard": "#e1ad01", "warm brown": "#964b00", "terracotta": "#e2725b", 
-                "forest green": "#228b22", "camel": "#c19a6b", "dark gold": "#b8860b", "bronze": "#cd7f32",
-                "copper": "#b87333", "dark olive": "#556b2f", "khaki": "#f0e68c", "warm burgundy": "#800020",
-                "chocolate": "#d2691e", "paprika red": "#e2583e", "deep turquoise": "#00ced1", "dark coral": "#cd5c5c",
+                "forest green": "#228b22", "camel": "#c19a6b", "dark gold": "#b8860b", "rich gold": "#daa520", "gold": "#ffd700", 
+                "bronze": "#cd7f32", "copper": "#b87333", "dark olive": "#4a4a2e", "khaki": "#c3b091", 
+                "warm burgundy": "#800020", "burgundy": "#800020", "brick red": "#b22222", "paprika red": "#e2583e", 
+                "chocolate brown": "#4a2c17", "deep chocola": "#4a2c17", "chocolate": "#4a2c17", "brown": "#7b4b27",
+                "deep turquoise": "#00ced1", "dark coral": "#cd5c5c", "amber": "#ffbf00",
                 
                 // Spring Tones
-                "peach": "#ffb09c", "coral": "#ff6b6b", "warm ivory": "#fffdd0", "golden yellow": "#ffd700",
+                "peach": "#ffb09c", "coral": "#ff6b6b", "warm ivory": "#fffdd0", "golden yellow": "#ffd700", "golden yello": "#ffd700",
                 "bright turqu": "#00e5ff", "bright turquoise": "#00e5ff", "salmon pink": "#ff8d94", "light orange": "#ffa726",
                 "apple green": "#8ebd60", "soft coral": "#ff8a80", "light golden yellow": "#fff9c4", "mint green": "#a7ffeb",
-                "soft salmon": "#ffa07a", "butter yellow": "#fff59d", "light peach pink": "#ffchb4",
+                "soft salmon": "#ffa07a", "butter yellow": "#fff59d", "light peach pink": "#ffbda4", "buttercup yellow": "#fff350",
                 
                 // Summer Tones
                 "dusty rose": "#dcae96", "soft lavende": "#e1bee7", "soft lavender": "#e1bee7", "powder blue": "#b0e0e6",
                 "warm taupe": "#b38f8f", "soft sage": "#b2dfdb", "muted mauve": "#ce93d8", "nude blush": "#f8bbd0",
-                "soft teal": "#80cbc4", "soft gray": "#b0bec5", "blush": "#ffc107", "light navy": "#1a237e",
+                "soft teal": "#80cbc4", "soft gray": "#b0bec5", "blush": "#f4a6c6", "light navy": "#1a237e",
                 "cool white": "#f8fafc", "muted plum": "#9c27b0", "soft lilac": "#f3e5f5", "cool taupe": "#90a4ae",
                 "slate blue": "#708090", "dusty lavender": "#b39ddb", "muted teal": "#009688", "soft raspberry": "#e91e63",
+                "rose pink": "#f4a6c6", "soft periwinkle": "#c5cae9", "pale mint": "#e0f2f1", "dove gray": "#b0bec5",
                 
                 // Winter Tones
-                "pure white": "#ffffff", "black": "#0a0a0a", "icy blue": "#e3f2fd", "royal blue": "#4169e1",
-                "hot pink": "#ff69b4", "fuchsia": "#ff00ff", "true red": "#d50000", "emerald green": "#00c853",
-                "navy blue": "#1a237e", "bright purple": "#aa00ff", "cobalt": "#0091ea", "cool gray": "#78909c",
-                "silver": "#b0bec5", "raspberry": "#c2185b", "bright teal": "#00bfa5", "sapphire blue": "#0d47a1",
-                "emerald": "#00e676", "berry red": "#ad1457", "crimson": "#b71c1c", "plum": "#4a148c"
+                "pure white": "#ffffff", "snow white": "#f8f8ff", "black": "#0a0a0a", "icy blue": "#e3f2fd", "royal blue": "#4169e1",
+                "hot pink": "#ff69b4", "fuchsia": "#ff00ff", "true red": "#d50000", "emerald green": "#00c853", "emerald": "#50c878",
+                "navy blue": "#1b2a4a", "bright purple": "#aa00ff", "cobalt": "#0091ea", "cool gray": "#78909c",
+                "silver": "#c0c0c0", "raspberry": "#c2185b", "bright teal": "#00bfa5", "sapphire blue": "#0d47a1",
+                "berry red": "#ad1457", "crimson": "#b71c1c", "plum": "#8e4585", "charcoal": "#36454f"
             };
 
             colorSwatches.forEach((color, i) => {
                 const sx = 60 + (i * 135);
-                let hexFill = "#6a5acd"; // Standard default fallback
+                let hexFill = "#6a5acd"; // Secure default fallback
                 
-                // Match the clean lowercase text fragments cleanly
-                const normalizedColorName = color.toLowerCase().trim();
-                const token = Object.keys(styleColorMap).find(k => normalizedColorName.includes(k));
+                const cleanName = color.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+                
+                // Secure loose matching token search
+                const token = Object.keys(styleColorMap).find(k => 
+                    cleanName.includes(k) || k.includes(cleanName)
+                );
+                
                 if (token) hexFill = styleColorMap[token];
 
                 sCtx.fillStyle = hexFill;
@@ -1212,7 +1221,6 @@ if (shareSeasonBtn) {
             if (undertoneText === "Warm") insightTip = "Warm undertone frameworks dictate rich, organic reflections. Terracotta, golds, and mossy greens draw out your radiance.";
             sCtx.fillText(insightTip, 90, 1445);
 
-            // Universal Domain Footprint Subtext anchor
             sCtx.fillStyle = accentColor;
             sCtx.font = "bold 32px system-ui, sans-serif";
             sCtx.textAlign = "center";
@@ -1226,7 +1234,7 @@ if (shareSeasonBtn) {
             launchShareModalLayout(renderDataUrl, seasonalTypeText);
         };
 
-        // Trigger loading sequence downlinks safely
+        // Fire rendering layer trigger
         userImgObj.src = previewImage.src;
     });
 }
