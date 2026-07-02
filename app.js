@@ -960,13 +960,27 @@ function capitalise(str){return str.replace(/\b\w/g,c=>c.toUpperCase());}
 // =========================================================================
 // ── 🎨 HIGH-FIDELITY MULTI-FORMAT GENERATOR (BUGPUSH ACCURATE FIX) ──
 // =========================================================================
+// =========================================================================
+// ── 🎨 PREMIUM INFOGRAPHIC GENERATOR (ELEGANT RETINA-READY DASHBOARD) ──
+// =========================================================================
+// =========================================================================
+// ── 🎨 HIGH-FIDELITY INFOGRAPHIC REMASTER (REAL GARMENT PATHS + EXHAUSTIVE MAP) ──
+// =========================================================================
+// =========================================================================
+// ── 🎨 HIGH-FIDELITY INFOGRAPHIC REMASTER (FULLY CORRECTED PALETTE + QR) ──
+// =========================================================================
+// =========================================================================
+// ── 🎨 PREMIUM INFOGRAPHIC GENERATOR (ROCK-SOLID BULLETPROOF PROMISE ENGINE) ──
+// =========================================================================
+// =========================================================================
+// ── 🎨 PREMIUM INFOGRAPHIC GENERATOR (CLEAN DISCRETE LAYOUT - NO MEDAL/NO BARCODE) ──
+// =========================================================================
 if (shareSeasonBtn) {
-    shareSeasonBtn.addEventListener("click", () => {
+    shareSeasonBtn.addEventListener("click", async () => {
         let seasonalTypeText = seasonalTypeDiv ? seasonalTypeDiv.innerText.replace("Seasonal Type:", "").trim() : "Custom Season";
         const skinToneText = skinToneDiv ? skinToneDiv.innerText.replace("Skin Tone:", "").trim() : "Detected Tone";
         const undertoneText = undertoneDiv ? undertoneDiv.innerText.replace("Undertone:", "").trim() : "Neutral";
 
-        // Pull active calculated colors out of list elements cleanly
         const clothingColorsList = clothingColors ? Array.from(clothingColors.querySelectorAll("li:not(.recommendation-heading)")).map(li => li.innerText) : [];
         let colorSwatches = clothingColorsList.slice(0, 8);
         if (colorSwatches.length < 8) colorSwatches = ["Peach", "Coral", "Yellow", "Mint Green", "Sky Blue", "Lavender", "Light Pink", "Cream"];
@@ -975,267 +989,277 @@ if (shareSeasonBtn) {
         const sCtx = shareCanvas.getContext("2d");
         
         shareCanvas.width = 1200;
-        shareCanvas.height = 1760;
+        shareCanvas.height = 1680;
 
-        const userImgObj = new Image();
-        
-        // Everything runs inside the safety of the async onload hook
-        userImgObj.onload = function() {
-            let accentColor = "#6a5acd";
-            let bgColor = "#f8fafc";
-            let cardBg = "#ffffff";
-            let textColor = "#0f172a";
-            let mutedText = "#475569";
-
-            if (currentAnalyzedPersonType === "woman") {
-                accentColor = "#ec4899"; 
-                bgColor = "#fff5f7";
-            } else if (currentAnalyzedPersonType === "child") {
-                accentColor = "#3b82f6"; 
-                bgColor = "#f0fdf4";
-            } else {
-                accentColor = "#1e3a8a"; 
-                bgColor = "#f1f5f9";
-            }
-
-            // Base Canvas Painting
-            sCtx.fillStyle = bgColor;
-            sCtx.fillRect(0, 0, shareCanvas.width, shareCanvas.height);
-
-            // 🧠 DRAW HEADER BLOCK SYSTEM
-            sCtx.fillStyle = accentColor;
-            sCtx.font = "bold 42px system-ui, -apple-system, sans-serif";
-            sCtx.textAlign = "left";
-            sCtx.fillText("✨ AI Color Analysis", 60, 90);
-
-            sCtx.fillStyle = mutedText;
-            sCtx.font = "600 24px system-ui, -apple-system, sans-serif";
-            sCtx.fillText("Privacy-First Personalized Style Passport", 60, 130);
-
-            // Security Tag
-            sCtx.fillStyle = "rgba(16, 185, 129, 0.1)";
-            sCtx.beginPath();
-            sCtx.roundRect(860, 65, 280, 50, 12);
-            sCtx.fill();
-            sCtx.fillStyle = "#10b981";
-            sCtx.font = "bold 20px system-ui, sans-serif";
-            sCtx.fillText("🔒 On-Device Private", 890, 98);
-
-            // 🧠 DRAW USER PORTRAIT IMAGE LAYER
-            sCtx.save();
-            sCtx.beginPath();
-            sCtx.roundRect(60, 180, 420, 520, 24);
-            sCtx.clip();
-
-            let srcX = 0, srcY = 0, srcSize = userImgObj.width;
-            if (userImgObj.width > userImgObj.height) {
-                srcSize = userImgObj.height;
-                srcX = (userImgObj.width - userImgObj.height) / 2;
-            } else {
-                srcSize = userImgObj.width;
-                srcY = (userImgObj.height - userImgObj.width) / 2;
-            }
-            sCtx.drawImage(userImgObj, srcX, srcY, srcSize, srcSize, 60, 180, 420, 520);
-            sCtx.restore();
-
-            // Label tag card attachment inside image wrapper boundaries
-            sCtx.fillStyle = "rgba(15, 23, 42, 0.75)";
-            sCtx.beginPath();
-            sCtx.roundRect(85, 625, 370, 55, 12);
-            sCtx.fill();
-            sCtx.fillStyle = "#ffffff";
-            sCtx.font = "bold 22px system-ui, sans-serif";
-            sCtx.fillText(`🎨 Tone: ${skinToneText}`, 110, 660);
-
-            // 🧠 WRITE TYPOGRAPHY SEASONAL BIO INFOGRAPHICS
-            sCtx.fillStyle = accentColor;
-            sCtx.font = "bold 32px system-ui, sans-serif";
-            sCtx.fillText("YOUR SEASON", 530, 230);
-
-            sCtx.fillStyle = textColor;
-            sCtx.font = "bold 84px system-ui, -apple-system, sans-serif";
-            sCtx.fillText(seasonalTypeText, 530, 330);
-
-            sCtx.fillStyle = mutedText;
-            sCtx.font = "600 28px system-ui, sans-serif";
-            sCtx.fillText(`Profile Matrix: ${undertoneText} Undertone  •  Verified Match`, 530, 390);
-
-            sCtx.fillStyle = textColor;
-            sCtx.font = "24px system-ui, sans-serif";
-            sCtx.fillText(`Your personal coloring completely aligns with the characteristics of a ${seasonalTypeText}.`, 530, 450);
-            sCtx.fillText("Wearing these verified tones optimizes skin radiance and mitigates washing out effects.", 530, 490);
-
-            // Metric tracking blocks row layout
-            const metrics = [
-                { label: "Undertone", val: undertoneText },
-                { label: "Match Score", val: "98%" },
-                { label: "Confidence", val: "97%" }
-            ];
-            metrics.forEach((m, idx) => {
-                const mx = 530 + (idx * 210);
-                sCtx.fillStyle = cardBg;
-                sCtx.beginPath();
-                sCtx.roundRect(mx, 550, 190, 110, 16);
-                sCtx.fill();
-                sCtx.lineWidth = 1;
-                sCtx.strokeStyle = "rgba(0,0,0,0.05)";
-                sCtx.stroke();
-
-                sCtx.fillStyle = mutedText;
-                sCtx.font = "600 18px system-ui, sans-serif";
-                sCtx.fillText(m.label, mx + 25, 590);
-                sCtx.fillStyle = accentColor;
-                sCtx.font = "bold 26px system-ui, sans-serif";
-                sCtx.fillText(m.val, mx + 25, 635);
+        // Helper promise function to load the profile portrait safely
+        const loadImageAssetSafely = (srcUrl) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => {
+                    const blankCanvas = document.createElement("canvas");
+                    blankCanvas.width = 100; blankCanvas.height = 100;
+                    resolve(blankCanvas);
+                };
+                img.src = srcUrl;
             });
-
-            // 🧠 DRAW PALETTE BAR MATRIX ROW
-            sCtx.fillStyle = textColor;
-            sCtx.font = "bold 32px system-ui, sans-serif";
-            sCtx.fillText("🎨 YOUR OPTIMAL MOLECULAR COLOR PALETTE", 60, 770);
-
-            const swatchWidth = 125;
-            const swatchHeight = 90;
-            
-            // Cleaned, validated color hex dictionary mapping all dynamic text names
-            const styleColorMap = {
-                // Autumn Tones
-                "burnt orange": "#cc5500", "rust": "#b83b1d", "olive green": "#606c38", "deep teal": "#006666",
-                "mustard yell": "#e1ad01", "mustard": "#e1ad01", "warm brown": "#964b00", "terracotta": "#e2725b", 
-                "forest green": "#228b22", "camel": "#c19a6b", "dark gold": "#b8860b", "rich gold": "#daa520", "gold": "#ffd700", 
-                "bronze": "#cd7f32", "copper": "#b87333", "dark olive": "#4a4a2e", "khaki": "#c3b091", 
-                "warm burgundy": "#800020", "burgundy": "#800020", "brick red": "#b22222", "paprika red": "#e2583e", 
-                "chocolate brown": "#4a2c17", "deep chocola": "#4a2c17", "chocolate": "#4a2c17", "brown": "#7b4b27",
-                "deep turquoise": "#00ced1", "dark coral": "#cd5c5c", "amber": "#ffbf00",
-                
-                // Spring Tones
-                "peach": "#ffb09c", "coral": "#ff6b6b", "warm ivory": "#fffdd0", "golden yellow": "#ffd700", "golden yello": "#ffd700",
-                "bright turqu": "#00e5ff", "bright turquoise": "#00e5ff", "salmon pink": "#ff8d94", "light orange": "#ffa726",
-                "apple green": "#8ebd60", "soft coral": "#ff8a80", "light golden yellow": "#fff9c4", "mint green": "#a7ffeb",
-                "soft salmon": "#ffa07a", "butter yellow": "#fff59d", "light peach pink": "#ffbda4", "buttercup yellow": "#fff350",
-                
-                // Summer Tones
-                "dusty rose": "#dcae96", "soft lavende": "#e1bee7", "soft lavender": "#e1bee7", "powder blue": "#b0e0e6",
-                "warm taupe": "#b38f8f", "soft sage": "#b2dfdb", "muted mauve": "#ce93d8", "nude blush": "#f8bbd0",
-                "soft teal": "#80cbc4", "soft gray": "#b0bec5", "blush": "#f4a6c6", "light navy": "#1a237e",
-                "cool white": "#f8fafc", "muted plum": "#9c27b0", "soft lilac": "#f3e5f5", "cool taupe": "#90a4ae",
-                "slate blue": "#708090", "dusty lavender": "#b39ddb", "muted teal": "#009688", "soft raspberry": "#e91e63",
-                "rose pink": "#f4a6c6", "soft periwinkle": "#c5cae9", "pale mint": "#e0f2f1", "dove gray": "#b0bec5",
-                
-                // Winter Tones
-                "pure white": "#ffffff", "snow white": "#f8f8ff", "black": "#0a0a0a", "icy blue": "#e3f2fd", "royal blue": "#4169e1",
-                "hot pink": "#ff69b4", "fuchsia": "#ff00ff", "true red": "#d50000", "emerald green": "#00c853", "emerald": "#50c878",
-                "navy blue": "#1b2a4a", "bright purple": "#aa00ff", "cobalt": "#0091ea", "cool gray": "#78909c",
-                "silver": "#c0c0c0", "raspberry": "#c2185b", "bright teal": "#00bfa5", "sapphire blue": "#0d47a1",
-                "berry red": "#ad1457", "crimson": "#b71c1c", "plum": "#8e4585", "charcoal": "#36454f"
-            };
-
-            colorSwatches.forEach((color, i) => {
-                const sx = 60 + (i * 135);
-                let hexFill = "#6a5acd"; // Secure default fallback
-                
-                const cleanName = color.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-                
-                // Secure loose matching token search
-                const token = Object.keys(styleColorMap).find(k => 
-                    cleanName.includes(k) || k.includes(cleanName)
-                );
-                
-                if (token) hexFill = styleColorMap[token];
-
-                sCtx.fillStyle = hexFill;
-                sCtx.beginPath();
-                sCtx.roundRect(sx, 810, swatchWidth, swatchHeight, 12);
-                sCtx.fill();
-                sCtx.lineWidth = 2;
-                sCtx.strokeStyle = "rgba(0,0,0,0.1)";
-                sCtx.stroke();
-
-                sCtx.fillStyle = textColor;
-                sCtx.font = "bold 16px system-ui, sans-serif";
-                sCtx.fillText(color.substring(0, 12), sx + 4, 930);
-            });
-
-            // 🧠 RENDER DYNAMIC CARD SLOTS ROW
-            sCtx.fillStyle = textColor;
-            sCtx.font = "bold 32px system-ui, sans-serif";
-            sCtx.fillText("👔 CHROMATIC WARDROBE RECOMMENDATION MAPS", 60, 1010);
-
-            let rowItems = [];
-            if (currentAnalyzedPersonType === "woman") {
-                rowItems = [
-                    { title: "Clothing", desc: "Peach Blouse", icon: "👚" },
-                    { title: "Hair Tone", desc: "Natural Brown", icon: "💇" },
-                    { title: "Cosmetics", desc: "Coral Lipstick", icon: "💄" },
-                    { title: "Jewelry", desc: "Yellow Gold", icon: "💍" }
-                ];
-            } else if (currentAnalyzedPersonType === "child") {
-                rowItems = [
-                    { title: "Everyday Wear", desc: "Striped T-Shirt", icon: "👕" },
-                    { title: "Outerwear", desc: "Mint Hoodie", icon: "🧥" },
-                    { title: "Gear", desc: "School Backpack", icon: "🎒" },
-                    { title: "Accessory", desc: "Colorful Watch", icon: "⌚" }
-                ];
-            } else {
-                rowItems = [
-                    { title: "Shirts", desc: "Navy Oxford", icon: "👔" },
-                    { title: "Outerwear", desc: "Charcoal Coat", icon: "🧥" },
-                    { title: "Accessories", desc: "Silver Watch", icon: "⌚" },
-                    { title: "Footwear", desc: "White Sneakers", icon: "👟" }
-                ];
-            }
-
-            rowItems.forEach((item, idx) => {
-                const ix = 60 + (idx * 275);
-                sCtx.fillStyle = cardBg;
-                sCtx.beginPath();
-                sCtx.roundRect(ix, 1050, 255, 230, 20);
-                sCtx.fill();
-                
-                sCtx.fillStyle = mutedText;
-                sCtx.font = "bold 18px system-ui, sans-serif";
-                sCtx.fillText(item.title, ix + 25, 1095);
-
-                sCtx.fillStyle = textColor;
-                sCtx.font = "24px system-ui, sans-serif";
-                sCtx.fillText(item.icon, ix + 25, 1160);
-
-                sCtx.fillStyle = accentColor;
-                sCtx.font = "bold 20px system-ui, sans-serif";
-                sCtx.fillText(item.desc, ix + 25, 1230);
-            });
-
-            // 🧠 INSIGHTS AND BRAND FOOTER MATRIX
-            sCtx.fillStyle = cardBg;
-            sCtx.beginPath();
-            sCtx.roundRect(60, 1340, 1080, 160, 20);
-            sCtx.fill();
-
-            sCtx.fillStyle = accentColor;
-            sCtx.font = "bold 22px system-ui, sans-serif";
-            sCtx.fillText("💡 EXPERT METRIC ANALYSIS RULE", 90, 1395);
-
-            sCtx.fillStyle = textColor;
-            sCtx.font = "20px system-ui, sans-serif";
-            let insightTip = "Your cool depth parameters indicate high luxury contrasts. Stick to stark whites and clear jewel tones.";
-            if (undertoneText === "Warm") insightTip = "Warm undertone frameworks dictate rich, organic reflections. Terracotta, golds, and mossy greens draw out your radiance.";
-            sCtx.fillText(insightTip, 90, 1445);
-
-            sCtx.fillStyle = accentColor;
-            sCtx.font = "bold 32px system-ui, sans-serif";
-            sCtx.textAlign = "center";
-            sCtx.fillText("aicoloranalysis.online", shareCanvas.width / 2, 1620);
-
-            sCtx.fillStyle = mutedText;
-            sCtx.font = "600 20px system-ui, sans-serif";
-            sCtx.fillText("Automated Local Client Vision Engine Pass • 100% Temporary Storage Secure", shareCanvas.width / 2, 1665);
-
-            const renderDataUrl = shareCanvas.toDataURL("image/png");
-            launchShareModalLayout(renderDataUrl, seasonalTypeText);
         };
 
-        // Fire rendering layer trigger
-        userImgObj.src = previewImage.src;
+        // Load only the portrait photo asset
+        const userImgObj = await loadImageAssetSafely(previewImage.src);
+
+        let accentColor = "#8a4f2a"; 
+        let accentBg = "#8a4f2a";
+        let bgColor = "#fffbf7"; 
+        let cardBg = "#ffffff";
+        let textColor = "#1a110e"; 
+        let mutedText = "#665955";
+        let leafEmoji = "🍂";
+
+        if (seasonalTypeText.toLowerCase().includes("summer")) {
+            accentColor = "#b35c87"; accentBg = "#b35c87"; bgColor = "#fbf7f9"; leafEmoji = "🌸";
+        } else if (seasonalTypeText.toLowerCase().includes("winter")) {
+            accentColor = "#1a365d"; accentBg = "#1a365d"; bgColor = "#f7fafc"; leafEmoji = "❄️";
+        } else if (seasonalTypeText.toLowerCase().includes("spring")) {
+            accentColor = "#6a5acd"; accentBg = "#6a5acd"; bgColor = "#fdfbf7"; leafEmoji = "✨";
+        }
+
+        // 1. Paint Base Background
+        sCtx.fillStyle = bgColor;
+        sCtx.fillRect(0, 0, shareCanvas.width, shareCanvas.height);
+
+        // Circular Decorative Background Watermarks
+        sCtx.strokeStyle = "rgba(138, 79, 42, 0.025)";
+        sCtx.lineWidth = 4;
+        sCtx.beginPath(); sCtx.arc(1100, 450, 220, 0, Math.PI * 2); sCtx.stroke();
+        sCtx.beginPath(); sCtx.arc(1100, 450, 160, 0, Math.PI * 2); sCtx.stroke();
+
+        // Top Header Text
+        sCtx.fillStyle = textColor;
+        sCtx.font = "bold 38px system-ui, -apple-system, sans-serif";
+        sCtx.textAlign = "left";
+        sCtx.fillText("AI Color Analysis", 125, 95);
+
+        sCtx.fillStyle = mutedText;
+        sCtx.font = "500 18px system-ui, sans-serif";
+        sCtx.fillText("Privacy-First Personalized Style Passport", 125, 125);
+
+        // Profile Avatar Vector Icon Ring
+        sCtx.strokeStyle = accentColor;
+        sCtx.lineWidth = 3;
+        sCtx.beginPath(); sCtx.arc(80, 100, 24, 0, Math.PI * 2); sCtx.stroke();
+        sCtx.fillStyle = accentColor;
+        sCtx.font = "22px system-ui"; sCtx.fillText("👤", 68, 108);
+
+        // On-Device Secure Badge Pill
+        sCtx.fillStyle = "#f0fdf4";
+        sCtx.beginPath(); sCtx.roundRect(820, 55, 320, 75, 12); sCtx.fill();
+        sCtx.lineWidth = 1; sCtx.strokeStyle = "#bbf7d0"; sCtx.stroke();
+        sCtx.fillStyle = "#166534";
+        sCtx.font = "bold 16px system-ui, sans-serif";
+        sCtx.fillText("🔒 On-Device Private", 850, 85);
+        sCtx.fillStyle = "#665955";
+        sCtx.font = "500 14px system-ui, sans-serif";
+        sCtx.fillText("No Photos Stored • 100% Secure", 850, 112);
+
+        // 2. Render User Portrait Photo
+        sCtx.save();
+        sCtx.beginPath(); sCtx.roundRect(60, 210, 440, 520, 24); sCtx.clip();
+        let srcX = 0, srcY = 0, srcSize = userImgObj.width;
+        if (userImgObj.width > userImgObj.height) {
+            srcSize = userImgObj.height; srcX = (userImgObj.width - userImgObj.height) / 2;
+        } else {
+            srcSize = userImgObj.width; srcY = (userImgObj.height - userImgObj.width) / 2;
+        }
+        sCtx.drawImage(userImgObj, srcX, srcY, srcSize, srcSize, 60, 210, 440, 520);
+        sCtx.restore();
+
+        // Photo floating tag label pill
+        sCtx.fillStyle = "rgba(26, 17, 14, 0.82)";
+        sCtx.beginPath(); sCtx.roundRect(85, 650, 390, 55, 14); sCtx.fill();
+        sCtx.fillStyle = "#ffffff";
+        sCtx.font = "bold 20px system-ui, sans-serif";
+        sCtx.fillText(`🎨 Skin Tone: ${skinToneText}`, 115, 684);
+
+        // 3. Right Side Profile Metadata Column
+        sCtx.fillStyle = accentBg;
+        sCtx.beginPath(); sCtx.roundRect(550, 210, 220, 46, 10); sCtx.fill();
+        sCtx.fillStyle = "#ffffff";
+        sCtx.font = "bold 16px system-ui, sans-serif";
+        sCtx.fillText(`${leafEmoji} YOUR SEASON`, 575, 239);
+
+        sCtx.fillStyle = textColor;
+        sCtx.font = "bold 82px Georgia, serif";
+        sCtx.fillText(seasonalTypeText, 550, 345);
+
+        sCtx.fillStyle = textColor;
+        sCtx.font = "600 24px system-ui, sans-serif";
+        sCtx.fillText(`${undertoneText}  •  Muted  •  Deep  •  Earthy`, 550, 400);
+
+        sCtx.fillStyle = mutedText;
+        sCtx.font = "20px Georgia, serif";
+        sCtx.fillText("Your personal coloring completely aligns with the", 550, 455);
+        sCtx.fillText(`characteristics of the ${seasonalTypeText} profile.`, 550, 490);
+        sCtx.fillText("Wearing these verified tones optimizes your skin", 550, 525);
+        sCtx.fillText("radiance and brings natural harmony.", 550, 560);
+
+        // 💡 Note: Medal / Rosette ribbon block has been completely removed from this area
+
+        // Metric Box Row Panels
+        const stats = [
+            { title: "Undertone", value: undertoneText, icon: "☀️" },
+            { title: "Match Score", value: "98%", icon: "🎯" },
+            { title: "Confidence", value: "97%", icon: "🛡️" }
+        ];
+        stats.forEach((s, idx) => {
+            const sx = 550 + (idx * 200);
+            sCtx.fillStyle = cardBg;
+            sCtx.beginPath(); sCtx.roundRect(sx, 595, 185, 135, 18); sCtx.fill();
+            sCtx.lineWidth = 1; sCtx.strokeStyle = "rgba(138, 79, 42, 0.08)"; sCtx.stroke();
+            sCtx.fillStyle = mutedText; sCtx.font = "14px system-ui, sans-serif"; sCtx.fillText(`${s.icon} ${s.title}`, sx + 22, 635);
+            sCtx.fillStyle = "#8a4f2a"; sCtx.font = "bold 28px Arial, sans-serif"; sCtx.fillText(s.value, sx + 22, 690);
+        });
+
+        // 4. Molecular Color Palette Row
+        sCtx.fillStyle = textColor;
+        sCtx.font = "bold 28px system-ui, sans-serif";
+        sCtx.fillText("🎨 YOUR OPTIMAL MOLECULAR COLOR PALETTE ✨", 60, 805);
+
+        const swatchW = 125, swatchH = 90;
+
+        colorSwatches.forEach((color, i) => {
+            const swX = 60 + (i * 136);
+            const hexVal = resolveColorHex(color);
+            const hexStr = hexVal.toUpperCase();
+
+            sCtx.fillStyle = hexVal;
+            sCtx.beginPath(); sCtx.roundRect(swX, 845, swatchW, swatchH, 14); sCtx.fill();
+            sCtx.lineWidth = 1; sCtx.strokeStyle = "rgba(0,0,0,0.06)"; sCtx.stroke();
+
+            sCtx.fillStyle = textColor;
+            sCtx.font = "bold 15px system-ui, sans-serif";
+            sCtx.fillText(color.substring(0, 12), swX + 2, 965);
+            sCtx.fillStyle = mutedText;
+            sCtx.font = "500 13px Courier, monospace";
+            sCtx.fillText(hexStr, swX + 4, 987);
+        });
+
+        // 5. Chromatic Wardrobe Recommendation Maps (Real Fashion Vectors)
+        sCtx.fillStyle = textColor;
+        sCtx.font = "bold 28px system-ui, sans-serif";
+        sCtx.fillText("👕 CHROMATIC WARDROBE RECOMMENDATION MAPS ✨", 60, 1060);
+
+        // Pull the real personalized palette computed for this user (stashed
+        // globally by unlockDressChecker() right after analysis — same object
+        // getClothingPalette() returns) instead of hardcoding garment colors.
+        const userPaletteForWardrobe = window._userPalette || {};
+        const wardrobeBest = (userPaletteForWardrobe.best && userPaletteForWardrobe.best.length >= 6) ? userPaletteForWardrobe.best : colorSwatches;
+        const wardrobeNeutrals = (userPaletteForWardrobe.neutrals && userPaletteForWardrobe.neutrals.length >= 5) ? userPaletteForWardrobe.neutrals : wardrobeBest;
+
+        const resolveWardrobeColorHex = resolveColorHex;
+
+        let rowItems = [
+            { title: "Shirts", desc: `${wardrobeBest[0] || "Best Shade"} Oxford`, type: "shirt", colors: [wardrobeBest[0], wardrobeBest[1], wardrobeBest[2]].map(resolveWardrobeColorHex) },
+            { title: "Outerwear", desc: `${wardrobeBest[3] || "Best Shade"} Coat`, type: "coat", colors: [wardrobeBest[3], wardrobeBest[4], wardrobeBest[5]].map(resolveWardrobeColorHex) },
+            { title: "Accessories", desc: `${wardrobeNeutrals[0] || "Neutral Shade"} Watch`, type: "watch", colors: [wardrobeNeutrals[0], wardrobeNeutrals[1], wardrobeNeutrals[2]].map(resolveWardrobeColorHex) },
+            { title: "Footwear", desc: `${wardrobeNeutrals[2] || "Neutral Shade"} Sneakers`, type: "shoes", colors: [wardrobeNeutrals[2], wardrobeNeutrals[3], wardrobeNeutrals[4]].map(resolveWardrobeColorHex) }
+        ];
+
+        rowItems.forEach((item, idx) => {
+            const ix = 60 + (idx * 276);
+            sCtx.fillStyle = cardBg;
+            sCtx.beginPath(); sCtx.roundRect(ix, 1100, 260, 235, 20); sCtx.fill();
+            sCtx.lineWidth = 1; sCtx.strokeStyle = "rgba(0,0,0,0.04)"; sCtx.stroke();
+            
+            sCtx.fillStyle = mutedText;
+            sCtx.font = "bold 16px system-ui, sans-serif";
+            sCtx.fillText(item.title, ix + 22, 1140);
+
+            item.colors.forEach((cHex, cIdx) => {
+                const cx = ix + 26 + (cIdx * 70);
+                const cy = 1175;
+                
+                sCtx.save();
+                sCtx.fillStyle = cHex;
+                sCtx.strokeStyle = "rgba(0,0,0,0.15)";
+                sCtx.lineWidth = 1.5;
+
+                if (item.type === "shirt") {
+                    sCtx.beginPath();
+                    sCtx.moveTo(cx + 10, cy + 5); sCtx.lineTo(cx + 40, cy + 5);
+                    sCtx.lineTo(cx + 46, cy + 20); sCtx.lineTo(cx + 38, cy + 24);
+                    sCtx.lineTo(cx + 38, cy + 60); sCtx.lineTo(cx + 12, cy + 60);
+                    sCtx.lineTo(cx + 12, cy + 24); sCtx.lineTo(cx + 4, cy + 20);
+                    sCtx.closePath(); sCtx.fill(); sCtx.stroke();
+                    sCtx.beginPath(); sCtx.moveTo(cx+25, cy+14); sCtx.lineTo(cx+25, cy+60); sCtx.stroke();
+                } 
+                else if (item.type === "coat") {
+                    sCtx.beginPath();
+                    sCtx.moveTo(cx + 8, cy + 2); sCtx.lineTo(cx + 42, cy + 2);
+                    sCtx.lineTo(cx + 48, cy + 62); sCtx.lineTo(cx + 2, cy + 62);
+                    sCtx.closePath(); sCtx.fill(); sCtx.stroke();
+                    sCtx.fillStyle = "rgba(0,0,0,0.1)";
+                    sCtx.beginPath();
+                    sCtx.moveTo(cx+25, cy+22); sCtx.lineTo(cx+8, cy+2); sCtx.lineTo(cx+42, cy+2);
+                    sCtx.closePath(); sCtx.fill(); sCtx.stroke();
+                } 
+                else if (item.type === "watch") {
+                    sCtx.fillStyle = "#8b5a2b"; 
+                    sCtx.fillRect(cx + 18, cy, 14, 64);
+                    sCtx.strokeRect(cx + 18, cy, 14, 64);
+                    sCtx.fillStyle = cHex;
+                    sCtx.beginPath(); sCtx.arc(cx + 25, cy + 32, 20, 0, Math.PI * 2); sCtx.fill(); sCtx.stroke();
+                    sCtx.fillStyle = "#ffffff";
+                    sCtx.beginPath(); sCtx.arc(cx + 25, cy + 32, 14, 0, Math.PI * 2); sCtx.fill();
+                } 
+                else if (item.type === "shoes") {
+                    sCtx.beginPath();
+                    sCtx.moveTo(cx + 4, cy + 45); sCtx.lineTo(cx + 14, cy + 20);
+                    sCtx.lineTo(cx + 30, cy + 22); sCtx.lineTo(cx + 48, cy + 46);
+                    sCtx.lineTo(cx + 48, cy + 56); sCtx.lineTo(cx + 4, cy + 56);
+                    sCtx.closePath(); sCtx.fill(); sCtx.stroke();
+                    sCtx.fillStyle = "#ffffff";
+                    sCtx.fillRect(cx + 4, cy + 50, 44, 6); sCtx.strokeRect(cx + 4, cy + 50, 44, 6);
+                }
+                sCtx.restore();
+            });
+
+            sCtx.fillStyle = "#8a4f2a";
+            sCtx.font = "bold 18px system-ui, sans-serif";
+            sCtx.fillText(item.desc, ix + 22, 1298);
+        });
+
+        // 6. Style Advice Bottom Section
+        sCtx.fillStyle = "#fffcf7"; 
+        sCtx.beginPath(); sCtx.roundRect(60, 1375, 1080, 130, 18); sCtx.fill();
+        sCtx.lineWidth = 1; sCtx.strokeStyle = "rgba(138, 79, 42, 0.12)"; sCtx.stroke();
+
+        sCtx.fillStyle = "#dfa12b";
+        sCtx.font = "32px system-ui"; sCtx.fillText("💡", 90, 1448);
+
+        sCtx.fillStyle = textColor;
+        sCtx.font = "bold 20px system-ui, sans-serif";
+        sCtx.fillText("AI STYLE ADVICE", 145, 1425);
+        sCtx.fillStyle = mutedText;
+        sCtx.font = "17px Georgia, serif";
+        let advice = "Earthy tones, textured fabrics and warm metals will make your complexion look healthier and more vibrant.";
+        if (undertoneText === "Cool") advice = "Sharp high contrast parameters dictate jewel selections. Stick to stark crisp whites and cold metal links.";
+        sCtx.fillText(advice, 145, 1465);
+
+        // 💡 Note: Barcode image layout drawing engine is completely removed here
+
+        // 7. Footer Branding Labels
+        sCtx.fillStyle = "#8a4f2a";
+        sCtx.font = "bold 26px system-ui, sans-serif";
+        sCtx.textAlign = "center";
+        sCtx.fillText("Discover Your Perfect Colors with AI • aicoloranalysis.online", shareCanvas.width / 2, 1565);
+
+        sCtx.fillStyle = mutedText;
+        sCtx.font = "600 15px system-ui, sans-serif";
+        sCtx.fillText("🛡️ Privacy Guaranteed: On-Device Processing Completed Locally. No Photos Stored.", shareCanvas.width / 2, 1608);
+
+        const renderDataUrl = shareCanvas.toDataURL("image/png");
+        launchShareModalLayout(renderDataUrl, seasonalTypeText);
     });
 }
 
@@ -1300,6 +1324,82 @@ function getJewelryPalette(undertone,skinToneCategory){
     if(undertone==="Warm")return{best:["Yellow Gold","Rose Gold","Bronze","Copper","Brass"],gems:["Amber","Citrine","Topaz","Carnelian","Coral","Peridot","Turquoise","Tiger's Eye"],secondary:["Mixed Metal (Gold-dominant)","Warm Enamel","Wood & Natural Materials"],avoid:["Silver","White Gold","Platinum","Cool Blue Sapphire","Blue Aquamarine"]};
     if(undertone==="Cool")return{best:["Silver","White Gold","Platinum","Palladium"],gems:["Diamond","Sapphire","Amethyst","Blue Topaz","Aquamarine","Ruby","Tanzanite","Pearl"],secondary:["Rose Gold (silver-toned)","Hematite","Gunmetal"],avoid:["Yellow Gold","Copper","Bronze","Brass","Warm Coral Stone"]};
     return{best:["Yellow Gold","Silver","Rose Gold — all work equally well"],gems:["Diamond","Opal","Pearl","Morganite","Jade","Moonstone","Garnet","Subtle Quartz"],secondary:["Mixed Metals","Two-tone Jewelry","Layered Gold & Silver"],avoid:["Very Neon Enamel","Overly Bright Plastic Jewelry"]};
+}
+
+// ── Palette-name → hex resolver ──
+// The clothing/hair/jewelry palette generators produce ~200 distinct
+// descriptive colour-name strings (e.g. "Dusty Rose", "Warm White", "Soft
+// Gray", "Dove"). A small hand-maintained name→hex map (like the old
+// styleColorMap) inevitably misses most of them and silently falls back to
+// one flat colour for everything unmatched — which is exactly why "Warm
+// White", "Cool Beige", "Soft Gray" and "Dove" were all rendering as the
+// same brown. This resolver instead looks up the base hue from the last
+// word in the name (usually the actual colour noun, e.g. "Dusty Rose" →
+// "rose"), then nudges lightness/saturation/hue based on any recognised
+// modifier words in the rest of the name (e.g. "Dusty" → desaturate +
+// lighten slightly, "Deep" → darken). This covers the full ~200-name
+// vocabulary instead of just the handful someone thought to hardcode.
+function hslToRgb(h, s, l) {
+    h = ((h % 360) + 360) % 360; s /= 100; l /= 100;
+    const c = (1 - Math.abs(2*l - 1)) * s;
+    const x = c * (1 - Math.abs((h/60) % 2 - 1));
+    const m = l - c/2;
+    let r=0,g=0,b=0;
+    if (h<60)      { r=c; g=x; b=0; }
+    else if (h<120){ r=x; g=c; b=0; }
+    else if (h<180){ r=0; g=c; b=x; }
+    else if (h<240){ r=0; g=x; b=c; }
+    else if (h<300){ r=x; g=0; b=c; }
+    else           { r=c; g=0; b=x; }
+    return { r: Math.round((r+m)*255), g: Math.round((g+m)*255), b: Math.round((b+m)*255) };
+}
+
+const BASE_HUE_HEX = {
+    red:"#E53E3E", orange:"#F97316", yellow:"#FBBF24", lemon:"#FFF44F", gold:"#D4AF37",
+    green:"#22C55E", olive:"#6B8E23", sage:"#9CAF88", mint:"#98FF98", emerald:"#50C878", jade:"#00A86B", lime:"#84CC16",
+    teal:"#14B8A6", turquoise:"#2DD4BF", aqua:"#22D3EE",
+    blue:"#3B82F6", navy:"#1E3A5F", cobalt:"#0047AB", sapphire:"#0F52BA", periwinkle:"#8891D8", slate:"#64748B",
+    purple:"#8B5CF6", lavender:"#B497BD", lilac:"#C8A2C8", plum:"#8E4585", orchid:"#C77DC0", grape:"#6F2DA8", mauve:"#B784A7",
+    pink:"#EC4899", rose:"#F472B6", blush:"#F9C6D0", fuchsia:"#E4599A", magenta:"#D6249F", raspberry:"#B3446C", berry:"#8B0A50", crimson:"#DC143C",
+    coral:"#FF6B6B", salmon:"#FF8B7E", peach:"#FFB09C", terracotta:"#CC6B49", rust:"#B7410E", paprika:"#C1440E", amber:"#FFBF00", mustard:"#E1AD01", mango:"#FFA400",
+    brown:"#8B5A2B", chocolate:"#5A3A22", espresso:"#4B3621", camel:"#C19A6B", khaki:"#C3B091", tan:"#D2B48C", taupe:"#8B7D6B", copper:"#B87333", bronze:"#CD7F32",
+    burgundy:"#800020", maroon:"#800000",
+    cream:"#FFFDD0", ivory:"#FFFFF0", beige:"#E8D9B5", sand:"#E4CBA5", nude:"#E3BC9A", champagne:"#F7E7CE",
+    gray:"#9CA3AF", grey:"#9CA3AF", charcoal:"#36454F", pewter:"#96A0A6", dove:"#D6D6D6", silver:"#C0C0C0",
+    black:"#1A1A1A", white:"#FDFDFD"
+};
+
+const COLOR_MODIFIER_ADJUST = {
+    dark:{l:-16}, deep:{l:-18}, rich:{l:-10,s:8}, true:{s:10},
+    light:{l:16}, pale:{l:22,s:-12}, soft:{l:10,s:-16}, muted:{l:4,s:-22}, dusty:{l:6,s:-22},
+    bright:{s:20,l:2}, electric:{s:28}, stark:{s:15,l:6}, pure:{s:10}, vivid:{s:25}, neon:{s:30,l:5},
+    warm:{h:6}, cool:{h:-6}, icy:{l:20,s:-20}, powder:{l:22,s:-18}, harsh:{s:10,l:-5}
+};
+
+function resolveColorHex(name) {
+    if (!name) return "#9CA3AF";
+    const words = name.toLowerCase().split(/\s+/);
+
+    let baseHex = null;
+    for (let i = words.length - 1; i >= 0; i--) {
+        if (BASE_HUE_HEX[words[i]]) { baseHex = BASE_HUE_HEX[words[i]]; break; }
+    }
+    if (!baseHex) return "#9CA3AF"; // unrecognised name — neutral gray fallback
+
+    const rgb = hexToRgbTriplet(baseHex);
+    let { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+    words.forEach(w => {
+        const adj = COLOR_MODIFIER_ADJUST[w];
+        if (adj) {
+            if (adj.h) h += adj.h;
+            if (adj.s) s = Math.max(0, Math.min(100, s + adj.s));
+            if (adj.l) l = Math.max(14, Math.min(96, l + adj.l));
+        }
+    });
+
+    const out = hslToRgb(h, s, l);
+    return rgbToHex(out.r, out.g, out.b);
 }
 
 function rgbToHex(r,g,b){return"#"+[r,g,b].map(x=>{const h=x.toString(16);return h.length===1?"0"+h:h;}).join("");}
