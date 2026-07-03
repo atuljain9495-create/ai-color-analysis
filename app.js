@@ -690,20 +690,20 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
     img.src=imageSrc;
 }
 
-function getSeasonalType(undertone,skinToneCategory,contrastLevel){
-    if(undertone==="Warm"){
-        if(skinToneCategory==="light")  return contrastLevel==="high"?"Warm Spring":"Light Spring";
-        if(skinToneCategory==="medium") return contrastLevel==="high"?"True Autumn":"Soft Autumn";
-        if(skinToneCategory==="deep")   return "Deep Autumn";
+function getSeasonalType(undertone, skinToneCategory, contrastLevel) {
+    if (undertone === "Warm") {
+        if (skinToneCategory === "light")  return contrastLevel === "high" ? "Warm Spring (Vibrant & Golden Profile)" : "Light Spring (Clear & Delicate Profile)";
+        if (skinToneCategory === "medium") return contrastLevel === "high" ? "True Autumn (Rich & Warm Profile)" : "Soft Autumn (Muted & Earthy Profile)";
+        if (skinToneCategory === "deep")   return "Deep Autumn (Low-Light & Warm Profile)";
     }
-    if(undertone==="Cool"){
-        if(skinToneCategory==="light")  return contrastLevel==="high"?"Bright Winter":"Light Summer";
-        if(skinToneCategory==="medium") return contrastLevel==="high"?"True Winter":"Soft Summer";
-        if(skinToneCategory==="deep")   return "Deep Winter";
+    if (undertone === "Cool") {
+        if (skinToneCategory === "light")  return contrastLevel === "high" ? "Bright Winter (High-Contrast & Vivid Profile)" : "Light Summer (Cool & Delicate Profile)";
+        if (skinToneCategory === "medium") return contrastLevel === "high" ? "True Winter (Stark & Crisp Profile)" : "Soft Summer (Muted & Cool Profile)";
+        if (skinToneCategory === "deep")   return "Deep Winter (Low-Light & Crisp Profile)";
     }
-    if(skinToneCategory==="light")  return "Soft Summer";
-    if(skinToneCategory==="deep")   return "Deep Autumn";
-    return "True Neutral";
+    if (skinToneCategory === "light")  return "Soft Summer (Muted & Delicate Profile)";
+    if (skinToneCategory === "deep")   return "Deep Autumn (Low-Light & Earthy Profile)";
+    return "True Neutral Balanced Profile";
 }
 
 function generateRecommendations(undertone,skinToneCategory,contrastLevel){
@@ -2060,25 +2060,50 @@ window.openDressCheckerCamera = async function() {
 
 window.closeDressCheckerCamera = function() {
     const dVideo = document.getElementById("dressVideo");
+    const dPreviewBox = document.getElementById("dressPreviewBox");
+    const dPreviewImg = document.getElementById("dressPreviewImg");
     const dPlaceholder = document.getElementById("dressPlaceholderText");
     const dOpenBtn = document.getElementById("dressCameraOpenBtn");
     const dFlipBtn = document.getElementById("dressCameraFlipBtn");
     const dCaptureBtn = document.getElementById("dressCaptureBtn");
+    const dCheckBtn = document.getElementById("dressCheckBtn");
+    const dResult = document.getElementById("dressResult");
 
+    // 1. Turn off live camera stream channels safely
     if (dressStreamInstance) {
         dressStreamInstance.getTracks().forEach(t => t.stop());
         dressStreamInstance = null;
     }
 
     if (dVideo) dVideo.style.display = "none";
+    
+    // 2. Clear out old memory tracking references completely
+    dressImageData = null;
+    if (dPreviewImg) dPreviewImg.src = "";
+    
+    // 3. Hide the preview box and hide the active "Check This Color" action button
+    if (dPreviewBox) dPreviewBox.style.display = "none";
+    if (dCheckBtn) dCheckBtn.style.display = "none";
+    
+    // 4. Reset the right-side dashboard card to its default waiting message state
+    if (dResult) {
+        dResult.innerHTML = `
+            <div style="border: 1px dashed #2e3b85; background: rgba(30, 41, 93, 0.15); border-radius: 12px; padding: 30px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 240px; box-sizing: border-box;">
+                <span style="font-size: 2.2rem; margin-bottom: 8px; opacity: 0.4;">📊</span>
+                <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 500; line-height: 1.4;">Awaiting item data submission.<br>Tap "Check This Color" to view matches.</span>
+            </div>
+        `;
+    }
+    
+    // 5. Safely restore the primary "Media monitor inactive" placeholder backdrop view
     if (dPlaceholder) dPlaceholder.style.display = "block";
     
+    // 6. Reset button tags cleanly back to original states
     dOpenBtn.textContent = "📷 Open Camera";
     dOpenBtn.onclick = window.openDressCheckerCamera;
     dFlipBtn.style.display = "none";
     dCaptureBtn.style.display = "none";
 };
-
 window.toggleDressCheckerCameraLens = function() {
     // Cycles smoothly between front (user) and rear (environment) device sensors
     currentDressFacingMode = (currentDressFacingMode === "environment") ? "user" : "environment";

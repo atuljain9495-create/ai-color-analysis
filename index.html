@@ -746,6 +746,55 @@
             }
         }
 
+        /* 💻 Shrinks the "How It Works" step cards on laptop/PC screens.
+           Scoped to .how-it-works-grid / .how-it-works-step only —
+           completely separate from #dressCheckerSection, so the
+           "Test a Product" card is untouched. */
+       /* ── 💻 WIDE DESKTOP CONSOLE MATRIX (COMBINED VISUAL CALIBRATION) ── */
+        /* ── 💻 WIDE DESKTOP CONSOLE MATRIX (COMBINED VISUAL CALIBRATION) ── */
+        @media (min-width: 901px) {
+            /* 1️⃣ Keeps the 'How It Works' carousel small, tight, and compact */
+            .how-it-works-grid {
+                max-width: 1000px !important;
+                margin: 0 auto !important;
+                gap: 16px !important;
+            }
+            .how-it-works-step {
+                padding: 14px !important;
+                border-radius: 12px !important;
+            }
+            .how-it-works-step-media {
+                margin-bottom: 10px !important;
+            }
+            /* 🧠 Calibrated to a balanced mid-tier scale */
+            .how-it-works-step h4 {
+                font-size: 1.02rem !important;
+                margin-bottom: 5px !important;
+            }
+            /* 🧠 Calibrated to a balanced mid-tier scale */
+            .how-it-works-step p {
+                font-size: 0.82rem !important;
+                line-height: 1.42 !important;
+            }
+            .how-it-works-step-number {
+                width: 26px !important;
+                height: 26px !important;
+                font-size: 0.8rem !important;
+            }
+
+            /* 2️⃣ Expands the 'Test a Product' dashboard by 30% for a roomy layout */
+            #dressCheckerSection {
+                zoom: 1 !important; 
+                max-width: 1340px !important; 
+                width: 95% !important;
+                margin: 30px auto 0 auto;
+            }
+            .blueprint-sandbox-grid {
+                grid-template-columns: 52% 48% !important; 
+                gap: 28px !important; 
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -769,63 +818,57 @@
 
 <section class="hero">
     <h2>Find Your Perfect Color Palette in 10 Seconds</h2>
-    <p>AI analyzes your skin tone and recommends clothes, makeup, jewelry, and hair colors that actually suit you.</p>
+    <p>Advanced Face-Mapping Tonal Analytics Engine. Distills underlying biological undertones locally on your device with native 12-season metric depth.</p>
 </section>
 
 <section class="how-it-works-section" aria-label="How AI Color Analysis works">
-    <div class="how-it-works-header">
-        <h2>✨ How It Works</h2>
-        <p>4 simple steps to your personalized color palette</p>
-    </div>
-    <p class="how-it-works-swipe-hint">← Swipe to see all steps →</p>
     <div class="how-it-works-grid">
 
-        <div class="how-it-works-step">
-            <div class="how-it-works-step-media">
-                <span class="how-it-works-step-number">1</span>
-                <img src="images/selfie.webp" alt="Step 1: your uploaded photo" loading="lazy">
-            </div>
-            <h4>📸 Your Photo</h4>
-            <p>We analyze your natural coloring, right in your browser.</p>
+    <div class="how-it-works-step">
+        <div class="how-it-works-step-media">
+            <span class="how-it-works-step-number">1</span>
+            <img src="images/selfie.webp" alt="Step 1: your uploaded photo" loading="lazy">
         </div>
-
-        <div class="how-it-works-step">
-            <div class="how-it-works-step-media">
-                <span class="how-it-works-step-number">2</span>
-                <img src="images/card.webp" alt="Step 2: your color passport card" loading="lazy">
-            </div>
-            <h4>🎨 Your Color Passport</h4>
-            <p>Your season, best colors & personalized palette.</p>
-        </div>
-
-        <div class="how-it-works-step">
-            <div class="how-it-works-step-media">
-                <span class="how-it-works-step-number">3</span>
-                <img src="images/cloth.webp" alt="Step 3: test a product before you buy" loading="lazy">
-            </div>
-            <h4>👗 Test a Product</h4>
-            <p>Check any product color before you buy it.</p>
-        </div>
-
-        <div class="how-it-works-step">
-            <div class="how-it-works-step-media">
-                <span class="how-it-works-step-number">4</span>
-                <img src="images/shop.webp" alt="Step 4: shop your color matches" loading="lazy">
-            </div>
-            <h4>🛍️ Shop Your Matches</h4>
-            <p>Find top picks in your best colors across stores.</p>
-        </div>
-
+        <h4>📸 Face-Mapping Scan</h4>
+        <p>Isolates skin pixel clusters across key diagnostic facial zones entirely in browser memory.</p>
     </div>
+
+    <div class="how-it-works-step">
+        <div class="how-it-works-step-media">
+            <span class="how-it-works-step-number">2</span>
+            <img src="images/card.webp" alt="Step 2: your color passport card" loading="lazy">
+        </div>
+        <h4>🎨 12-Season Profile</h4>
+        <p>Calculates your precise sub-season archetype to decode your exact tonal landscape.</p>
+    </div>
+
+    <div class="how-it-works-step">
+        <div class="how-it-works-step-media">
+            <span class="how-it-works-step-number">3</span>
+            <img src="images/cloth.webp" alt="Step 3: test a product before you buy" loading="lazy">
+        </div>
+        <h4>👗 Garment Matching</h4>
+        <p>Check store snapshots against your color profile parameters instantly before purchasing.</p>
+    </div>
+
+    <div class="how-it-works-step">
+        <div class="how-it-works-step-media">
+            <span class="how-it-works-step-number">4</span>
+            <img src="images/shop.webp" alt="Step 4: shop your color matches" loading="lazy">
+        </div>
+        <h4>🛍️ Wardrobe Filters</h4>
+        <p>Instantly highlights verified clothing items across integrated retail search indexes.</p>
+    </div>
+
+</div>
 </section>
 
 <section class="upload-section">
     <div class="card">
         <h3>Upload Your Photo</h3>
-        
-        <p style="font-size: 0.88rem; opacity: 0.75; margin-top: -6px; margin-bottom: 20px; line-height: 1.5; color: var(--text-color, #4b5563);">
-            📸 For the most accurate seasonal matchmaking profile results, kindly click or upload a clear portrait photo showing your face under indirect natural lighting.
-        </p>
+<p style="font-size: 0.88rem; opacity: 0.75; margin-top: -6px; margin-bottom: 20px; line-height: 1.5; color: var(--text-color, #4b5563);">
+    📸 For scientific calibration results, upload a clear portrait under direct window light without cosmetics, artificial yellow bulbs, or screen glare tints.
+</p>
 
         <div style="margin-bottom: 18px; text-align: left; width: 100%;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
