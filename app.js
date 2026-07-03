@@ -1869,46 +1869,110 @@ if (dressCheckBtn) {
             });
         }
 
+        // Curated reason traits assigned dynamically based on seasonal matches
+        const isWarm = window._userUndertone === "Warm";
+        const traits = {
+            perfect: [
+                isWarm ? "✓ Rich, warm and optimized tone" : "✓ Soft, cool and muted tone",
+                "✓ Complements your natural undertone",
+                "✓ Enhances your natural facial harmony",
+                "✓ Perfect choice for everyday wear"
+            ],
+            good: [
+                "✓ Harmonious color temperature",
+                "✓ Coordinates with your season style",
+                "✓ Safe tonal configuration",
+                "✓ Great secondary accessory choice"
+            ],
+            neutral: [
+                "⚠ Blends safely but can wash you out",
+                "⚠ Lacks optimal clarity for your face",
+                "⚠ Counter-balance with your best accent",
+                "⚠ Best kept away from immediate portraits"
+            ],
+            avoid: [
+                "✗ Clashes directly with your undertone",
+                "✗ Highly likely to wash out your color profiles",
+                "✗ Creates harsh shadows on your features",
+                "✗ We strongly recommend alternative shades"
+            ]
+        };
+
+        const activeTraits = traits[verdict === "perfect" ? "perfect" : (verdict === "good" ? "good" : (verdict === "okay" ? "neutral" : "avoid"))];
+
+        // Capture 5 fallback swatches dynamically straight out of the active user profile palette
+        const dressCheckerPalette = window._userPalette || {};
+        const dressCheckerSwatchSource = (dressCheckerPalette.best && dressCheckerPalette.best.length >= 5)
+            ? dressCheckerPalette.best
+            : (dressCheckerPalette.neutrals && dressCheckerPalette.neutrals.length >= 5)
+                ? dressCheckerPalette.neutrals
+                : ["Peach", "Coral", "Yellow", "Mint Green", "Sky Blue"];
+        const swatchFallbackList = dressCheckerSwatchSource.slice(0, 5);
+        let swatchesHtmlMarkup = "";
+        swatchFallbackList.forEach(swName => {
+            const resolvedSwatchHex = resolveColorHex(swName);
+            swatchesHtmlMarkup += `<div style="flex: 1; height: 36px; border-radius: 6px; background: ${resolvedSwatchHex}; border: 1px solid rgba(255,255,255,0.1);" title="${swName}"></div>`;
+        });
+
         const verdictConfig = {
             perfect: {
-                emoji: "✅", title: "Perfect Match!",
-                msg:   `This <strong>${colorInfo.name}</strong> colour fits beautifully in your <strong>${window._userSeason}</strong> palette. It will naturally enhance your ${window._userUndertone.toLowerCase()} undertone and make you look radiant.`,
-                bg:    "linear-gradient(135deg,#064e3b,#065f46)", border:"#10b981"
+                emoji: "✓", title: "Perfect Match!",
+                msg: `This color fits beautifully in your <strong>${window._userSeason}</strong> palette. It will naturally enhance your undertone and make you look <strong>radiant</strong>.`,
+                bg: "#064e3b", border: "#10b981", titleColor: "#10b981"
             },
             good: {
-                emoji: "👍", title: "Good Choice",
-                msg:   `This <strong>${colorInfo.name}</strong> is a solid pick for your <strong>${window._userSeason}</strong> profile. It complements your palette well, though not your absolute best shade.`,
-                bg:    "linear-gradient(135deg,#1e3a5f,#1e40af)", border:"#3b82f6"
+                emoji: "✓", title: "Good Choice",
+                msg: `This color is a solid pick for your <strong>${window._userSeason}</strong> profile. It complements your palette well, bringing out great features.`,
+                bg: "#1e3a8a", border: "#3b82f6", titleColor: "#3b82f6"
             },
             okay: {
-                emoji: "🟡", title: "Wearable but Not Ideal",
-                msg:   `This <strong>${colorInfo.name}</strong> can work, but it's not optimised for your <strong>${window._userSeason}</strong> palette. Pair it with one of your best neutral shades to balance it out.`,
-                bg:    "linear-gradient(135deg,#451a03,#92400e)", border:"#f59e0b"
+                emoji: "⚠", title: "Wearable but Not Ideal",
+                msg: `This color can work, but it's not optimized for your <strong>${window._userSeason}</strong> palette. Pair it with clear neutrals.`,
+                bg: "#451a03", border: "#f59e0b", titleColor: "#f59e0b"
             },
             caution: {
-                emoji: "⚠️", title: "Proceed with Caution",
-                msg:   `This <strong>${colorInfo.name}</strong> doesn't align well with your <strong>${window._userUndertone}</strong> undertone. It may make your complexion appear dull or washed out.`,
-                bg:    "linear-gradient(135deg,#3b1f00,#7c2d12)", border:"#f97316"
+                emoji: "⚠", title: "Proceed with Caution",
+                msg: `This color doesn't align well with your <strong>${window._userUndertone}</strong> profile parameters. It may wash you out.`,
+                bg: "#3b1f00", border: "#f97316", titleColor: "#f97316"
             },
             avoid: {
-                emoji: "❌", title: "Not Recommended",
-                msg:   `This <strong>${colorInfo.name}</strong> is in the avoid list for your <strong>${window._userSeason}</strong> profile. It is likely to clash with your ${window._userUndertone.toLowerCase()} undertone. We'd suggest returning it.`,
-                bg:    "linear-gradient(135deg,#450a0a,#7f1d1d)", border:"#ef4444"
+                emoji: "✗", title: "Not Recommended",
+                msg: `This color is on the avoid list for your <strong>${window._userSeason}</strong> profile. It clashes heavily with your undertone.`,
+                bg: "#450a0a", border: "#ef4444", titleColor: "#f87171"
             }
         };
 
         const v = verdictConfig[verdict];
         dressResult.style.display = "block";
+
+        // Comprehensive rendering mapping exactly with image reference layouts
         dressResult.innerHTML = `
-            <div style="background:${v.bg};border:1px solid ${v.border};border-radius:14px;padding:20px 22px;">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-                    <div style="width:52px;height:52px;border-radius:10px;background:${dominant.hex};border:2px solid rgba(255,255,255,0.3);flex-shrink:0;"></div>
-                    <div>
-                        <div style="font-size:1.1rem;font-weight:800;color:#fff;">${v.emoji} ${v.title}</div>
-                        <div style="font-size:0.78rem;opacity:0.7;color:#fff;">Detected colour: ${colorInfo.name} &nbsp;·&nbsp; HEX ${dominant.hex} &nbsp;·&nbsp; ${colorInfo.confidence}% confidence</div>
+            <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid #1e295d; border-radius: 12px; padding: 14px; box-sizing: border-box; text-align: left;">
+
+                <div style="background: ${v.bg}; border: 1px solid ${v.border}; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; box-sizing: border-box;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                        <span style="color: ${v.titleColor}; font-weight: 900; font-size: 1.1rem;">${v.emoji}</span>
+                        <span style="font-size: 0.95rem; font-weight: 800; color: #ffffff;">${v.title}</span>
+                    </div>
+                    <p style="color: #cbd5e1; font-size: 0.82rem; line-height: 1.45; margin: 0;">
+                        Detected color: <strong>${colorInfo.name}</strong> (${dominant.hex}) &nbsp;·&nbsp; ${v.msg}
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 14px; box-sizing: border-box; padding: 0 2px;">
+                    <span style="font-size: 0.72rem; font-weight: 800; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Why it works for you</span>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        ${activeTraits.map(t => `<div style="font-size: 0.78rem; color: #94a3b8; font-weight: 500;">${t}</div>`).join('')}
                     </div>
                 </div>
-                <p style="color:#fff;font-size:0.88rem;line-height:1.7;margin:0;">${v.msg}</p>
+
+                <div style="box-sizing: border-box; padding: 0 2px; margin-top: 10px;">
+                    <span style="font-size: 0.72rem; font-weight: 800; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Similar matches in your palette</span>
+                    <div style="display: flex; gap: 6px; width: 100%;">
+                        ${swatchesHtmlMarkup}
+                    </div>
+                </div>
+
             </div>
         `;
 
@@ -2053,12 +2117,8 @@ window.captureDressCheckerPhoto = function() {
     dFlipBtn.style.display = "none";
     dCaptureBtn.style.display = "none";
     
-    // 🧠 FIX: Force structural removal of placeholder text upon snap validation
+    // 🧠 FIXED: Enforces perfect hiding of text panel overlays when a snapshot drops
     if (dPlaceholder) dPlaceholder.style.display = "none";
-    
-    dOpenBtn.textContent = "📷 Open Camera";
-    dOpenBtn.onclick = window.openDressCheckerCamera;
-    
     if (dPreviewBox) dPreviewBox.style.display = "block";
     if (dCheckBtn) dCheckBtn.style.display = "inline-block";
 };

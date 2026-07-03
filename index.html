@@ -574,6 +574,178 @@
             filter: grayscale(1) invert(1) brightness(1.8) !important;
         }
         }
+        /* ── "How It Works" Steps Section (above upload section) ── */
+        .how-it-works-section {
+            margin-bottom: 32px;
+        }
+        .how-it-works-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .how-it-works-header h2 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+            color: var(--text-color, #1f2937);
+        }
+        .how-it-works-header p {
+            font-size: 0.95rem;
+            opacity: 0.7;
+            color: var(--text-color, #4b5563);
+            margin: 0;
+        }
+        .how-it-works-swipe-hint {
+            display: none;
+            text-align: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+            opacity: 0.55;
+            color: var(--primary-color, #6a5acd);
+            margin: 8px 0 14px 0;
+        }
+        .how-it-works-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        .how-it-works-step {
+            position: relative;
+            background: var(--card-bg, #fff);
+            border: 1px solid rgba(106, 90, 205, 0.14);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        .how-it-works-step-media {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f3f4f6;
+            margin-bottom: 14px;
+        }
+        .how-it-works-step-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .how-it-works-step-number {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--primary-color, #6a5acd);
+            color: #fff;
+            font-weight: 800;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+        .how-it-works-step h4 {
+            margin: 0 0 6px 0;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-color, #1f2937);
+        }
+        .how-it-works-step p {
+            margin: 0;
+            font-size: 0.84rem;
+            opacity: 0.72;
+            line-height: 1.45;
+            color: var(--text-color, #4b5563);
+        }
+        body.dark-mode .how-it-works-step {
+            background: var(--card-bg, #1f2937);
+            border-color: rgba(167, 139, 250, 0.2);
+        }
+        body.dark-mode .how-it-works-step-media {
+            background: #111827;
+        }
+
+        /* Below 900px: instead of stacking cards and eating vertical space,
+           turn the grid into a horizontal swipe/scroll carousel with
+           scroll-snap so each card settles neatly in view. */
+       /* ── 📱 HIGH-DENSITY COMPACT MOBILE CAROUSEL REMASTER ── */
+       /* ── 📱 HIGH-DENSITY COMPACT MOBILE CAROUSEL REMASTER (50% WIDTH) ── */
+        @media (max-width: 900px) {
+            .how-it-works-swipe-hint {
+                display: block;
+                margin: 4px 0 10px 0 !important;
+            }
+            .how-it-works-grid {
+                display: flex;
+                grid-template-columns: none;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                -webkit-overflow-scrolling: touch;
+                padding: 4px 4px 8px 4px;
+                scrollbar-width: none;
+            }
+            .how-it-works-grid::-webkit-scrollbar {
+                display: none;
+            }
+            /* 🧠 Slashes card width to exactly 50% for a highly optimized mobile overview */
+            .how-it-works-step {
+                flex: 0 0 50% !important; 
+                scroll-snap-align: start;
+                padding: 12px !important;
+                border-radius: 12px !important;
+            }
+            /* Scales down images to keep aspect ratios flawless without breaking look-alikes */
+            .how-it-works-step-media {
+                margin-bottom: 8px !important;
+                aspect-ratio: 4 / 3 !important;
+            }
+            .how-it-works-step h4 {
+                font-size: 0.9rem !important;
+                margin-bottom: 4px !important;
+            }
+            .how-it-works-step p {
+                font-size: 0.78rem !important;
+                line-height: 1.35 !important;
+            }
+            .how-it-works-step-number {
+                width: 24px !important;
+                height: 24px !important;
+                font-size: 0.78rem !important;
+            }
+        }
+        @media (max-width: 480px) {
+            .how-it-works-header h2 {
+                font-size: 1.35rem;
+            }
+            /* Ensures perfect positioning across extra-narrow device viewports */
+            .how-it-works-step {
+                flex-basis: 50% !important;
+            }
+        }
+
+        /* 💻 Shrinks the "Test a Product Before You Buy!" card 20% on laptop/PC
+           screens so it fits comfortably without dominating the viewport.
+           Mobile (below 901px) keeps its original, already-compact size. */
+        /* ── 💻 HIGH-DENSITY BALANCED DESKTOP LAYOUT CONTROLLER ── */
+        @media (min-width: 901px) {
+            #dressCheckerSection {
+                zoom: 1 !important; 
+                max-width: 1440px !important; /* Expanded width by over 30% to stop visual crowding */
+                width: 95% !important;
+                margin: 25px auto 0 auto;
+            }
+            /* Explicitly distributes horizontal real estate so elements don't bunch up */
+            .blueprint-sandbox-grid {
+                grid-template-columns: 55% 45% !important; 
+                gap: 32px !important; /* Generates wide breathing room between card pillars */
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -598,6 +770,53 @@
 <section class="hero">
     <h2>Find Your Perfect Color Palette in 10 Seconds</h2>
     <p>AI analyzes your skin tone and recommends clothes, makeup, jewelry, and hair colors that actually suit you.</p>
+</section>
+
+<section class="how-it-works-section" aria-label="How AI Color Analysis works">
+    <div class="how-it-works-header">
+        <h2>✨ How It Works</h2>
+        <p>4 simple steps to your personalized color palette</p>
+    </div>
+    <p class="how-it-works-swipe-hint">← Swipe to see all steps →</p>
+    <div class="how-it-works-grid">
+
+        <div class="how-it-works-step">
+            <div class="how-it-works-step-media">
+                <span class="how-it-works-step-number">1</span>
+                <img src="images/selfie.webp" alt="Step 1: your uploaded photo" loading="lazy">
+            </div>
+            <h4>📸 Your Photo</h4>
+            <p>We analyze your natural coloring, right in your browser.</p>
+        </div>
+
+        <div class="how-it-works-step">
+            <div class="how-it-works-step-media">
+                <span class="how-it-works-step-number">2</span>
+                <img src="images/card.webp" alt="Step 2: your color passport card" loading="lazy">
+            </div>
+            <h4>🎨 Your Color Passport</h4>
+            <p>Your season, best colors & personalized palette.</p>
+        </div>
+
+        <div class="how-it-works-step">
+            <div class="how-it-works-step-media">
+                <span class="how-it-works-step-number">3</span>
+                <img src="images/cloth.webp" alt="Step 3: test a product before you buy" loading="lazy">
+            </div>
+            <h4>👗 Test a Product</h4>
+            <p>Check any product color before you buy it.</p>
+        </div>
+
+        <div class="how-it-works-step">
+            <div class="how-it-works-step-media">
+                <span class="how-it-works-step-number">4</span>
+                <img src="images/shop.webp" alt="Step 4: shop your color matches" loading="lazy">
+            </div>
+            <h4>🛍️ Shop Your Matches</h4>
+            <p>Find top picks in your best colors across stores.</p>
+        </div>
+
+    </div>
 </section>
 
 <section class="upload-section">
@@ -705,67 +924,81 @@
     </div>
 </section>
 
-<section class="recommendations" id="dressCheckerSection">
-    <div class="recommend-card" style="grid-column: 1 / -1; padding: 28px;">
-        <h3 style="font-size:1.3rem; font-weight:700; margin-bottom:6px;">👗 Test a Product Before You Buy!</h3>
-        <p style="font-size:0.88rem; opacity:0.7; margin-bottom:12px; line-height:1.6;">
+<section class="recommendations" id="dressCheckerSection" style="margin-top: 30px; width: 100%;">
+    <div class="recommend-card" style="grid-column: 1 / -1; padding: 32px; background: #0b1329 !important; border: 1px solid #1e293b !important; border-radius: 20px !important; box-shadow: 0 12px 40px rgba(0,0,0,0.25) !important;">
+        
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+            <span style="font-size: 1.8rem;">👗</span>
+            <h3 style="font-size: 1.45rem; font-weight: 800; color: #ffffff; margin: 0; font-family: system-ui, -apple-system, sans-serif;">Test a Product Before You Buy!</h3>
+        </div>
+        <p style="font-size: 0.9rem; color: #94a3b8; margin: 0 0 16px 0; line-height: 1.6;">
             Screenshot any clothing item from Amazon, ASOS or H&M, or snap a live picture of a garment. We'll instantly tell you if that colour suits your personal palette.
         </p>
 
-        <div style="display: inline-block; margin-bottom: 20px; font-size: 0.78rem; padding: 4px 12px; background: #fffbeb; color: #b45309; font-weight: 700; border-radius: 20px; border: 1px solid #fef3c7;">
-            ⚠️ IMPORTANT: Click pictures under clear, proper lighting to get highly accurate results.
+        <div style="width: 100%; padding: 12px 16px; background: #fff3cd; border: 1px solid #ffeba2; border-radius: 10px; margin-bottom: 24px; box-sizing: border-box; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.1rem;">⚠️</span>
+            <strong style="font-size: 0.82rem; color: #856404; font-family: system-ui, sans-serif;">IMPORTANT: Click pictures under clear, proper lighting to get highly accurate results.</strong>
         </div>
 
-        <div id="dressCheckerLocked" style="display:flex; align-items:center; gap:12px; background:rgba(106,90,205,0.1); border:1px dashed #6a5acd; border-radius:12px; padding:16px 20px; margin-bottom:16px;">
-            <span style="font-size:1.6rem;">🔒</span>
-            <p style="font-size:0.88rem; opacity:0.8; margin:0;">
+        <div id="dressCheckerLocked" style="display: flex; align-items: center; gap: 14px; background: rgba(106, 90, 205, 0.08); border: 1px dashed rgba(106, 90, 205, 0.3); border-radius: 14px; padding: 18px 22px; margin-bottom: 16px; box-sizing: border-box;">
+            <span style="font-size: 1.8rem;">🔒</span>
+            <p style="font-size: 0.9rem; color: #cbd5e1; margin: 0; font-weight: 500;">
                 <strong>Run your skin analysis first</strong> — then come back here to check any clothing item instantly.
             </p>
         </div>
 
-        <div id="dressCheckerActive" style="display:none;">
-            <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:stretch; margin-bottom:16px; width: 100%;">
+        <div id="dressCheckerActive" style="display: none; width: 100%;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; width: 100%; align-items: stretch; margin-bottom: 20px; box-sizing: border-box;">
                 
-                <div style="flex:1; min-width: 280px; display: flex; flex-direction: column; gap: 12px; justify-content: space-between;">
-                    <label for="dressUpload" id="dressUploadLabel" style="
-                        display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
-                        border: 2px dashed #6a5acd; border-radius:14px; padding: 24px 16px; cursor:pointer; text-align:center;
-                        background: rgba(106,90,206,0.06); transition: background 0.2s; flex: 1;">
-                        <span style="font-size:1.8rem;">📁</span>
-                        <span style="font-weight:700; font-size:0.9rem;">Upload Product Screenshot</span>
-                        <span style="font-size:0.75rem; opacity:0.6;">Supports Amazon, ASOS, H&M etc.</span>
-                        <input type="file" id="dressUpload" accept="image/*" style="display:none;">
-                    </label>
+                <div style="background: #111c44; border: 1px solid #1e295d; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-sizing: border-box; position: relative;">
+                    <div>
+                        <span style="font-size: 0.72rem; font-weight: 800; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 12px;">🛍️ Your Item</span>
+                        
+                        <label for="dressUpload" id="dressUploadLabel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 2px dashed #2e3b85; border-radius: 12px; padding: 24px 16px; cursor: pointer; text-align: center; background: rgba(30, 41, 93, 0.3); transition: background 0.2s; min-height: 140px; box-sizing: border-box; margin-bottom: 12px;">
+                            <span style="font-size: 1.8rem;">📁</span>
+                            <span style="font-weight: 700; font-size: 0.9rem; color: #ffffff;">Upload Product Screenshot</span>
+                            <span style="font-size: 0.75rem; color: #94a3b8;">Supports Amazon, ASOS, H&M, etc.</span>
+                            <input type="file" id="dressUpload" accept="image/*" style="display: none;">
+                        </label>
+                    </div>
 
-                    <div style="display: flex; gap: 8px;">
-                        <button type="button" id="dressCameraOpenBtn" onclick="openDressCheckerCamera()" style="flex: 2; background: #4b5563; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">📷 Open Camera</button>
-                        <button type="button" id="dressCameraFlipBtn" onclick="toggleDressCheckerCameraLens()" style="display: none; background: #374151; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; width: 44px;" title="Flip Camera">🔄</button>
-                        <button type="button" id="dressCaptureBtn" onclick="captureDressCheckerPhoto()" style="display: none; flex: 2; background: #10b981; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">📸 Capture Picture</button>
+                    <div style="width: 100%; border-radius: 12px; overflow: hidden; background: #090d22; position: relative; aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; border: 1px solid #1e295d; box-sizing: border-box; margin-bottom: 16px;">
+                        <video id="dressVideo" autoplay playsinline muted style="display: none; width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;"></video>
+                        
+                        <div id="dressPreviewBox" style="display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0;">
+                            <img id="dressPreviewImg" alt="Product preview" style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>
+                        
+                        <div id="dressPlaceholderText" style="color: #475569; font-size: 0.8rem; font-weight: 600; text-align: center; padding: 16px; z-index: 1; line-height: 1.4;">
+                            Media preview monitor inactive.<br><span style="font-weight: normal; opacity: 0.7;">Upload screenshot or trigger device camera.</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; width: 100%; box-sizing: border-box; margin-top: auto;">
+                        <button type="button" id="dressCameraOpenBtn" onclick="openDressCheckerCamera()" style="flex: 2; background: #1e295d; color: #ffffff; border: 1px solid #312e81; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box;">📷 Open Camera</button>
+                        <button type="button" id="dressCameraFlipBtn" onclick="toggleDressCheckerCameraLens()" style="display: none; background: #1f2937; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; width: 44px; box-sizing: border-box;" title="Flip Camera">🔄</button>
+                        <button type="button" id="dressCaptureBtn" onclick="captureDressCheckerPhoto()" style="display: none; flex: 2; background: #10b981; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-sizing: border-box;">📸 Capture Picture</button>
                     </div>
                 </div>
 
-                <div style="flex:1; min-width:280px; max-width: 100%; border-radius:14px; overflow:hidden; background:#1e293b; position:relative; min-height: 180px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.05);">
-                    <video id="dressVideo" autoplay playsinline muted style="display: none; width:100%; height:100%; object-fit:cover; position: absolute; top:0; left:0;"></video>
-                    
-                    <div id="dressPreviewBox" style="display: none; width: 100%; height: 100%; position: absolute; top:0; left:0;">
-                        <img id="dressPreviewImg" alt="Product preview" style="width:100%; height:100%; object-fit:contain; background: #0f172a;">
+                <div style="background: #111c44; border: 1px solid #1e295d; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-sizing: border-box;">
+                    <div style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+                        <span style="font-size: 0.72rem; font-weight: 800; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 12px;">✨ Result Dashboard</span>
+                        
+                        <div id="dressResult" style="display: block; width: 100%; flex: 1;">
+                            <div style="border: 1px dashed #2e3b85; background: rgba(30, 41, 93, 0.15); border-radius: 12px; padding: 30px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 240px; box-sizing: border-box;">
+                                <span style="font-size: 2.2rem; margin-bottom: 8px; opacity: 0.4;">📊</span>
+                                <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 500; line-height: 1.4;">Awaiting item data submission.<br>Tap "Check This Color" to view matches.</span>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div id="dressPlaceholderText" style="color: #64748b; font-size: 0.8rem; font-weight: 600; text-align: center; padding: 16px; max-width: 240px; z-index: 1;">
-                        Media viewer active.<br><span style="font-weight: normal; opacity: 0.7;">Upload a file or tap the camera button.</span>
-                    </div>
+
+                    <button id="dressCheckBtn" style="width: 100%; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; border: none; padding: 14px 28px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3); display: none; margin-top: 16px; box-sizing: border-box;">
+                        🎨 Check This Color
+                    </button>
                 </div>
+
             </div>
-
-            <button id="dressCheckBtn" style="
-                background: linear-gradient(135deg,#6a5acd,#9c3fe0);
-                color:#fff; border:none; padding:12px 28px; border-radius:25px;
-                font-weight:700; font-size:0.95rem; cursor:pointer;
-                box-shadow:0 4px 15px rgba(106,90,205,0.4);
-                display:none; margin-bottom:16px;">
-                🎨 Check This Color
-            </button>
-            <div id="dressResult" style="display:none; border-radius:14px; padding:20px; margin-top:4px;"></div>
         </div>
     </div>
 </section>
