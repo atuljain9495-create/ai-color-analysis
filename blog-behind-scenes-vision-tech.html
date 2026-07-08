@@ -44,24 +44,57 @@
 <section class="page-content">
     <div class="post-container">
         <a href="blog.html" class="back-link">← Back to Blog Index</a>
-        <h2>Behind the Pixels: How Client-Side Computer Vision Works</h2>
-        <p>Many online tools ask you to upload personal photographs to a remote server, raising natural privacy concerns. Our platform takes a different, privacy-first approach. By utilizing client-side web frameworks, your images are analyzed entirely on your own device, ensuring your data never leaves your browser.</p>
+        <h2>Behind the Pixels: How Our Privacy-First AI Analysis Works</h2>
+        <p>In an age of data breaches and privacy concerns, the idea of uploading a personal photo to an online tool can feel unsettling. Where does the photo go? Who sees it? How is it being used? We built our AI Color Analysis tool with these questions in mind, which is why we chose a "privacy-by-design" approach. Unlike many other online services, our entire analysis process happens **on your device**, within your browser. Your photo is never uploaded, stored, or seen by us.</p>
 
-        <h3>Locating Facial Regions with face-api.js</h3>
-        <p>Our script utilizes local machine learning models via <code>face-api.js</code> to isolate key facial regions—like your cheeks and forehead—while filtering out distracting background elements or hair shadows that could skew the analysis.</p>
+        <p>This is made possible by modern web technologies that allow for powerful computations to be run directly on the "client-side"—a technical term for your computer or phone. Here’s a step-by-step look at how it works.</p>
 
-        <h3>The Science of Pixel Sampling</h3>
-        <p>Once the facial region is mapped, the application runs a local K-means clustering algorithm to determine your true dominant skin pigments. By evaluating these values across the YCbCr spectrum, it calculates your precise seasonal color profile entirely in temporary browser memory.</p>
+        <h3>Step 1: Loading the Brains (The AI Model)</h3>
+        <p>When you load our website, your browser downloads the necessary files to run the analysis. This includes the page's design, the interactive elements, and, most importantly, a pre-trained machine learning model. We use a popular open-source library called `face-api.js`, which is designed to run efficiently in a web browser. Think of this as loading a specialized calculator into your browser—it knows how to perform the calculations, but it doesn't have any data to work with yet.</p>
+
+        <h3>Step 2: You Provide the Photo (Locally)</h3>
+        <p>When you select a photo to upload or use your device's camera, you are giving your browser temporary access to that image. The image is loaded into the browser's memory, which is a private, sandboxed environment. It is not sent over the internet to our servers. It exists only on your machine for the duration of your session.</p>
+
+        <h3>Step 3: Finding Your Face (Facial Landmark Detection)</h3>
+        <p>The `face-api.js` model then gets to work. It scans the image data in your browser's memory and looks for patterns that identify it as a human face. It detects key landmarks—the position of your eyes, nose, mouth, and jawline. This allows the tool to isolate the face from the background, ensuring that the color of your shirt or the wall behind you doesn't interfere with the analysis.</p>
+
+        <h3>Step 4: Analyzing the Pixels (Skin Tone and Undertone Calculation)</h3>
+        <p>Once your face is located, our algorithm focuses on specific regions, primarily the forehead and cheeks. These areas are less likely to be affected by shadows or makeup and give the clearest indication of your natural skin color. The script then analyzes the pixels in these regions, measuring the average values of Red, Green, and Blue (RGB).</p>
+
+        <p>To determine your undertone, it looks at the relationship between these color channels. For example, a higher proportion of red and yellow values suggests a warm undertone, while a higher proportion of blue values points to a cool undertone. It’s a mathematical process that quantifies the subtle hues that are often difficult to see with the naked eye.</p>
+
+        <h3>Step 5: Determining Your Season and Generating Recommendations</h3>
+        <p>Based on the calculated undertone, as well as the overall lightness and contrast of your features, the algorithm classifies you into one of the 12 seasonal color palettes (e.g., "Soft Autumn," "Bright Winter"). It then cross-references this result with a database of color recommendations to generate your personalized palettes for clothing, makeup, and jewelry.</p>
+
+        <h3>Step 6: The Data Disappears</h3>
+        <p>All of this happens in a matter of seconds. Once the analysis is complete and your results are displayed, the original image data has served its purpose. When you close the browser tab or refresh the page, the browser's memory is cleared, and the photo is gone forever. No trace of it is left on your device or ours.</p>
+
+        <h3>Why This Matters</h3>
+        <p>This client-side approach is the cornerstone of our commitment to your privacy. It means you can use our tool with the confidence that your personal data remains personal. You get all the benefits of a sophisticated AI analysis without any of the privacy trade-offs. It’s a powerful demonstration of how modern technology can be used in a way that is both helpful and respectful of the user.</p>
 
         <div class="cta-box">
             <h4>✨ Test our secure, on-device analysis technology!</h4>
-            <p>Experience fast, privacy-first analysis with zero server uploads. Run your secure color scan over at our <a href="index.html">AI Color Analysis Tool</a> right now!</p>
+            <p>Curious to see it in action? Experience fast, private, and accurate color analysis without ever uploading your photo to a server. Try our <a href="index.html">free AI Color Analysis Tool</a> now.</p>
         </div>
     </div>
 </section>
 
 <footer>
     <div class="footer-content">
+        <div class="footer-social-row">
+            <a href="https://www.instagram.com/ai_color_analysis_online" target="_blank" rel="noopener" class="footer-brand-link instagram-target" title="Follow us on Instagram">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+                </svg>
+                <span>Instagram</span>
+            </a>
+            <a href="https://www.pinterest.com/aicoloranalysisonline/" target="_blank" rel="noopener" class="footer-brand-link pinterest-target" title="Follow us on Pinterest">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.965 1.406-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.569-.994 3.995-.283 1.194.415 2.169 1.592 2.169 1.91 0 3.375-2.4 3.375-5.252 0-2.164-1.428-3.79-4.16-3.79-3.044 0-4.94 2.268-4.94 4.811 0 .919.269 1.572.691 2.073.199.239.227.334.146.652-.048.19-.155.741-.202.94-.063.242-.258.324-.479.228-1.343-.599-1.979-2.203-1.979-3.996 0-2.986 2.525-6.52 7.498-6.52 3.99 0 6.643 2.89 6.643 6.002 0 4.214-2.355 7.359-5.834 7.359-1.168 0-2.27-.635-2.646-1.366 0 0-.629 2.493-.761 3.003-.23.882-.676 1.76-1.042 2.327 1.052.311 2.167.481 3.32.481 6.621 0 11.988-5.366 11.988-11.984C24.017 5.367 18.638 0 12.017 0z"/>
+                </svg>
+                <span>Pinterest</span>
+            </a>
+        </div>
         <p class="footer-legal-claims">© 2026 AI Color Analysis &nbsp;|&nbsp; <a href="privacy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="terms.html">Terms of Service</a></p>
     </div>
 </footer>

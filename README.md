@@ -66,6 +66,17 @@ Distributed under the MIT License. See terms.html and privacy.html for extended 
 ├── blog-why-lighting-matters.html       # Standalone article: Photography precision
 ├── blog-building-a-color-wardrobe.html  # Standalone article: Capsule outfitting
 ├── About.html                           # Platform vision page
+├── blog-breaking-color-rules.html       # New Article
+├── blog-colors-that-look-cheap.html     # New Article
+├── blog-30-day-ai-challenge.html        # New Article
+├── blog-universal-flattering-colors.html # New Article
+├── blog-stop-matching-your-eyes.html    # New Article
+├── blog-fabric-textures-by-season.html  # New Article
+├── blog-find-your-power-color.html      # New Article
+├── blog-mens-color-analysis-guide.html  # New Article
+├── blog-accessorizing-with-accents.html # New Article
+├── blog-dark-academia-palette.html      # New Article
+├── blog-foundation-undertone-match.html # New Article
 ├── contact.html                         # Customer plain-English inquiry channel
 ├── privacy.html                         # AdSense & GDPR compliant privacy policy
 ├── terms.html                           # Terms of service and disclaimers

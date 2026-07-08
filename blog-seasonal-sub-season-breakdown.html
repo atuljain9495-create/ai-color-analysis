@@ -10,13 +10,16 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Understanding the 12-Season Framework: Deep Sub-Seasons Explored | AI Color Analysis Blog</title>
-    <meta name="description" content="Delve deep into the sub-season metrics of style analysis. Discover how stylists divide color archetypes into clear sub-profiles.">
+    <title>Understanding the 12-Season Framework | AI Color Analysis Blog</title>
+    <meta name="description" content="A deep dive into the 12-season color analysis model. Learn the difference between a Soft Summer and a Light Spring, and find your true sub-season.">
     <link rel="stylesheet" href="style.css">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2939037453955862" crossorigin="anonymous"></script>
     <style>
         .post-container { max-width: 750px; margin: 40px auto; padding: 0 20px; text-align: left; line-height: 1.6; }
         .post-container h3 { margin-top: 25px; margin-bottom: 10px; color: var(--primary-color, #333); }
+        .post-container p { margin-bottom: 15px; }
+        .post-container ul { margin-left: 20px; margin-bottom: 15px; }
+        .post-container li { margin-bottom: 6px; }
         .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary-color, #333); text-decoration: none; font-weight: 500; }
         .cta-box { border: 1px solid #1e293b; background: #0f172a; padding: 20px; border-radius: 8px; margin-top: 30px; text-align: center; color: #fff; }
         .cta-box p { color: #f8fafc !important; opacity: 1 !important; }
@@ -24,10 +27,11 @@
     </style>
 </head>
 <body>
-<header>
+   <header>
     <div class="logo" style="display: flex; align-items: center; gap: 12px;">
         <img src="favicon.png" class="logo-light-mode" alt="AI Color Analysis Light Logo" style="width: 38px; height: 38px; object-fit: contain; border-radius: 50%;">
         <img src="favicon1.png" class="logo-dark-mode" alt="AI Color Analysis Dark Logo" style="width: 38px; height: 38px; object-fit: contain; border-radius: 50%;">
+        
         <h1>AI Color Analysis</h1>
     </div>
     <div class="header-actions">
@@ -41,30 +45,161 @@
     </div>
 </header>
 
-<section class="page-content">
-    <div class="post-container">
-        <a href="blog.html" class="back-link">← Back to Blog Index</a>
-        <h2>Understanding the 12-Season Framework: Deep Sub-Seasons Explored</h2>
-        <p>Traditional four-season color analysis was a great starting point, but grouping everyone into just Spring, Summer, Autumn, or Winter can overlook crucial details. The modern 12-season system builds on this by adding three distinct sub-categories to each season, offering a much more precise look at your unique color profile.</p>
+    <style>
+        /* Modern mobile overrides applied strictly inside the media breakpoint query */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                padding: 20px 16px 14px 16px !important;
+                gap: 14px !important;
+                width: 100%;
+                box-sizing: border-box;
+                position: relative;
+            }
+            header .logo h1 {
+                font-size: 1.5rem !important;
+                margin: 0 !important;
+                text-align: center !important;
+                letter-spacing: -0.5px;
+            }
+            .header-actions {
+                flex-direction: column !important;
+                gap: 14px !important;
+                width: 100%;
+                align-items: center !important;
+            }
+            nav {
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                gap: 8px !important;
+                background: rgba(0, 0, 0, 0.04) !important;
+                padding: 10px 16px !important;
+                border-radius: 30px !important;
+                border: 1px solid rgba(0, 0, 0, 0.06) !important;
+                width: 100% !important;
+                max-width: 340px !important;
+                box-sizing: border-box !important;
+            }
+            body.dark-mode nav {
+                background: rgba(30, 41, 59, 0.6) !important;
+                border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            }
+            nav a {
+                font-size: 0.88rem !important;
+                font-weight: 700 !important;
+                padding: 2px 6px !important;
+                text-align: center;
+                flex: 1;
+            }
+            #darkModeBtn {
+                position: absolute !important;
+                top: 14px !important;
+                right: 14px !important;
+                background: rgba(0, 0, 0, 0.04) !important;
+                border: 1px solid rgba(0, 0, 0, 0.05) !important;
+                padding: 0 !important;
+                border-radius: 50% !important;
+                width: 38px !important;
+                height: 38px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 1.1rem !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+            }
+            body.dark-mode #darkModeBtn {
+                background: rgba(255, 255, 255, 0.08) !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            }
+        }
+    </style>
+    
+    <section class="page-content">
+        <div class="post-container">
+            <a href="blog.html" class="back-link">← Back to Blog Index</a>
+            <h2>Beyond the Basics: An Introduction to the 12-Season Color Framework</h2>
+            <p>If you’ve dipped your toes into the world of color analysis, you’ve likely heard of the four main seasons: Spring, Summer, Autumn, and Winter. This system, which categorizes individual coloring based on undertone and contrast, has been a styling cornerstone for decades. But what happens when you don’t feel like you fit perfectly into one of those four boxes? Maybe you have warm undertones like a Spring, but the bright, clear colors of that palette feel overwhelming on you. Or perhaps you have cool undertones like a Summer, but you can handle more depth and contrast than the typical Summer palette allows.</p>
 
-        <h3>The Core Properties: Hue, Value, and Chroma</h3>
-        <p>Sub-seasons look closely at the fine details of your features—evaluating your warmth vs. coolness (hue), your overall lightness vs. darkness (value), and how muted or vibrant your natural contrast is (chroma).</p>
+            <p>This is where the more nuanced and accurate **12-season framework** comes in. This expanded system takes the four base seasons and divides each one into three sub-seasons, creating a much more personalized and precise approach to color. It acknowledges that not all Springs are the same, and not all Winters are the same. By identifying your dominant characteristic—be it your undertone (warm/cool), your value (light/dark), or your chroma (bright/soft)—we can pinpoint your exact place within the color spectrum.</p>
+            
+            <h3>The Three Dominant Characteristics</h3>
+            <p>The 12-season system is based on the idea that every person's coloring has a primary, dominant characteristic. This is the most important aspect of your coloring, and it determines your "flow" into your neighboring seasons.</p>
+            <ul>
+                <li><strong>Value (Light vs. Dark):</strong> This refers to the overall lightness or darkness of your features (hair, skin, and eyes). If you are very fair, your dominant characteristic is likely "Light." If you have very dark features, it's likely "Dark."</li>
+                <li><strong>Chroma (Bright vs. Soft):</strong> This is about the clarity and saturation of your coloring. If you have bright, clear eyes and a high-contrast look, your dominant characteristic is likely "Bright." If your features are more blended and muted, with a lower contrast, your dominant characteristic is likely "Soft."</li>
+                <li><strong>Undertone (Warm vs. Cool):</strong> This is the traditional foundation of color analysis. If your coloring is overwhelmingly warm (golden) or overwhelmingly cool (blue-based), then your undertone is your dominant characteristic. These are the "True" seasons.</li>
+            </ul>
 
-        <h3>A Closer Look at the Sub-Seasons</h3>
-        <p>This approach allows for helpful distinctions. For instance, a <em>Soft Summer</em> thrives in muted, dusty, cool tones, while a <em>Bright Winter</em> requires high-contrast, vibrant, striking shades. Pinpointing your exact sub-season makes it easy to find the colors that truly complement your face.</p>
+            <h3>The 12 Seasons Explained</h3>
+            <p>Each of the four main seasons has a "True" sub-season, where the undertone is the dominant characteristic, and two "neutral" sub-seasons that are influenced by a neighboring season.</p>
 
-        <div class="cta-box">
-            <h4>✨ Discover your exact sub-season archetype instantly!</h4>
-            <p>Our updated codebase calculates your precise 12-season sub-profile using real-time RGB color mapping. Get your personalized passport card over at the <a href="index.html">AI Color Analysis Home Tool</a> right now!</p>
+            <h4>The Springs (Warm & Bright)</h4>
+            <ul>
+                <li><strong>Light Spring:</strong> Dominant characteristic is "Light." You are a blend of Spring and Summer. Your colors are warm, but also very light and delicate. Think soft peach, light aqua, and pale yellow.</li>
+                <li><strong>Warm (True) Spring:</strong> Dominant characteristic is "Warm." You are the quintessential Spring. Your colors are clear, warm, and vibrant, like coral, turquoise, and lime green.</li>
+                <li><strong>Bright Spring:</strong> Dominant characteristic is "Bright." You are a blend of Spring and Winter. You can handle the highest saturation of all the Springs, with colors like hot pink, bright coral, and electric blue.</li>
+            </ul>
+
+            <h4>The Summers (Cool & Soft)</h4>
+            <ul>
+                <li><strong>Light Summer:</strong> Dominant characteristic is "Light." You are a blend of Summer and Spring, but on the cool side. Your colors are soft, cool, and very light, like powder blue, soft lavender, and pale pink.</li>
+                <li><strong>Cool (True) Summer:</strong> Dominant characteristic is "Cool." You are the classic Summer. Your colors are distinctly cool and muted, like dusty rose, periwinkle, and soft teal.</li>
+                <li><strong>Soft Summer:</strong> Dominant characteristic is "Soft." You are a blend of Summer and Autumn. Your colors are cool, but also very muted and gentle, with a touch of earthy softness. Think dusty mauve, sage green, and soft navy.</li>
+            </ul>
+
+            <h4>The Autumns (Warm & Soft)</h4>
+            <ul>
+                <li><strong>Soft Autumn:</strong> Dominant characteristic is "Soft." You are a blend of Autumn and Summer. Your colors are warm, but also very muted and gentle. Think olive green, muted mustard, and dusty rose.</li>
+                <li><strong>Warm (True) Autumn:</strong> Dominant characteristic is "Warm." You are the quintessential Autumn. Your colors are rich, warm, and earthy, like terracotta, rust, and deep olive green.</li>
+                <li><strong>Deep Autumn:</strong> Dominant characteristic is "Dark." You are a blend of Autumn and Winter. You can handle the darkest and richest of the warm colors, like deep chocolate brown, warm burgundy, and forest green.</li>
+            </ul>
+
+            <h4>The Winters (Cool & Bright)</h4>
+            <ul>
+                <li><strong>Deep Winter:</strong> Dominant characteristic is "Dark." You are a blend of Winter and Autumn. You look best in the darkest, most saturated colors, like black, deep navy, emerald green, and ruby red.</li>
+                <li><strong>Cool (True) Winter:</strong> Dominant characteristic is "Cool." You are the classic Winter. Your colors are purely cool and highly saturated, like royal blue, fuchsia, and true red.</li>
+                <li><strong>Bright Winter:</strong> Dominant characteristic is "Bright." You are a blend of Winter and Spring. You can handle the highest contrast and most vivid colors, like electric blue, hot pink, and pure white.</li>
+            </ul>
+
+            <h3>Why It Matters</h3>
+            <p>Understanding your sub-season is like getting a fine-tuned prescription for your personal style. It explains why, as a Soft Autumn, you might feel overwhelmed by the bright oranges of a True Autumn palette, or why, as a Bright Spring, you can borrow some of the vibrant colors from the Winter palette. It allows you to build a wardrobe that is not just "good enough," but perfectly, harmoniously, and authentically you.</p>
+
+            <div class="cta-box">
+                <h4>✨ Ready to find your true sub-season?</h4>
+                <p>Our AI-powered tool analyzes the nuances of your coloring to pinpoint your precise place within the 12-season framework. Get your free, private analysis with our <a href="index.html">AI Color Analysis Tool</a> and unlock your perfect palette.</p>
+            </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<footer>
+   <footer>
     <div class="footer-content">
-        <p class="footer-legal-claims">© 2026 AI Color Analysis &nbsp;|&nbsp; <a href="privacy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="terms.html">Terms of Service</a></p>
+        
+        <div class="footer-social-row">
+            <a href="https://www.instagram.com/ai_color_analysis_online" target="_blank" rel="noopener" class="footer-brand-link instagram-target" title="Follow us on Instagram">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+                </svg>
+                <span>Instagram</span>
+            </a>
+            
+            <a href="https://www.pinterest.com/aicoloranalysisonline/" target="_blank" rel="noopener" class="footer-brand-link pinterest-target" title="Follow us on Pinterest">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.965 1.406-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.569-.994 3.995-.283 1.194.415 2.169 1.592 2.169 1.91 0 3.375-2.4 3.375-5.252 0-2.164-1.428-3.79-4.16-3.79-3.044 0-4.94 2.268-4.94 4.811 0 .919.269 1.572.691 2.073.199.239.227.334.146.652-.048.19-.155.741-.202.94-.063.242-.258.324-.479.228-1.343-.599-1.979-2.203-1.979-3.996 0-2.986 2.525-6.52 7.498-6.52 3.99 0 6.643 2.89 6.643 6.002 0 4.214-2.355 7.359-5.834 7.359-1.168 0-2.27-.635-2.646-1.366 0 0-.629 2.493-.761 3.003-.23.882-.676 1.76-1.042 2.327 1.052.311 2.167.481 3.32.481 6.621 0 11.988-5.366 11.988-11.984C24.017 5.367 18.638 0 12.017 0z"/>
+                </svg>
+                <span>Pinterest</span>
+            </a>
+        </div>
+        
+        <p class="footer-legal-claims">
+            © 2026 AI Color Analysis &nbsp;|&nbsp; 
+            <a href="privacy.html">Privacy Policy</a> &nbsp;·&nbsp; 
+            <a href="terms.html">Terms of Service</a>
+        </p>
     </div>
 </footer>
-<script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

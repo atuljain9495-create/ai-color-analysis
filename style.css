@@ -453,8 +453,7 @@ body.dark-mode .about-hero{
 }
 
 body.dark-mode .about-badges span,
-body.dark-mode .about-highlight-card,
-body.dark-mode .about-card{
+body.dark-mode .about-highlight-card {
     background: #111827;
     border-color: #374151;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
@@ -1249,3 +1248,389 @@ footer {
             display: inline-block;
         }
         
+/* ==========================================================================
+   BLOG CARD GRID — DEDICATED UI/UX OVERHAUL
+   Scoped to .blog-grid / .blog-card so it doesn't affect other pages
+   that reuse .about-grid / .about-card
+   ========================================================================== */
+
+.blog-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 24px;
+    align-items: stretch;
+}
+
+.blog-card {
+    max-width: none;
+    display: flex;
+    flex-direction: column;
+    padding: 26px;
+    border-radius: 18px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Thin accent bar on top of every card for a cleaner, more premium feel */
+.blog-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #4f46e5, #7c3aed);
+    opacity: 0.85;
+}
+
+.blog-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+    border-color: rgba(79, 70, 229, 0.35);
+}
+
+.blog-card h3 {
+    font-size: 1.15rem;
+    line-height: 1.35;
+    margin-bottom: 12px;
+}
+
+/* Meta row: category pill + reading time, replaces plain "Category: X | Y Min Read" text */
+.blog-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.blog-pill {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 4px 11px;
+    border-radius: 999px;
+    background: rgba(79, 70, 229, 0.1);
+    color: #4338ca;
+    white-space: nowrap;
+}
+
+.blog-readtime {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    color: var(--muted-color);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.blog-clock-icon {
+    width: 13px;
+    height: 13px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.75;
+}
+
+/* Category color groups — lets readers visually scan by topic type */
+.blog-pill[data-group="indigo"] { background: rgba(79, 70, 229, 0.1); color: #4338ca; }
+.blog-pill[data-group="blue"]   { background: rgba(37, 99, 235, 0.1); color: #1d4ed8; }
+.blog-pill[data-group="amber"]  { background: rgba(217, 119, 6, 0.12); color: #b45309; }
+.blog-pill[data-group="rose"]   { background: rgba(225, 29, 72, 0.1); color: #be123c; }
+.blog-pill[data-group="emerald"]{ background: rgba(5, 150, 105, 0.1); color: #047857; }
+.blog-pill[data-group="violet"] { background: rgba(124, 58, 237, 0.1); color: #6d28d9; }
+
+/* Description text fills remaining space so buttons line up across a row */
+.blog-card p {
+    flex-grow: 1;
+    font-size: 0.94rem;
+    margin-bottom: 18px;
+}
+
+.blog-card .read-more-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    align-self: flex-start;
+    margin-top: auto;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff !important;
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    box-shadow: 0 8px 18px rgba(79, 70, 229, 0.22);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.blog-card .read-more-btn .btn-arrow {
+    transition: transform 0.18s ease;
+}
+
+.blog-card .read-more-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow: 0 10px 22px rgba(79, 70, 229, 0.3);
+}
+
+.blog-card .read-more-btn:hover .btn-arrow {
+    transform: translateX(3px);
+}
+
+/* Dark mode adjustments */
+body.dark-mode .blog-pill[data-group="indigo"] { background: rgba(129, 140, 248, 0.18); color: #c7d2fe; }
+body.dark-mode .blog-pill[data-group="blue"]   { background: rgba(96, 165, 250, 0.18); color: #bfdbfe; }
+body.dark-mode .blog-pill[data-group="amber"]  { background: rgba(251, 191, 36, 0.18); color: #fde68a; }
+body.dark-mode .blog-pill[data-group="rose"]   { background: rgba(251, 113, 133, 0.18); color: #fecdd3; }
+body.dark-mode .blog-pill[data-group="emerald"]{ background: rgba(52, 211, 153, 0.18); color: #a7f3d0; }
+body.dark-mode .blog-pill[data-group="violet"] { background: rgba(167, 139, 250, 0.18); color: #ddd6fe; }
+
+body.dark-mode .blog-card:hover {
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    border-color: rgba(167, 139, 250, 0.35);
+}
+
+@media (max-width: 768px) {
+    .blog-grid {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .blog-card {
+        padding: 20px;
+    }
+}
+
+/* ==========================================================================
+   BLOG TOPIC FILTER BAR
+   ========================================================================== */
+
+.blog-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 8px 0 28px;
+}
+
+.blog-filter-btn {
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--muted-color);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.blog-filter-btn:hover {
+    transform: translateY(-1px);
+    border-color: rgba(79, 70, 229, 0.4);
+    color: #4f46e5;
+}
+
+.blog-filter-btn.is-active {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    border-color: transparent;
+    color: #fff !important;
+    box-shadow: 0 8px 18px rgba(79, 70, 229, 0.28);
+}
+
+/* Give each topic button a hint of its category color when not active */
+.blog-filter-btn[data-group="indigo"]:hover { color: #4338ca; border-color: rgba(79, 70, 229, 0.4); }
+.blog-filter-btn[data-group="blue"]:hover   { color: #1d4ed8; border-color: rgba(37, 99, 235, 0.4); }
+.blog-filter-btn[data-group="amber"]:hover  { color: #b45309; border-color: rgba(217, 119, 6, 0.4); }
+.blog-filter-btn[data-group="rose"]:hover   { color: #be123c; border-color: rgba(225, 29, 72, 0.4); }
+.blog-filter-btn[data-group="emerald"]:hover{ color: #047857; border-color: rgba(5, 150, 105, 0.4); }
+.blog-filter-btn[data-group="violet"]:hover { color: #6d28d9; border-color: rgba(124, 58, 237, 0.4); }
+
+.blog-card.is-hidden {
+    display: none;
+}
+
+.blog-filter-empty {
+    text-align: center;
+    color: var(--muted-color);
+    font-size: 0.95rem;
+    padding: 30px 10px;
+}
+
+body.dark-mode .blog-filter-btn {
+    background: #1f2937;
+    border-color: #374151;
+    color: #d1d5db;
+}
+
+body.dark-mode .blog-filter-btn:hover {
+    border-color: rgba(167, 139, 250, 0.5);
+    color: #c4b5fd;
+}
+
+body.dark-mode .blog-filter-btn.is-active {
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 768px) {
+    .blog-filter-bar {
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .blog-filter-btn {
+        font-size: 0.8rem;
+        padding: 7px 13px;
+    }
+}
+
+/* ==========================================================================
+   GLASSES 3D TRY-ON TAB STYLES
+   ========================================================================== */
+
+#glassesSelectionTray {
+    padding: 15px;
+    background: #111827; /* Dark background for the tray */
+    border-radius: 12px;
+    max-height: 450px;
+    overflow-y: auto;
+    border: 1px solid #374151;
+}
+
+.glasses-group-heading {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #a78bfa; /* Purple accent for headings */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #374151;
+}
+
+.glasses-item-card {
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s ease;
+}
+
+.glasses-item-card:hover {
+    background: #374151;
+}
+
+.glasses-item-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #f1f5f9;
+}
+
+.glasses-item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.glasses-item-actions .tryon-btn,
+.glasses-item-actions .buy-btn {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 8px;
+    text-decoration: none;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.glasses-item-actions .tryon-btn {
+    background: #334155;
+    color: #f1f5f9;
+    border: 1px solid #475569;
+}
+
+.glasses-item-actions .tryon-btn:hover {
+    background: #475569;
+}
+
+.glasses-item-actions .buy-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white !important;
+    border: none;
+}
+
+.glasses-item-actions .buy-btn:hover {
+    filter: brightness(1.1);
+}
+
+/* ==========================================================================
+   WORK IN PROGRESS OVERLAY
+   ========================================================================== */
+
+.work-in-progress-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-radius: 12px;
+    z-index: 10;
+    color: #111827;
+}
+
+.work-in-progress-overlay h4 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.work-in-progress-overlay p {
+    font-size: 1rem;
+    max-width: 80%;
+}
+
+body.dark-mode .work-in-progress-overlay {
+    background: rgba(17, 24, 39, 0.7);
+    color: #f9fafb;
+}
+
+/* ==========================================================================
+   GLOBAL THEMED SCROLLBAR
+   ========================================================================== */
+
+/* For Webkit-based browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #4b5563; /* A neutral mid-gray for the thumb */
+    border-radius: 10px;
+    border: 3px solid var(--bg-color); /* Creates padding around thumb */
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #6b7280;
+}

@@ -26,6 +26,97 @@ const shopSection    = document.getElementById("shopSection");
 const shopGrid       = document.getElementById("shopGrid");
 const shareSeasonBtn = document.getElementById("shareSeasonBtn");
 const faceStatusWarning = document.getElementById("faceStatusWarning");
+// Scoped styles for the 3D Glasses "Frame Inventory Curation" panel.
+// Injected here (rather than requiring a stylesheet edit) so the curated
+// tray renders correctly out of the box.
+(function injectGlassesTrayStyles() {
+    const style = document.createElement("style");
+    style.textContent = `
+        .glasses-shape-banner {
+            font-size: 13px;
+            color: #a5b4fc;
+            background: rgba(79, 70, 229, 0.12);
+            border: 1px solid rgba(79, 70, 229, 0.35);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 14px;
+        }
+        .glasses-group-heading {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #34d399;
+            margin: 16px 0 8px;
+        }
+        .glasses-group-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .glasses-item-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .glasses-item-card.glasses-item-active {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.08);
+        }
+        .glasses-item-swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+        }
+        .glasses-item-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 0;
+        }
+        .glasses-item-name {
+            font-weight: 600;
+            color: #e5e7eb;
+            font-size: 14px;
+        }
+        .glasses-item-why {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+        .glasses-item-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .glasses-item-actions .tryon-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            background: #4f46e5;
+            color: #fff;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .glasses-item-actions .buy-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: #10b981;
+            color: #fff;
+            font-weight: 600;
+            font-size: 12px;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+    `;
+    document.head.appendChild(style);
+})();
 
 let uploadedImage     = null;
 let stream            = null;
@@ -340,12 +431,16 @@ if (imageUpload) {
             previewImage.src = uploadedImage;
             previewWrapper.style.display = "flex";
             previewImage.style.display = "block";
-            
+
+            // --- FORCE UNLOCK ---
             if (analyzeBtn) {
                 analyzeBtn.removeAttribute("disabled");
                 analyzeBtn.classList.add("active");
+                analyzeBtn.style.opacity = "1";
+                analyzeBtn.style.cursor = "pointer";
+                console.log("Button force-unlocked by system.");
             }
-            
+
             setValidationMessage("Photo uploaded. Ready to analyse.", "info");
         };
         reader.readAsDataURL(file);
@@ -448,6 +543,9 @@ if (captureBtn) {
         if (analyzeBtn) {
             analyzeBtn.removeAttribute("disabled");
             analyzeBtn.classList.add("active");
+            analyzeBtn.style.opacity = "1";
+            analyzeBtn.style.cursor = "pointer";
+            console.log("Button force-unlocked by system.");
         }
 
         // Turn off stream layers cleanly upon successful capture (without
@@ -1818,6 +1916,7 @@ const dressPreviewImg = document.getElementById("dressPreviewImg");
 
 let dressImageData = null;
 
+// 👗 Fix: Wiping camera streams on the clothes tab when an image file loads instead
 if (dressUpload) {
     dressUpload.addEventListener("change", function() {
         const file = this.files[0];
@@ -1826,9 +1925,24 @@ if (dressUpload) {
         reader.onload = e => {
             dressImageData = e.target.result;
             dressPreviewImg.src = dressImageData;
-            dressPreviewBox.style.display = "block";
             
-            // 🧠 FIX: Explicitly hide the placeholder text block here!
+            // 🚨 CRITICAL FIX: Shut down the camera immediately upon upload
+            if (dressStreamInstance) {
+                dressStreamInstance.getTracks().forEach(t => t.stop());
+                dressStreamInstance = null;
+            }
+            const dVideo = document.getElementById("dressVideo");
+            const dOpenBtn = document.getElementById("dressCameraOpenBtn");
+            const dFlipBtn = document.getElementById("dressCameraFlipBtn");
+            const dCaptureBtn = document.getElementById("dressCaptureBtn");
+
+            if (dVideo) dVideo.style.display = "none";
+            if (dOpenBtn) dOpenBtn.textContent = "📷 Open Camera";
+            if (dFlipBtn) dFlipBtn.style.display = "none";
+            if (dCaptureBtn) dCaptureBtn.style.display = "none";
+
+            // Show the preview canvas frame box
+            if (dressPreviewBox) dressPreviewBox.style.display = "block";
             const dPlaceholder = document.getElementById("dressPlaceholderText");
             if (dPlaceholder) dPlaceholder.style.display = "none";
 
@@ -1837,6 +1951,291 @@ if (dressUpload) {
         };
         reader.readAsDataURL(file);
     });
+}
+
+// =========================================================================
+// 🕶️ STANDALONE LIVE WEB-STREAM GLASSES TRY-ON CONTROLLER ENGINE
+// =========================================================================
+let glassesStreamInstance = null;
+let currentGlassesFacingMode = "user";
+let activeGlassesStyleId = null;
+let glassesLoopRequestId = null;
+
+// Curated per the standard optical classification: every frame is tagged with
+// one of the 3 primary structures (Full-Rim / Semi-Rimless / Rimless) and the
+// face shapes it's recommended for, following the 7-shape face guide
+// (round, square, heart, oval, diamond, triangle, oblong).
+const catalog3DDatabase = [
+    // --- FULL-RIM ---
+    { id: "fr_rect_black",  name: "Classic Rectangular", structure: "Full-Rim",     faceMatches: ["round", "oblong"],                why: "Adds angles and length to soften a curved face.",        color: 0x111111, widthMult: 2.1,  yOff: -0.05 },
+    { id: "fr_geo_square",  name: "Geometric Square",    structure: "Full-Rim",     faceMatches: ["round", "oval"],                  why: "Sharp lines balance rounder or softer features.",        color: 0x263238, widthMult: 2.15, yOff: -0.05 },
+    { id: "fr_round_tort",  name: "Round Tortoiseshell", structure: "Full-Rim",     faceMatches: ["square", "diamond"],              why: "Rounded curves soften a strong jawline or angular cheekbones.", color: 0x6B4F35, widthMult: 2.0,  yOff: -0.06 },
+    { id: "fr_cateye_purp", name: "Vintage Cat-Eye",     structure: "Full-Rim",     faceMatches: ["heart", "diamond"],               why: "Upswept corners echo and highlight high cheekbones.",    color: 0x4c1d95, widthMult: 2.1,  yOff: -0.10 },
+    { id: "fr_wayfarer_blk",name: "Iconic Wayfarer",     structure: "Full-Rim",     faceMatches: ["oval", "round"],                  why: "A versatile trapezoidal shape that suits most faces.",   color: 0x000000, widthMult: 2.1,  yOff: -0.08 },
+    { id: "fr_oversized_sq",name: "Oversized Square",    structure: "Full-Rim",     faceMatches: ["oblong", "round"],                why: "Extra depth shortens and balances a longer face.",       color: 0x1E3A5F, widthMult: 2.3,  yOff: -0.05 },
+
+    // --- SEMI-RIMLESS ---
+    { id: "sr_browline_brn",name: "Browline Retro",      structure: "Semi-Rimless", faceMatches: ["triangle", "oblong", "oval"],     why: "Bold brow line widens the upper face to balance a wider jaw.", color: 0x5A3A22, widthMult: 2.15, yOff: -0.12 },
+    { id: "sr_rect_gun",    name: "Modern Rectangular",  structure: "Semi-Rimless", faceMatches: ["round", "oval"],                  why: "Clean straight lines add gentle structure.",             color: 0x414A4C, widthMult: 2.2,  yOff: -0.05 },
+
+    // --- RIMLESS ---
+    { id: "rl_aviator_gld", name: "Classic Aviator",     structure: "Rimless",      faceMatches: ["triangle", "oblong", "square"],   why: "Wide top bar adds width up top, balancing a narrower or angular jaw.", color: 0xc0a000, widthMult: 2.4, yOff: -0.12 },
+    { id: "rl_oval_silv",   name: "Lightweight Oval",    structure: "Rimless",      faceMatches: ["heart", "diamond", "oval"],       why: "Soft, near-invisible edge that doesn't compete with delicate features.", color: 0xAAAAAA, widthMult: 2.0, yOff: -0.06 }
+];
+
+window.openGlassesCamera = async function() {
+    // ONLY targets Glasses Tab elements
+    const gVideo = document.getElementById("glassesVideo");
+    const gCanvas = document.getElementById("glassesTryOnCanvas");
+    const gPlaceholder = document.getElementById("glassesPlaceholderText");
+    const gOpenBtn = document.getElementById("glassesCameraOpenBtn");
+
+    // CRITICAL: Ensure we do not interfere with 'stream' (the analysis stream)
+    // We strictly use 'glassesStreamInstance' only
+    try {
+        if (glassesStreamInstance) glassesStreamInstance.getTracks().forEach(t => t.stop());
+        
+        glassesStreamInstance = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "user" }, 
+            audio: false 
+        });
+
+        gVideo.srcObject = glassesStreamInstance;
+        gVideo.style.display = "block";
+        gCanvas.style.display = "block";
+        gPlaceholder.style.display = "none";
+
+        const gFlipBtn = document.getElementById("glassesCameraFlipBtn");
+        if (gFlipBtn) gFlipBtn.style.display = "inline-block";
+        
+        gOpenBtn.textContent = "📷 Close 3D Try-on Camera";
+        gOpenBtn.onclick = window.closeGlassesCamera;
+
+        gVideo.onloadedmetadata = () => {
+            initThreeJSScene(gVideo, gCanvas);
+            // ONLY runs the structural scanner on THIS specific Glasses tab stream
+            runInstantFaceStructureScan();
+            if (glassesLoopRequestId) cancelAnimationFrame(glassesLoopRequestId);
+            glassesLoopRequestId = requestAnimationFrame(render3DTrackingFrameLoopTick);
+        };
+    } catch (err) {
+        alert("Camera error in Glasses tab. Please check permissions.");
+    }
+};
+
+// Upgraded 7-Shape Geometric Face Analysis Logic
+window.getFaceShape = function(landmarks) {
+    if (!landmarks || !landmarks.positions || landmarks.positions.length !== 68) return 'oval';
+    
+    try {
+        const p = landmarks.positions;
+
+        // Widths
+        const faceWidth = p[16].x - p[0].x;
+        const jawWidth = p[12].x - p[4].x;
+        const foreheadWidth = p[26].x - p[17].x;
+
+        // Heights
+        const faceHeight = p[8].y - ((p[19].y + p[24].y) / 2); // Chin to mid-eyebrow
+        const midFaceHeight = p[33].y - ((p[19].y + p[24].y) / 2); // Nose-bridge to mid-eyebrow
+
+        const heightToWidthRatio = faceHeight / faceWidth;
+
+        // --- Structural Classification Logic ---
+
+        // Oblong: Significantly longer than wide
+        if (heightToWidthRatio > 1.4) return 'oblong';
+
+        // Heart: Forehead is widest, chin is pointed.
+        if (foreheadWidth > jawWidth && (p[8].y - p[5].y) > midFaceHeight * 0.5) {
+            return 'heart';
+        }
+
+        // Square: Jaw and forehead are similar widths, angular jaw.
+        const jawAngleYDiff = p[4].y - p[2].y;
+        if (Math.abs(jawWidth - foreheadWidth) < faceWidth * 0.1 && jawAngleYDiff < 10) {
+            return 'square';
+        }
+
+        // Round: Face is nearly as wide as it is tall, soft jawline.
+        if (heightToWidthRatio < 1.05 && jawAngleYDiff > 15) {
+            return 'round';
+        }
+        
+        // Diamond: Widest at the cheeks (p[1] and p[15]), narrow forehead and jaw.
+        const cheekWidth = p[15].x - p[1].x;
+        if (cheekWidth > foreheadWidth && cheekWidth > jawWidth) {
+            return 'diamond';
+        }
+
+        // Triangle: Jawline is wider than forehead.
+        if (jawWidth > foreheadWidth) {
+            return 'triangle';
+        }
+
+        return 'oval'; // Default balanced
+    } catch(e) { 
+        console.warn("Face shape detection failed, defaulting to oval.", e);
+        return 'oval'; 
+    }
+};
+
+async function runInstantFaceStructureScan() {
+    const statusText = document.getElementById("glassesFaceShapeResultText");
+    const gVideo = document.getElementById("glassesVideo");
+    if (!statusText || !gVideo) return;
+
+    statusText.textContent = "🧬 Scanning bone structure...";
+    
+    // Explicitly scan the glasses video stream
+    const detection = await window.faceapi.detectSingleFace(gVideo, new window.faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
+    
+    if (detection) {
+        window._storedTryOnLandmarks = detection.landmarks;
+        const faceShape = window.getFaceShape(detection.landmarks);
+        statusText.innerHTML = `🧬 AI STRUCTURE: <span style="color:#34d399;">${faceShape.toUpperCase()} FACE</span>`;
+        // Immediately load the curated tray based on this scan
+        renderCuratedGlassesSelectionTray();
+    }
+}
+
+function renderCuratedGlassesSelectionTray() {
+    const trayContainer = document.getElementById("glassesSelectionTray");
+    const faceShape = (window.getFaceShape(window._storedTryOnLandmarks) || "oval").toLowerCase();
+    if (!trayContainer) return;
+
+    // Direct matches for this specific face shape first.
+    let curatedFrames = catalog3DDatabase.filter(frame => frame.faceMatches.includes(faceShape));
+
+    // Only top up with versatile "oval-friendly" frames if direct matches are thin —
+    // previously this ORed in every oval-tagged frame for every face shape, which
+    // drowned out the actual recommendation with generic filler.
+    if (curatedFrames.length < 3) {
+        const versatile = catalog3DDatabase.filter(
+            frame => frame.faceMatches.includes("oval") && !curatedFrames.includes(frame)
+        );
+        curatedFrames = curatedFrames.concat(versatile);
+    }
+
+    // Group by frame structure: Full-Rim / Semi-Rimless / Rimless
+    const groupedFrames = curatedFrames.reduce((acc, frame) => {
+        const key = frame.structure || 'Full-Rim';
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(frame);
+        return acc;
+    }, {});
+
+    const isIndia = isUserInIndia();
+    const affiliateId = isIndia ? 'aicoloronline-21' : 'aicolor-20';
+    const amazonDomain = isIndia ? 'amazon.in' : 'amazon.com';
+
+    let trayHtml = `<div class="glasses-shape-banner">Curated for your <strong>${faceShape.toUpperCase()}</strong> face shape</div>`;
+
+    const structureOrder = ["Full-Rim", "Semi-Rimless", "Rimless"];
+    const orderedGroupNames = Object.keys(groupedFrames).sort(
+        (a, b) => structureOrder.indexOf(a) - structureOrder.indexOf(b)
+    );
+
+    orderedGroupNames.forEach(groupName => {
+        trayHtml += `<h4 class="glasses-group-heading">${groupName}</h4><div class="glasses-group-grid">`;
+
+        groupedFrames[groupName].forEach(frame => {
+            const searchTerm = encodeURIComponent(`${frame.name} glasses`);
+            const buyUrl = `https://www.${amazonDomain}/s?k=${searchTerm}&tag=${affiliateId}`;
+            const isActive = activeGlassesStyleId === frame.id;
+
+            // No external thumbnail image — those files don't ship with this
+            // build, which is what was causing the broken-image icons. A CSS
+            // swatch + icon carries the same info without a missing asset.
+            trayHtml += `
+                <div class="glasses-item-card${isActive ? ' glasses-item-active' : ''}">
+                    <div class="glasses-item-swatch" style="background:#${frame.color.toString(16).padStart(6, '0')};"></div>
+                    <div class="glasses-item-info">
+                        <span class="glasses-item-name">${frame.name}</span>
+                        ${frame.why ? `<span class="glasses-item-why">${frame.why}</span>` : ''}
+                    </div>
+                    <div class="glasses-item-actions">
+                        <button class="tryon-btn" onclick="window.setActiveGlassesModel('${frame.id}')">Try On</button>
+                        <a href="${buyUrl}" target="_blank" class="buy-btn" onclick="trackShoppingClick('AMAZON', 'Glasses')">Buy Now</a>
+                    </div>
+                </div>
+            `;
+        });
+
+        trayHtml += `</div>`;
+    });
+
+    trayContainer.innerHTML = trayHtml || "<p>No recommended frames found for your face shape.</p>";
+}
+
+// Stub function to be called by the try-on buttons
+window.setActiveGlassesModel = function(glassesId) {
+    activeGlassesStyleId = glassesId;
+    console.log("Set active 3D glasses model to:", glassesId);
+    // Re-render so the selected card gets the active highlight.
+    renderCuratedGlassesSelectionTray();
+    // In a real implementation, this would load a 3D model into the Three.js scene.
+};
+
+// Placeholder for 3D rendering logic
+let threeScene, threeCamera, threeRenderer, threeGlassesModel;
+
+function initThreeJSScene(videoElement, canvasElement) {
+    console.log("Initializing Three.js scene (stub)...");
+    // In a real implementation:
+    // threeScene = new THREE.Scene();
+    // threeCamera = new THREE.PerspectiveCamera(...);
+    // threeRenderer = new THREE.WebGLRenderer({ canvas: canvasElement, alpha: true });
+    // ... setup lights, etc.
+}
+
+function render3DTrackingFrameLoopTick() {
+    if (!glassesStreamInstance) return;
+    // console.log("Rendering 3D frame for model:", activeGlassesStyleId);
+    // In a real implementation:
+    // 1. Update video texture
+    // 2. Get face landmarks
+    // 3. Position `threeGlassesModel` based on landmarks
+    // 4. `threeRenderer.render(threeScene, threeCamera);`
+    glassesLoopRequestId = requestAnimationFrame(render3DTrackingFrameLoopTick);
+}
+
+window.closeGlassesCamera = function() {
+    const gVideo = document.getElementById("glassesVideo");
+    const gCanvas = document.getElementById("glassesTryOnCanvas");
+    const gPlaceholder = document.getElementById("glassesPlaceholderText");
+    const gOpenBtn = document.getElementById("glassesCameraOpenBtn");
+    const gFlipBtn = document.getElementById("glassesCameraFlipBtn");
+
+    if (glassesLoopRequestId) cancelAnimationFrame(glassesLoopRequestId);
+    glassesLoopRequestId = null;
+    if (glassesStreamInstance) {
+        glassesStreamInstance.getTracks().forEach(t => t.stop());
+        glassesStreamInstance = null;
+    }
+
+    if (gVideo) gVideo.style.display = "none";
+    if (gCanvas) gCanvas.style.display = "none";
+    if (gPlaceholder) gPlaceholder.style.display = "block";
+    if (gFlipBtn) gFlipBtn.style.display = "none";
+
+    if (gOpenBtn) {
+        gOpenBtn.textContent = "📷 Start 3D Try-on Camera";
+        gOpenBtn.onclick = window.openGlassesCamera;
+    }
+};
+
+window.toggleGlassesCameraLens = function() {
+    currentGlassesFacingMode = (currentGlassesFacingMode === "user") ? "environment" : "user";
+    window.openGlassesCamera();
+};
+
+// Populate the curated tray immediately on load with a versatile default set
+// (function declarations are hoisted, so this can run before its definition
+// appears further down the file), so the panel isn't empty before the user
+// has run a face-shape scan.
+if (document.getElementById("glassesSelectionTray")) {
+    renderCuratedGlassesSelectionTray();
 }
 
 if (dressCheckBtn) {
@@ -1868,6 +2267,15 @@ if (dressCheckBtn) {
                 'match_verdict': verdict
             });
         }
+
+        dressResult.innerHTML = `<div style="text-align: center; padding: 20px;">
+            <span style="font-size: 1.5rem; margin-bottom: 12px; display: block;">${verdict.icon}</span>
+            <strong style="font-size: 1rem; display: block; margin-bottom: 8px; color: ${verdict.color};">${verdict.text}</strong>
+            <span style="font-size: 0.9rem; color: #cbd5e1; display: block; margin-top: 12px; line-height: 1.6;">${verdict.explanation}</span>
+        </div>`;
+
+        dressCheckBtn.textContent = "🎨 Check This Color";
+        dressCheckBtn.disabled    = false;
 
         // Curated reason traits assigned dynamically based on seasonal matches
         const isWarm = window._userUndertone === "Warm";
@@ -1985,10 +2393,17 @@ function unlockDressChecker(palette, undertone, season) {
     window._userPalette   = palette;
     window._userUndertone = undertone;
     window._userSeason    = season;
+    
+    // 🔓 Hide the lock screen and display the main workspace wrapper cleanly
     const locked  = document.getElementById("dressCheckerLocked");
-    const active  = document.getElementById("dressCheckerActive");
+    const activeWorkspace = document.getElementById("sandboxActiveWorkspaceWrapper");
+    
     if (locked) locked.style.display = "none";
-    if (active) active.style.display = "block";
+    if (activeWorkspace) activeWorkspace.style.display = "block";
+
+    if (window._latestFaceLandmarks) {
+        window._storedTryOnLandmarks = window._latestFaceLandmarks;
+    }
 }
 // ── 🧠 GLOBAL ACCORDION ENGINE CONTROLLERS ──
 window.toggleAccordionPanel = function(panelElementId) {
@@ -2104,6 +2519,12 @@ window.closeDressCheckerCamera = function() {
     dFlipBtn.style.display = "none";
     dCaptureBtn.style.display = "none";
 };
+
+// NOTE: the "Coming Soon" overlay for the Glasses tab now lives directly in
+// index.html (inside #glassesTryOnActive) so it renders reliably and covers
+// the whole panel — a previous attempt here tried to inject it on
+// DOMContentLoaded, but since app.js loads at the end of <body>, that event
+// has already fired by the time this script runs, so it never fired.
 window.toggleDressCheckerCameraLens = function() {
     // Cycles smoothly between front (user) and rear (environment) device sensors
     currentDressFacingMode = (currentDressFacingMode === "environment") ? "user" : "environment";
