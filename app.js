@@ -26,97 +26,13 @@ const shopSection    = document.getElementById("shopSection");
 const shopGrid       = document.getElementById("shopGrid");
 const shareSeasonBtn = document.getElementById("shareSeasonBtn");
 const faceStatusWarning = document.getElementById("faceStatusWarning");
-// Scoped styles for the 3D Glasses "Frame Inventory Curation" panel.
-// Injected here (rather than requiring a stylesheet edit) so the curated
-// tray renders correctly out of the box.
-(function injectGlassesTrayStyles() {
-    const style = document.createElement("style");
-    style.textContent = `
-        .glasses-shape-banner {
-            font-size: 13px;
-            color: #a5b4fc;
-            background: rgba(79, 70, 229, 0.12);
-            border: 1px solid rgba(79, 70, 229, 0.35);
-            border-radius: 8px;
-            padding: 8px 12px;
-            margin-bottom: 14px;
-        }
-        .glasses-group-heading {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #34d399;
-            margin: 16px 0 8px;
-        }
-        .glasses-group-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .glasses-item-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 12px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.03);
-        }
-        .glasses-item-card.glasses-item-active {
-            border-color: #10b981;
-            background: rgba(16, 185, 129, 0.08);
-        }
-        .glasses-item-swatch {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            border: 2px solid rgba(255, 255, 255, 0.25);
-        }
-        .glasses-item-info {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            min-width: 0;
-        }
-        .glasses-item-name {
-            font-weight: 600;
-            color: #e5e7eb;
-            font-size: 14px;
-        }
-        .glasses-item-why {
-            font-size: 11px;
-            color: #9ca3af;
-            margin-top: 2px;
-        }
-        .glasses-item-actions {
-            display: flex;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-        .glasses-item-actions .tryon-btn {
-            padding: 6px 12px;
-            border-radius: 6px;
-            border: none;
-            background: #4f46e5;
-            color: #fff;
-            font-weight: 600;
-            font-size: 12px;
-            cursor: pointer;
-        }
-        .glasses-item-actions .buy-btn {
-            padding: 6px 12px;
-            border-radius: 6px;
-            background: #10b981;
-            color: #fff;
-            font-weight: 600;
-            font-size: 12px;
-            text-decoration: none;
-            white-space: nowrap;
-        }
-    `;
-    document.head.appendChild(style);
-})();
+// Styles for the 3D Goggles "Frame Inventory Curation" panel live in
+// style.css (.glasses-item-card and related classes) — this used to also be
+// injected here at runtime as a duplicate, conflicting stylesheet, which is
+// what caused the mobile layout to break (the injected version loaded after
+// style.css and silently won on cascade order, and it had no mobile
+// breakpoint at all). Removed in favor of style.css being the one source of
+// truth.
 
 let uploadedImage     = null;
 let stream            = null;
