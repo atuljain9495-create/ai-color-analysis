@@ -247,7 +247,8 @@ async function initFaceApi() {
     try {
         await Promise.all([
             window.faceapi.nets.tinyFaceDetector.load(FACE_API_MODEL_URL),
-            window.faceapi.nets.ageGenderNet.load(FACE_API_MODEL_URL)
+            window.faceapi.nets.ageGenderNet.load(FACE_API_MODEL_URL),
+            window.faceapi.nets.faceLandmark68Net.load(FACE_API_MODEL_URL)
         ]);
         faceApiReady   = true;
         ageGenderReady = true;
@@ -391,6 +392,31 @@ applyDarkModeUI();
 resetResults();
 
 window._selectedGender = "woman";
+window._aiGenderDetectionEnabled = true;
+
+window.toggleAiGenderDetection = function(enabled) {
+    window._aiGenderDetectionEnabled = enabled;
+
+    const label = document.getElementById("profileTypeLabel");
+    const toggleLabel = document.getElementById("aiToggleLabel");
+    const track = document.getElementById("aiToggleTrack");
+    const thumb = document.getElementById("aiToggleThumb");
+    const helperText = document.getElementById("profileTypeHelperText");
+
+    if (enabled) {
+        if (label) label.textContent = "🤖 Profile Type: AI Auto-Detect Active";
+        if (toggleLabel) { toggleLabel.textContent = "AI: ON"; toggleLabel.style.color = "#0369a1"; }
+        if (track) track.style.background = "#0ea5e9";
+        if (thumb) thumb.style.left = "20px";
+        if (helperText) helperText.textContent = "Our face-tracking network automatically isolates demographics to personalize your store recommendations. You can optionally tap below to set a manual override fallback position:";
+    } else {
+        if (label) label.textContent = "🙋 Profile Type: Manual Selection";
+        if (toggleLabel) { toggleLabel.textContent = "AI: OFF"; toggleLabel.style.color = "#6b7280"; }
+        if (track) track.style.background = "#94a3b8";
+        if (thumb) thumb.style.left = "2px";
+        if (helperText) helperText.textContent = "AI auto-detection is off — your selection below will always be used, even if our AI would have guessed differently.";
+    }
+};
 
 window.selectGender = function(gender) {
     window._selectedGender = gender;
@@ -660,14 +686,14 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         const detectedAge = validationResult.age || null;
         const detectedGender = validationResult.gender || null;
 
-        let personType = "woman"; 
-        if (detectedGender) {
+        let personType = "woman";
+        if (window._aiGenderDetectionEnabled && detectedGender) {
             personType = (detectedGender === "male") ? "man" : "woman";
         } else {
             personType = window._selectedGender || "woman";
         }
 
-        if (detectedAge !== null && detectedAge < 13) personType = "child";
+        if (window._aiGenderDetectionEnabled && detectedAge !== null && detectedAge < 13) personType = "child";
 
         currentAnalyzedPersonType = personType;
 
@@ -1187,7 +1213,17 @@ if (shareSeasonBtn) {
         sCtx.fillText(`${leafEmoji} YOUR SEASON`, 575, 239);
 
         sCtx.fillStyle = textColor;
-        sCtx.font = "bold 82px Georgia, serif";
+        // Auto-shrink the title so long season names (e.g. "Warm Spring
+        // (Vibrant & Golden Profile)") fit within the card instead of
+        // running off the right edge — 82px was previously fixed regardless
+        // of text length.
+        const seasonTitleMaxWidth = 600; // available width from x=550 to the card's right margin
+        let seasonFontSize = 82;
+        sCtx.font = `bold ${seasonFontSize}px Georgia, serif`;
+        while (sCtx.measureText(seasonalTypeText).width > seasonTitleMaxWidth && seasonFontSize > 28) {
+            seasonFontSize -= 2;
+            sCtx.font = `bold ${seasonFontSize}px Georgia, serif`;
+        }
         sCtx.fillText(seasonalTypeText, 550, 345);
 
         sCtx.fillStyle = textColor;
@@ -1965,22 +2001,26 @@ let glassesLoopRequestId = null;
 // one of the 3 primary structures (Full-Rim / Semi-Rimless / Rimless) and the
 // face shapes it's recommended for, following the 7-shape face guide
 // (round, square, heart, oval, diamond, triangle, oblong).
+// Each frame's `modelFile` points to /assets/3d-glasses/<file>.glb — drop your
+// GLB models in that folder using these exact filenames and they'll load
+// automatically. No file there yet = that frame just won't render (logged
+// to console, doesn't break anything else).
 const catalog3DDatabase = [
     // --- FULL-RIM ---
-    { id: "fr_rect_black",  name: "Classic Rectangular", structure: "Full-Rim",     faceMatches: ["round", "oblong"],                why: "Adds angles and length to soften a curved face.",        color: 0x111111, widthMult: 2.1,  yOff: -0.05 },
-    { id: "fr_geo_square",  name: "Geometric Square",    structure: "Full-Rim",     faceMatches: ["round", "oval"],                  why: "Sharp lines balance rounder or softer features.",        color: 0x263238, widthMult: 2.15, yOff: -0.05 },
-    { id: "fr_round_tort",  name: "Round Tortoiseshell", structure: "Full-Rim",     faceMatches: ["square", "diamond"],              why: "Rounded curves soften a strong jawline or angular cheekbones.", color: 0x6B4F35, widthMult: 2.0,  yOff: -0.06 },
-    { id: "fr_cateye_purp", name: "Vintage Cat-Eye",     structure: "Full-Rim",     faceMatches: ["heart", "diamond"],               why: "Upswept corners echo and highlight high cheekbones.",    color: 0x4c1d95, widthMult: 2.1,  yOff: -0.10 },
-    { id: "fr_wayfarer_blk",name: "Iconic Wayfarer",     structure: "Full-Rim",     faceMatches: ["oval", "round"],                  why: "A versatile trapezoidal shape that suits most faces.",   color: 0x000000, widthMult: 2.1,  yOff: -0.08 },
-    { id: "fr_oversized_sq",name: "Oversized Square",    structure: "Full-Rim",     faceMatches: ["oblong", "round"],                why: "Extra depth shortens and balances a longer face.",       color: 0x1E3A5F, widthMult: 2.3,  yOff: -0.05 },
+    { id: "fr_rect_black",  name: "Classic Rectangular", structure: "Full-Rim",     faceMatches: ["round", "oblong"],                why: "Adds angles and length to soften a curved face.",        color: 0x111111, widthMult: 2.1,  yOff: -0.05, modelFile: "fr_rect_black.glb" },
+    { id: "fr_geo_square",  name: "Geometric Square",    structure: "Full-Rim",     faceMatches: ["round", "oval"],                  why: "Sharp lines balance rounder or softer features.",        color: 0x263238, widthMult: 2.15, yOff: -0.05, modelFile: "fr_geo_square.glb" },
+    { id: "fr_round_tort",  name: "Round Tortoiseshell", structure: "Full-Rim",     faceMatches: ["square", "diamond"],              why: "Rounded curves soften a strong jawline or angular cheekbones.", color: 0x6B4F35, widthMult: 2.0,  yOff: -0.06, modelFile: "fr_round_tort.glb" },
+    { id: "fr_cateye_purp", name: "Vintage Cat-Eye",     structure: "Full-Rim",     faceMatches: ["heart", "diamond"],               why: "Upswept corners echo and highlight high cheekbones.",    color: 0x4c1d95, widthMult: 2.1,  yOff: -0.10, modelFile: "fr_cateye_purp.glb" },
+    { id: "fr_wayfarer_blk",name: "Iconic Wayfarer",     structure: "Full-Rim",     faceMatches: ["oval", "round"],                  why: "A versatile trapezoidal shape that suits most faces.",   color: 0x000000, widthMult: 2.1,  yOff: -0.08, modelFile: "fr_wayfarer_blk.glb" },
+    { id: "fr_oversized_sq",name: "Oversized Square",    structure: "Full-Rim",     faceMatches: ["oblong", "round"],                why: "Extra depth shortens and balances a longer face.",       color: 0x1E3A5F, widthMult: 2.3,  yOff: -0.05, modelFile: "fr_oversized_sq.glb" },
 
     // --- SEMI-RIMLESS ---
-    { id: "sr_browline_brn",name: "Browline Retro",      structure: "Semi-Rimless", faceMatches: ["triangle", "oblong", "oval"],     why: "Bold brow line widens the upper face to balance a wider jaw.", color: 0x5A3A22, widthMult: 2.15, yOff: -0.12 },
-    { id: "sr_rect_gun",    name: "Modern Rectangular",  structure: "Semi-Rimless", faceMatches: ["round", "oval"],                  why: "Clean straight lines add gentle structure.",             color: 0x414A4C, widthMult: 2.2,  yOff: -0.05 },
+    { id: "sr_browline_brn",name: "Browline Retro",      structure: "Semi-Rimless", faceMatches: ["triangle", "oblong", "oval"],     why: "Bold brow line widens the upper face to balance a wider jaw.", color: 0x5A3A22, widthMult: 2.15, yOff: -0.12, modelFile: "sr_browline_brn.glb" },
+    { id: "sr_rect_gun",    name: "Modern Rectangular",  structure: "Semi-Rimless", faceMatches: ["round", "oval"],                  why: "Clean straight lines add gentle structure.",             color: 0x414A4C, widthMult: 2.2,  yOff: -0.05, modelFile: "sr_rect_gun.glb" },
 
     // --- RIMLESS ---
-    { id: "rl_aviator_gld", name: "Classic Aviator",     structure: "Rimless",      faceMatches: ["triangle", "oblong", "square"],   why: "Wide top bar adds width up top, balancing a narrower or angular jaw.", color: 0xc0a000, widthMult: 2.4, yOff: -0.12 },
-    { id: "rl_oval_silv",   name: "Lightweight Oval",    structure: "Rimless",      faceMatches: ["heart", "diamond", "oval"],       why: "Soft, near-invisible edge that doesn't compete with delicate features.", color: 0xAAAAAA, widthMult: 2.0, yOff: -0.06 }
+    { id: "rl_aviator_gld", name: "Classic Aviator",     structure: "Rimless",      faceMatches: ["triangle", "oblong", "square"],   why: "Wide top bar adds width up top, balancing a narrower or angular jaw.", color: 0xc0a000, widthMult: 2.4, yOff: -0.12, modelFile: "rl_aviator_gld.glb" },
+    { id: "rl_oval_silv",   name: "Lightweight Oval",    structure: "Rimless",      faceMatches: ["heart", "diamond", "oval"],       why: "Soft, near-invisible edge that doesn't compete with delicate features.", color: 0xAAAAAA, widthMult: 2.0, yOff: -0.06, modelFile: "rl_oval_silv.glb" }
 ];
 
 window.openGlassesCamera = async function() {
@@ -2007,11 +2047,20 @@ window.openGlassesCamera = async function() {
 
         const gFlipBtn = document.getElementById("glassesCameraFlipBtn");
         if (gFlipBtn) gFlipBtn.style.display = "inline-block";
+
+        const gCaptureBtn = document.getElementById("glassesCaptureBtn");
+        if (gCaptureBtn) gCaptureBtn.style.display = "inline-block";
         
         gOpenBtn.textContent = "📷 Close 3D Try-on Camera";
         gOpenBtn.onclick = window.closeGlassesCamera;
 
         gVideo.onloadedmetadata = () => {
+            // Set the canvas's actual render resolution before Three.js reads
+            // it — otherwise the camera/renderer briefly get built against the
+            // canvas element's default 300x150 size.
+            gCanvas.width = gVideo.videoWidth;
+            gCanvas.height = gVideo.videoHeight;
+
             initThreeJSScene(gVideo, gCanvas);
             // ONLY runs the structural scanner on THIS specific Glasses tab stream
             runInstantFaceStructureScan();
@@ -2086,16 +2135,34 @@ async function runInstantFaceStructureScan() {
     if (!statusText || !gVideo) return;
 
     statusText.textContent = "🧬 Scanning bone structure...";
-    
-    // Explicitly scan the glasses video stream
-    const detection = await window.faceapi.detectSingleFace(gVideo, new window.faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
-    
-    if (detection) {
-        window._storedTryOnLandmarks = detection.landmarks;
-        const faceShape = window.getFaceShape(detection.landmarks);
-        statusText.innerHTML = `🧬 AI STRUCTURE: <span style="color:#34d399;">${faceShape.toUpperCase()} FACE</span>`;
-        // Immediately load the curated tray based on this scan
-        renderCuratedGlassesSelectionTray();
+
+    // Same tuned, more lighting-tolerant settings used elsewhere in this file
+    // (the previous default TinyFaceDetectorOptions() was noticeably
+    // stricter and would miss faces in dim/warm indoor lighting).
+    const detectorOptions = new window.faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.3 });
+
+    try {
+        let detection = null;
+        // The very first attempt can fire before the video frame is fully
+        // painted, so retry a few times with a short pause rather than
+        // giving up after a single try.
+        for (let attempt = 0; attempt < 4 && !detection; attempt++) {
+            if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 350));
+            detection = await window.faceapi.detectSingleFace(gVideo, detectorOptions).withFaceLandmarks();
+        }
+
+        if (detection) {
+            window._storedTryOnLandmarks = detection.landmarks;
+            const faceShape = window.getFaceShape(detection.landmarks);
+            statusText.innerHTML = `🧬 AI STRUCTURE: <span style="color:#34d399;">${faceShape.toUpperCase()} FACE</span>`;
+            // Immediately load the curated tray based on this scan
+            renderCuratedGlassesSelectionTray();
+        } else {
+            statusText.textContent = "🧬 Couldn't detect a face — check lighting and make sure your whole face is in frame.";
+        }
+    } catch (err) {
+        console.warn("Face structure scan failed:", err);
+        statusText.textContent = "🧬 Face scan unavailable right now.";
     }
 }
 
@@ -2174,31 +2241,327 @@ window.setActiveGlassesModel = function(glassesId) {
     console.log("Set active 3D glasses model to:", glassesId);
     // Re-render so the selected card gets the active highlight.
     renderCuratedGlassesSelectionTray();
-    // In a real implementation, this would load a 3D model into the Three.js scene.
+    loadGlassesModel(glassesId);
 };
 
-// Placeholder for 3D rendering logic
+// ============================================================================
+// 3D GLASSES ENGINE (Three.js)
+// Models load from: assets/3d-glasses/<modelFile>.glb  (see catalog3DDatabase)
+// ============================================================================
+
 let threeScene, threeCamera, threeRenderer, threeGlassesModel;
+const GLASSES_MODEL_FOLDER = "assets/3d-glasses/";
 
 function initThreeJSScene(videoElement, canvasElement) {
-    console.log("Initializing Three.js scene (stub)...");
-    // In a real implementation:
-    // threeScene = new THREE.Scene();
-    // threeCamera = new THREE.PerspectiveCamera(...);
-    // threeRenderer = new THREE.WebGLRenderer({ canvas: canvasElement, alpha: true });
-    // ... setup lights, etc.
+    if (typeof THREE === "undefined") {
+        console.warn("Three.js is not loaded — 3D glasses rendering is unavailable.");
+        return;
+    }
+
+    threeScene = new THREE.Scene();
+
+    threeCamera = new THREE.PerspectiveCamera(35, canvasElement.width / canvasElement.height || 1, 0.1, 1000);
+    threeCamera.position.set(0, 0, 5);
+    threeCamera.lookAt(0, 0, 0);
+
+    threeRenderer = new THREE.WebGLRenderer({ canvas: canvasElement, alpha: true, antialias: true, preserveDrawingBuffer: true });
+    threeRenderer.setSize(canvasElement.width, canvasElement.height, false);
+    threeRenderer.setClearColor(0x000000, 0); // fully transparent, so the video shows through
+
+    threeScene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    keyLight.position.set(0, 1, 2);
+    threeScene.add(keyLight);
+
+    // If a frame was already selected before the camera opened, load it now.
+    if (activeGlassesStyleId) loadGlassesModel(activeGlassesStyleId);
 }
 
-function render3DTrackingFrameLoopTick() {
+function loadGlassesModel(glassesId) {
+    if (typeof THREE === "undefined" || typeof THREE.GLTFLoader === "undefined") {
+        console.warn("GLTFLoader is not available — check that the Three.js + GLTFLoader <script> tags are included in index.html.");
+        return;
+    }
+    if (!threeScene) return; // camera/scene not open yet — loadGlassesModel() runs again from initThreeJSScene once it is
+
+    // Always remove (and properly dispose) whatever's currently shown first —
+    // this needs to run unconditionally, including when glassesId is null
+    // (Clear Frames) or points at a frame with no model, otherwise the old
+    // model is left orphaned in the scene and keeps rendering.
+    if (threeGlassesModel) {
+        threeScene.remove(threeGlassesModel);
+        threeGlassesModel.traverse((child) => {
+            if (child.isMesh) {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+                    materials.forEach((mat) => {
+                        Object.values(mat).forEach((val) => {
+                            if (val && val.isTexture) val.dispose();
+                        });
+                        mat.dispose();
+                    });
+                }
+            }
+        });
+        threeGlassesModel = null;
+    }
+
+    lastKnownLandmarks = null; // avoid one stale frame of the old model's position/scale bleeding into the next
+
+    const frame = catalog3DDatabase.find(f => f.id === glassesId);
+    if (!frame || !frame.modelFile) return; // null (Clear Frames) or a frame with no model yet — stop here, scene is already clean
+
+    const loader = new THREE.GLTFLoader();
+    const modelPath = GLASSES_MODEL_FOLDER + frame.modelFile;
+
+    loader.load(
+        modelPath,
+        (gltf) => {
+            // Only apply if this is still the selected frame (guards against
+            // a slow load finishing after the user picked something else).
+            if (activeGlassesStyleId !== glassesId) return;
+
+            const rawModel = gltf.scene;
+
+            // Downloaded/exported models come in at wildly different native
+            // scales and pivots (this file, for example, is a Sketchfab FBX
+            // export with a ~100x scale baked into its node transforms,
+            // ending up ~300 Three.js units wide with an off-center pivot).
+            // Normalize every model to the same reference width and center
+            // it on its own bounding box, so scale/rotation behave the same
+            // regardless of what the source file's original units were.
+            const box = new THREE.Box3().setFromObject(rawModel);
+            const size = new THREE.Vector3();
+            box.getSize(size);
+            const center = new THREE.Vector3();
+            box.getCenter(center);
+
+            rawModel.position.sub(center); // re-center on its own bounding box
+
+            // Many export pipelines (Sketchfab/FBX especially) produce
+            // inverted or single-sided face normals. With default culling
+            // that can render as completely invisible from the try-on
+            // camera angle even though the model loaded successfully —
+            // forcing double-sided rendering rules that out.
+            rawModel.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+                    materials.forEach((mat) => { mat.side = THREE.DoubleSide; });
+                }
+            });
+
+            const wrapper = new THREE.Group();
+            wrapper.add(rawModel);
+
+            const REFERENCE_WIDTH = 1; // wrapper.scale of 1 == 1 Three.js unit wide
+            const nativeWidth = size.x || 1;
+            const baseScale = REFERENCE_WIDTH / nativeWidth;
+            wrapper.userData.baseScale = baseScale;
+
+            // Apply a sensible default scale/position immediately, so the
+            // model is visible right away instead of only appearing once
+            // face tracking succeeds (which may take a moment, or fail in
+            // poor lighting) — positionGlassesModel() will refine this every
+            // frame once a face is actually detected.
+            wrapper.scale.setScalar(baseScale * 0.6);
+            wrapper.position.set(0, 0, 0);
+
+            threeGlassesModel = wrapper;
+            threeScene.add(threeGlassesModel);
+
+            console.log(`Loaded "${frame.name}" — native width ${size.x.toFixed(3)} units, normalized.`);
+        },
+        undefined,
+        (err) => {
+            console.warn(`Couldn't load 3D model for "${frame.name}" from ${modelPath}. Make sure the file exists in /assets/3d-glasses/.`, err);
+        }
+    );
+}
+
+let lastGlassesDetectionTime = 0;
+const GLASSES_DETECTION_INTERVAL_MS = 120; // throttle heavy detection calls
+let lastKnownLandmarks = null;
+
+async function render3DTrackingFrameLoopTick() {
     if (!glassesStreamInstance) return;
-    // console.log("Rendering 3D frame for model:", activeGlassesStyleId);
-    // In a real implementation:
-    // 1. Update video texture
-    // 2. Get face landmarks
-    // 3. Position `threeGlassesModel` based on landmarks
-    // 4. `threeRenderer.render(threeScene, threeCamera);`
+
+    const gVideo = document.getElementById("glassesVideo");
+    const gCanvas = document.getElementById("glassesTryOnCanvas");
+
+    if (gVideo && gCanvas && gVideo.videoWidth && threeRenderer) {
+        if (gCanvas.width !== gVideo.videoWidth || gCanvas.height !== gVideo.videoHeight) {
+            gCanvas.width = gVideo.videoWidth;
+            gCanvas.height = gVideo.videoHeight;
+            threeRenderer.setSize(gCanvas.width, gCanvas.height, false);
+            threeCamera.aspect = gCanvas.width / gCanvas.height;
+            threeCamera.updateProjectionMatrix();
+        }
+
+        if (threeGlassesModel && window.faceapi) {
+            const now = performance.now();
+            if (now - lastGlassesDetectionTime > GLASSES_DETECTION_INTERVAL_MS) {
+                lastGlassesDetectionTime = now;
+                try {
+                    const detection = await window.faceapi
+                        .detectSingleFace(gVideo, new window.faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.3 }))
+                        .withFaceLandmarks();
+                    if (detection) lastKnownLandmarks = detection.landmarks;
+                } catch (e) {
+                    // Detection can transiently fail between frames (e.g. face briefly out of view) — reuse last known position.
+                }
+            }
+
+            if (lastKnownLandmarks) {
+                positionGlassesModel(lastKnownLandmarks, gVideo, gCanvas);
+            }
+        }
+
+        threeRenderer.render(threeScene, threeCamera);
+    }
+
     glassesLoopRequestId = requestAnimationFrame(render3DTrackingFrameLoopTick);
 }
+
+// NOTE: face-api's 68-point landmarks are 2D image-space points only — there's
+// no real depth or head-pose (pitch/yaw) data, so this positions and scales
+// the model from eye position/distance and rolls it to match the eye-line
+// angle. It will not convincingly follow head turns/nods the way true 3D
+// face-mesh tracking (e.g. MediaPipe Face Landmarker, which gives 3D points)
+// would. Swap the detection source later if you need full head-pose tracking.
+function positionGlassesModel(landmarks, videoEl, canvasEl) {
+    const leftEye = averagePoint(landmarks.getLeftEye());
+    const rightEye = averagePoint(landmarks.getRightEye());
+    const eyeDist = Math.hypot(rightEye.x - leftEye.x, rightEye.y - leftEye.y);
+    const midX = (leftEye.x + rightEye.x) / 2;
+    const midY = (leftEye.y + rightEye.y) / 2;
+    const roll = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x);
+
+    // Map 2D video pixel coords -> normalized device coords -> a world-space
+    // plane in front of the camera at a fixed distance.
+    const ndcX = (midX / videoEl.videoWidth) * 2 - 1;
+    const ndcY = -((midY / videoEl.videoHeight) * 2 - 1);
+
+    const distance = 5; // matches threeCamera.position.z
+    const vFOV = (threeCamera.fov * Math.PI) / 180;
+    const viewHeight = 2 * Math.tan(vFOV / 2) * distance;
+    const viewWidth = viewHeight * threeCamera.aspect;
+
+    threeGlassesModel.position.set((ndcX * viewWidth) / 2, (ndcY * viewHeight) / 2, 0);
+    threeGlassesModel.rotation.z = -roll;
+
+    const frame = catalog3DDatabase.find(f => f.id === activeGlassesStyleId);
+    const widthMult = (frame && frame.widthMult) || 2.1;
+    const baseScale = threeGlassesModel.userData.baseScale || 1;
+
+    // A real pair of glasses (temple to temple) is noticeably wider than the
+    // pupil-to-pupil distance the landmarks give us — this ratio calibrates
+    // eyeDist up to an actual glasses width. If sizing still looks off for a
+    // particular model, this constant is the one to tune.
+    const GLASSES_WIDTH_TO_EYE_DIST_RATIO = 2.2;
+
+    const dynamicScale = (eyeDist / videoEl.videoWidth) * viewWidth * GLASSES_WIDTH_TO_EYE_DIST_RATIO * (widthMult / 2.1);
+    const finalScale = baseScale * dynamicScale;
+    threeGlassesModel.scale.set(finalScale, finalScale, finalScale);
+}
+
+function averagePoint(points) {
+    const x = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+    const y = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+    return { x, y };
+}
+
+// ============================================================================
+// CAPTURE & DOWNLOAD — composites the live camera frame + rendered glasses
+// into a single branded image and triggers a download.
+// ============================================================================
+
+function drawRoundedRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+window.captureGlassesSnapshot = function() {
+    const gVideo = document.getElementById("glassesVideo");
+    const gCanvas = document.getElementById("glassesTryOnCanvas");
+
+    if (!gVideo || !gVideo.videoWidth || !glassesStreamInstance) {
+        alert("Start the camera first, then capture your photo.");
+        return;
+    }
+
+    const photoW = gVideo.videoWidth;
+    const photoH = gVideo.videoHeight;
+    const padding = Math.round(photoW * 0.045);
+    const footerH = Math.round(photoH * 0.16);
+    const frameW = photoW + padding * 2;
+    const frameH = photoH + padding * 2 + footerH;
+    const cornerRadius = Math.round(photoW * 0.03);
+
+    const out = document.createElement("canvas");
+    out.width = frameW;
+    out.height = frameH;
+    const ctx = out.getContext("2d");
+
+    // Background panel
+    const bgGradient = ctx.createLinearGradient(0, 0, frameW, frameH);
+    bgGradient.addColorStop(0, "#0b1030");
+    bgGradient.addColorStop(1, "#161b3d");
+    ctx.fillStyle = bgGradient;
+    drawRoundedRectPath(ctx, 0, 0, frameW, frameH, cornerRadius + 10);
+    ctx.fill();
+
+    // Gradient accent border
+    const borderGradient = ctx.createLinearGradient(0, 0, frameW, 0);
+    borderGradient.addColorStop(0, "#4f46e5");
+    borderGradient.addColorStop(0.5, "#7c3aed");
+    borderGradient.addColorStop(1, "#34d399");
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = borderGradient;
+    drawRoundedRectPath(ctx, 3, 3, frameW - 6, frameH - 6, cornerRadius + 8);
+    ctx.stroke();
+
+    // Photo — clipped to rounded corners, composited from the live video and
+    // the WebGL glasses canvas on top of it (mirrors what's on screen).
+    ctx.save();
+    drawRoundedRectPath(ctx, padding, padding, photoW, photoH, cornerRadius);
+    ctx.clip();
+    ctx.drawImage(gVideo, padding, padding, photoW, photoH);
+    ctx.drawImage(gCanvas, padding, padding, photoW, photoH);
+    ctx.restore();
+
+    // Thin inner highlight around the photo
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+    drawRoundedRectPath(ctx, padding, padding, photoW, photoH, cornerRadius);
+    ctx.stroke();
+
+    // Footer branding
+    const footerCenterY = padding * 2 + photoH + footerH / 2;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `700 ${Math.round(footerH * 0.30)}px Arial, sans-serif`;
+    ctx.fillText("🕶️  Virtual Glasses Try-On", frameW / 2, footerCenterY - footerH * 0.16);
+
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = `600 ${Math.round(footerH * 0.18)}px Arial, sans-serif`;
+    ctx.fillText("AI COLOR ANALYSIS  •  aicoloranalysis.online", frameW / 2, footerCenterY + footerH * 0.22);
+
+    // Trigger download
+    const link = document.createElement("a");
+    link.download = `ai-color-analysis-virtual-glasses-${Date.now()}.png`;
+    link.href = out.toDataURL("image/png");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
 
 window.closeGlassesCamera = function() {
     const gVideo = document.getElementById("glassesVideo");
@@ -2213,11 +2576,16 @@ window.closeGlassesCamera = function() {
         glassesStreamInstance.getTracks().forEach(t => t.stop());
         glassesStreamInstance = null;
     }
+    lastKnownLandmarks = null;
+    lastGlassesDetectionTime = 0;
 
     if (gVideo) gVideo.style.display = "none";
     if (gCanvas) gCanvas.style.display = "none";
     if (gPlaceholder) gPlaceholder.style.display = "block";
     if (gFlipBtn) gFlipBtn.style.display = "none";
+
+    const gCaptureBtn = document.getElementById("glassesCaptureBtn");
+    if (gCaptureBtn) gCaptureBtn.style.display = "none";
 
     if (gOpenBtn) {
         gOpenBtn.textContent = "📷 Start 3D Try-on Camera";

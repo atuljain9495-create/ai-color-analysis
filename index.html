@@ -57,6 +57,8 @@
 
     <link rel="stylesheet" href="style.css">
     <script async src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
     <style>
         /* ── 💎 ACCORDION COLLAPSIBLE ARCHITECTURE CRADLES ── */
@@ -872,10 +874,17 @@
 
         <div style="margin-bottom: 18px; text-align: left; width: 100%;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
-                <label style="font-size: 0.88rem; font-weight: 800; color: var(--primary-dark, #095853);">🤖 Profile Type: AI Auto-Detect Active</label>
-                <span style="font-size: 0.72rem; padding: 2px 8px; background: #e0f2fe; color: #0369a1; font-weight: 700; border-radius: 12px; border: 1px solid #bae6fd;">Smart Mode</span>
+                <label id="profileTypeLabel" style="font-size: 0.88rem; font-weight: 800; color: var(--primary-dark, #095853);">🤖 Profile Type: AI Auto-Detect Active</label>
+                <label style="position: relative; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                    <span id="aiToggleLabel" style="font-size: 0.72rem; font-weight: 700; color: #0369a1;">AI: ON</span>
+                    <span style="position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0;">
+                        <input type="checkbox" id="aiGenderToggleInput" checked onchange="window.toggleAiGenderDetection(this.checked)" style="opacity: 0; width: 0; height: 0;">
+                        <span id="aiToggleTrack" style="position: absolute; inset: 0; background: #0ea5e9; border-radius: 999px; transition: background 0.2s; pointer-events: none;"></span>
+                        <span id="aiToggleThumb" style="position: absolute; top: 2px; left: 20px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); pointer-events: none;"></span>
+                    </span>
+                </label>
             </div>
-            <p style="font-size: 0.76rem; opacity: 0.7; margin: 0 0 10px 0; line-height: 1.4;">
+            <p id="profileTypeHelperText" style="font-size: 0.76rem; opacity: 0.7; margin: 0 0 10px 0; line-height: 1.4;">
                 Our face-tracking network automatically isolates demographics to personalize your store recommendations. You can optionally tap below to set a manual override fallback position:
             </p>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -1046,11 +1055,7 @@
                 </div>
             </div>
 
-            <div id="glassesTryOnActive" style="display: none; width: 100%; position: relative;">
-                <div class="work-in-progress-overlay">
-                    <h4>🚧 Coming Soon</h4>
-                    <p>We're putting the finishing touches on live 3D glasses try-on — check back soon!</p>
-                </div>
+            <div id="glassesTryOnActive" style="display: none; width: 100%;">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; width: 100%; align-items: stretch; margin-bottom: 20px; box-sizing: border-box;">
                     
                     <div style="background: #111c44; border: 1px solid #1e295d; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-sizing: border-box;">
@@ -1068,6 +1073,7 @@
 
                         <div style="display: flex; gap: 8px; width: 100%; box-sizing: border-box; margin-top: auto;">
                             <button type="button" id="glassesCameraOpenBtn" onclick="openGlassesCamera()" style="flex: 2; background: #1e295d; color: #ffffff; border: 1px solid #312e81; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box;">📷 Start Try-on Camera</button>
+                            <button type="button" id="glassesCaptureBtn" onclick="window.captureGlassesSnapshot()" style="display: none; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; width: 44px; box-sizing: border-box; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);" title="Capture & Download">📸</button>
                             <button type="button" id="glassesCameraFlipBtn" onclick="toggleGlassesCameraLens()" style="display: none; background: #1f2937; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; width: 44px; box-sizing: border-box;" title="Flip Camera">🔄</button>
                         </div>
                     </div>
