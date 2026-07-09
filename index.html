@@ -577,6 +577,17 @@
             filter: grayscale(1) invert(1) brightness(1.8) !important;
         }
         }
+
+        /* ── 📱 Live Try-On Monitor: taller box on mobile so the camera view
+           fills more of the phone's screen height (not just its width).
+           object-fit: cover on both the video and canvas crops them
+           identically, so the 3D glasses render stays aligned with the
+           face and is never stretched/distorted by the new box shape. */
+        @media (max-width: 768px) {
+            #glassesLiveMonitorBox {
+                aspect-ratio: 3 / 4 !important;
+            }
+        }
         /* ── "How It Works" Steps Section (above upload section) ── */
         .how-it-works-section {
             margin-bottom: 32px;
@@ -1064,9 +1075,9 @@
                             <span style="font-size: 0.72rem; font-weight: 800; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 12px;">📸 Live Try-On Monitor</span>
                         </div>
 
-                        <div style="width: 100%; border-radius: 12px; overflow: hidden; background: #090d22; position: relative; aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; border: 1px solid #1e295d; box-sizing: border-box; margin-bottom: 16px;">
+                        <div id="glassesLiveMonitorBox" style="width: 100%; border-radius: 12px; overflow: hidden; background: #090d22; position: relative; aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; border: 1px solid #1e295d; box-sizing: border-box; margin-bottom: 16px;">
                             <video id="glassesVideo" autoplay playsinline muted style="display: none; width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;"></video>
-                            <canvas id="glassesTryOnCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: none;"></canvas>
+                            <canvas id="glassesTryOnCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; z-index: 10; display: none;"></canvas>
                             <div id="glassesPlaceholderText" style="color: #475569; font-size: 0.8rem; font-weight: 600; text-align: center; padding: 16px; z-index: 1; line-height: 1.4;">
                                 Camera feed closed.<br><span style="font-weight: normal; opacity: 0.7;">Tap "Start Try-on Camera" to begin.</span>
                             </div>
