@@ -2370,11 +2370,9 @@ function positionGlassesModel(landmarks, videoEl, canvasEl) {
     const viewHeight = 2 * Math.tan(vFOV / 2) * distance;
     const viewWidth = viewHeight * threeCamera.aspect;
 
-    threeGlassesModel.position.set((ndcX * viewWidth) / 2, (ndcY * viewHeight) / 2, 0);
-    threeGlassesModel.rotation.z = -roll;
-
     const frame = catalog3DDatabase.find(f => f.id === activeGlassesStyleId);
     const widthMult = (frame && frame.widthMult) || 2.1;
+    const yOff = (frame && typeof frame.yOff === "number") ? frame.yOff : 0;
     const baseScale = threeGlassesModel.userData.baseScale || 1;
 
     // A real pair of glasses (temple to temple) is noticeably wider than the
@@ -2386,6 +2384,26 @@ function positionGlassesModel(landmarks, videoEl, canvasEl) {
     const dynamicScale = (eyeDist / videoEl.videoWidth) * viewWidth * GLASSES_WIDTH_TO_EYE_DIST_RATIO * (widthMult / 2.1);
     const finalScale = baseScale * dynamicScale;
     threeGlassesModel.scale.set(finalScale, finalScale, finalScale);
+
+    // NOTE: catalog3DDatabase defines a per-frame `yOff` meant to nudge each
+    // style down toward the nose bridge/ear line (styles with deeper temple
+    // arms or a contoured brow bar — cat-eye, aviator, browline — need a
+    // bigger downward nudge than a plain rectangular frame). That value was
+    // previously defined but never applied anywhere, so every model sat at
+    // raw eye-line height, which pushed the temple arms/hinges up across the
+    // eyes instead of resting back at the ears. yOff is expressed in the
+    // model's own normalized units (its width == 1 before final scaling), so
+    // it's converted through the same finalScale the model is drawn at —
+    // that keeps the downward nudge proportionally correct at any face
+    // distance/zoom instead of being a fixed on-screen pixel offset.
+    const worldYOffset = yOff * finalScale;
+
+    threeGlassesModel.position.set(
+        (ndcX * viewWidth) / 2,
+        (ndcY * viewHeight) / 2 + worldYOffset,
+        0
+    );
+    threeGlassesModel.rotation.z = -roll;
 }
 
 function averagePoint(points) {
