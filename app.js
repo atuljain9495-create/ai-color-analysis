@@ -2328,7 +2328,12 @@ async function render3DTrackingFrameLoopTick() {
                 }
             }
 
-            if (lastKnownLandmarks) {
+            // Re-check threeGlassesModel here (not just lastKnownLandmarks) —
+            // the await above can take long enough for the user to switch or
+            // clear the selected frame mid-flight, which nulls threeGlassesModel.
+            // Without this guard, positionGlassesModel would run against a
+            // model that no longer exists and throw.
+            if (threeGlassesModel && lastKnownLandmarks) {
                 positionGlassesModel(lastKnownLandmarks, gVideo, gCanvas);
             }
         }
@@ -2346,6 +2351,8 @@ async function render3DTrackingFrameLoopTick() {
 // face-mesh tracking (e.g. MediaPipe Face Landmarker, which gives 3D points)
 // would. Swap the detection source later if you need full head-pose tracking.
 function positionGlassesModel(landmarks, videoEl, canvasEl) {
+    if (!threeGlassesModel) return; // model may have been cleared/swapped since this call was scheduled
+
     const leftEye = averagePoint(landmarks.getLeftEye());
     const rightEye = averagePoint(landmarks.getRightEye());
     const eyeDist = Math.hypot(rightEye.x - leftEye.x, rightEye.y - leftEye.y);
