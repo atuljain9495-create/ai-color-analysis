@@ -525,10 +525,39 @@ if (analyzeBtn) {
         }
 
         if (!uploadedImage) { setStatus("Please upload or capture a photo first.", "error"); return; }
+
+        // ── ⚡ INSTANT CLICK FEEDBACK ──
+        // validatePhoto()/analyzeSkinTone() below do real async work (face
+        // detection, model loading, etc.) that can take 2-5s, and previously
+        // the progress loader + scroll-into-view only happened after all of
+        // that finished. That silent gap made users think the click didn't
+        // register. So we lock the button and show/scroll to the loader
+        // synchronously, right on click, before any awaiting begins.
+        const originalBtnLabel = analyzeBtn.textContent;
+        analyzeBtn.disabled = true;
+        analyzeBtn.style.cursor = "wait";
+        analyzeBtn.textContent = "⏳ Analyzing...";
+
+        const progressLoader = document.getElementById("aiProgressLoader");
+        if (progressLoader) {
+            progressLoader.style.display = "flex";
+            document.querySelectorAll(".progress-step-item").forEach(el => {
+                el.className = "progress-step-item";
+                const icon = el.querySelector(".step-status-icon");
+                if (icon) icon.textContent = "⏳";
+            });
+            const percentLabel = document.getElementById("aiProgressPercentLabel");
+            const progressBarFill = document.getElementById("aiProgressBarFill");
+            if (percentLabel) percentLabel.textContent = "0%";
+            if (progressBarFill) progressBarFill.style.width = "0%";
+            progressLoader.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
         setStatus("", "info"); // Clear old status text — the premium progress loader now shows analysis state
         skinToneDiv.innerHTML = "🔍 Detecting skin tone & features...";
         hexColorDiv.innerHTML=undertoneDiv.innerHTML=seasonalTypeDiv.innerHTML=confidenceScore.innerHTML="";
         clearRecommendations();
+
         try {
             const result = await validatePhoto(uploadedImage);
             analyzeSkinTone(uploadedImage, result);
@@ -537,6 +566,11 @@ if (analyzeBtn) {
             setStatus(err.message, "error");
             setValidationMessage("Check your photo lighting and try again.", "error");
             if (skinToneDiv) skinToneDiv.innerHTML = `⚠️ ${err.message}`;
+            if (progressLoader) progressLoader.style.display = "none";
+        } finally {
+            analyzeBtn.disabled = false;
+            analyzeBtn.style.cursor = "pointer";
+            analyzeBtn.textContent = originalBtnLabel;
         }
     });
 }
@@ -614,7 +648,15 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         currentAnalyzedPersonType = personType;
 
         // ── ⏳ HIDE RAW OUTPUT LABELS AND ENGAGE VISUAL TIMELINE LOOPER ──
+        // NOTE: the progress loader is now shown + scrolled into view the
+        // instant the Analyze button is clicked (see the click handler
+        // above), so it's already visible and in place by the time we get
+        // here. We only need its percent/fill elements for the step
+        // sequence below, and to keep hiding the plain-text labels while
+        // processing runs.
         const progressLoader = document.getElementById("aiProgressLoader");
+        const percentLabel = document.getElementById("aiProgressPercentLabel");
+        const progressBarFill = document.getElementById("aiProgressBarFill");
 
         // Hide standard view strings during processing loop sequence
         skinToneDiv.style.display = "none";
@@ -624,25 +666,6 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         confidenceScore.style.display = "none";
         if (genderResult) genderResult.style.display = "none";
         if (shareSeasonBtn) shareSeasonBtn.style.display = "none";
-
-        // Show progress box matrix wrapper
-        const percentLabel = document.getElementById("aiProgressPercentLabel");
-        const progressBarFill = document.getElementById("aiProgressBarFill");
-        if (progressLoader) {
-            progressLoader.style.display = "flex";
-            // Reset items to inactive resting state metrics
-            document.querySelectorAll(".progress-step-item").forEach(el => {
-                el.className = "progress-step-item";
-                el.querySelector(".step-status-icon").textContent = "⏳";
-            });
-            if (percentLabel) percentLabel.textContent = "0%";
-            if (progressBarFill) progressBarFill.style.width = "0%";
-            // Bring the premium loader into view — it lives inside the
-            // Results card further down the page, so without this the user
-            // never scrolls far enough to see it and only notices the old
-            // plain status line next to the button instead.
-            progressLoader.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
 
         // 6-stage sequence powering both the step list and the percentage bar
         const STEP_SEQUENCE = ["upload", "face", "skintone", "undertone", "season", "recommendations"];
@@ -1505,71 +1528,6 @@ function isSkinTone(r, g, b) {
     return cb >= 77 && cb <= 127 && cr >= 133 && cr <= 173 && y > 60;
 }
 
-// ── Lightweight client-side K-Means (no dependencies) ──
-// Groups candidate garment pixels into `k` colour clusters and returns the
-// cluster with the highest *weighted* pixel count (weight favours pixels
-// near the centre of the crop, where the garment usually sits). This is far
-// more robust than a single running average, because a cluster of, say,
-// leftover white-background pixels can no longer silently drag a green
-// shirt's average toward grey — it simply loses to the green cluster.
-function kMeansDominantColor(pixels, k) {
-    if (!pixels.length) return null;
-    k = Math.min(k, pixels.length);
-
-    // Seed centroids by spreading picks evenly across the pixel list — a
-    // cheap stand-in for k-means++.
-    const step = Math.max(1, Math.floor(pixels.length / k));
-    let centroids = [];
-    for (let i = 0; i < k; i++) {
-        const p = pixels[Math.min(i * step, pixels.length - 1)];
-        centroids.push({ r: p.r, g: p.g, b: p.b });
-    }
-
-    const assignments = new Array(pixels.length).fill(0);
-
-    for (let iter = 0; iter < 6; iter++) {
-        // Assign step
-        for (let i = 0; i < pixels.length; i++) {
-            const p = pixels[i];
-            let bestIdx = 0, bestDist = Infinity;
-            for (let c = 0; c < centroids.length; c++) {
-                const dr = p.r - centroids[c].r, dg = p.g - centroids[c].g, db = p.b - centroids[c].b;
-                const dist = dr*dr + dg*dg + db*db;
-                if (dist < bestDist) { bestDist = dist; bestIdx = c; }
-            }
-            assignments[i] = bestIdx;
-        }
-        // Update step (weighted centroid)
-        const sums = centroids.map(() => ({ r: 0, g: 0, b: 0, w: 0 }));
-        for (let i = 0; i < pixels.length; i++) {
-            const p = pixels[i], s = sums[assignments[i]], w = p.weight;
-            s.r += p.r * w; s.g += p.g * w; s.b += p.b * w; s.w += w;
-        }
-        for (let c = 0; c < centroids.length; c++) {
-            if (sums[c].w > 0) {
-                centroids[c] = { r: sums[c].r / sums[c].w, g: sums[c].g / sums[c].w, b: sums[c].b / sums[c].w };
-            }
-        }
-    }
-
-    // Score clusters by total weight (pixel count × centrality), not just
-    // raw count, so a small-but-central garment beats a large-but-peripheral
-    // background remnant.
-    const clusterWeight = new Array(centroids.length).fill(0);
-    for (let i = 0; i < pixels.length; i++) clusterWeight[assignments[i]] += pixels[i].weight;
-
-    let bestC = 0;
-    for (let c = 1; c < centroids.length; c++) {
-        if (clusterWeight[c] > clusterWeight[bestC]) bestC = c;
-    }
-
-    return {
-        r: Math.round(centroids[bestC].r),
-        g: Math.round(centroids[bestC].g),
-        b: Math.round(centroids[bestC].b)
-    };
-}
-
 function getDominantColor(imageElement) {
     const tc  = document.createElement("canvas");
     const ctx = tc.getContext("2d", { willReadFrequently: true });
@@ -1793,17 +1751,27 @@ function colorFamilyBucket(h, s, l) {
     // If lightness is extremely high or saturation is near-zero, lock it into flat neutrals early
     if (s < 12) return l > 85 ? "white" : l < 24 ? "black" : "gray";
     if (l > 93 && s < 20) return "white";
-    if (l < 18) return "black";
+    // Only force very dark pixels into "black" when they're also low-saturation
+    // (i.e. genuinely neutral/near-colorless). A dark-but-saturated pixel
+    // (e.g. a dark green or dark navy garment) has real hue information that
+    // this used to throw away purely because it was dim — mislabeling, say,
+    // a forest-green shirt as "Charcoal". Let anything with meaningful
+    // saturation fall through to the hue buckets below instead.
+    if (l < 18 && s < 25) return "black";
 
     if (s < 22 && h >= 20 && h < 100) return "olive_brown"; 
-    if (h < 15 || h >= 345) return (l > 45 && s > 40) ? "pink" : "red";
+    // Covers the full red/pink wraparound (290°-360° and 0°-15°) with no gap.
+    // Previously this only caught h >= 345, so hues in [290, 345) — dark
+    // maroons/burgundies included — fell through every bucket below and
+    // landed on the catch-all "pink" default at the end of this function,
+    // regardless of how dark or desaturated they were.
+    if (h < 15 || h >= 290) return (l > 45 && s > 40) ? "pink" : "red";
     if (h < 45)  return "orange";
     if (h < 65)  return "yellow";
     if (h < 170) return "green";
     if (h < 195) return "teal";
     if (h < 255) return "blue";
-    if (h < 290) return "purple";
-    return "pink";
+    return "purple";
 }
 
 // Which named swatches are eligible candidates for each bucket. Buckets can
@@ -2612,12 +2580,6 @@ if (dressCheckBtn) {
             });
         }
 
-        dressResult.innerHTML = `<div style="text-align: center; padding: 20px;">
-            <span style="font-size: 1.5rem; margin-bottom: 12px; display: block;">${verdict.icon}</span>
-            <strong style="font-size: 1rem; display: block; margin-bottom: 8px; color: ${verdict.color};">${verdict.text}</strong>
-            <span style="font-size: 0.9rem; color: #cbd5e1; display: block; margin-top: 12px; line-height: 1.6;">${verdict.explanation}</span>
-        </div>`;
-
         dressCheckBtn.textContent = "🎨 Check This Color";
         dressCheckBtn.disabled    = false;
 
@@ -2642,6 +2604,12 @@ if (dressCheckBtn) {
                 "⚠ Counter-balance with your best accent",
                 "⚠ Best kept away from immediate portraits"
             ],
+            caution: [
+                "⚠ Sits just outside your natural undertone",
+                "⚠ Can look flat without the right styling",
+                "⚠ Pair with one of your best neutrals to balance it",
+                "⚠ Fine occasionally, not an everyday staple"
+            ],
             avoid: [
                 "✗ Clashes directly with your undertone",
                 "✗ Highly likely to wash out your color profiles",
@@ -2650,7 +2618,14 @@ if (dressCheckBtn) {
             ]
         };
 
-        const activeTraits = traits[verdict === "perfect" ? "perfect" : (verdict === "good" ? "good" : (verdict === "okay" ? "neutral" : "avoid"))];
+        // checkColorAgainstPalette() returns one of 5 tiers: perfect, good,
+        // okay, caution, avoid. Map each explicitly onto its own trait
+        // bucket above — previously "caution" fell through to the "avoid"
+        // bucket's harsher wording (✗ Clashes directly..., etc.), which
+        // directly contradicted the softer "Proceed with Caution" headline
+        // shown just above it.
+        const VERDICT_TO_TRAIT_KEY = { perfect: "perfect", good: "good", okay: "neutral", caution: "caution", avoid: "avoid" };
+        const activeTraits = traits[VERDICT_TO_TRAIT_KEY[verdict] || "avoid"];
 
         // Capture 5 fallback swatches dynamically straight out of the active user profile palette
         const dressCheckerPalette = window._userPalette || {};
