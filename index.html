@@ -297,6 +297,114 @@
         }
         #genderResult .gender-icon { font-size: 1.4rem; }
 
+        /* ── ⏳ Premium Multi-Stage Analysis Loader ── */
+        .ai-progress-loader-box {
+            display: none;
+            flex-direction: column;
+            background: linear-gradient(160deg, #1e1b4b, #0f172a);
+            border-radius: 18px;
+            padding: 26px 22px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+            color: #fff;
+            gap: 18px;
+        }
+        .ai-progress-loader-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .ai-progress-loader-title {
+            font-size: 1rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .ai-progress-loader-title .spin-icon {
+            display: inline-block;
+            animation: aiLoaderSpin 1.4s linear infinite;
+        }
+        @keyframes aiLoaderSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .ai-progress-percent-label {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #a78bfa;
+            font-variant-numeric: tabular-nums;
+        }
+        .ai-progress-bar-track {
+            width: 100%;
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.12);
+            overflow: hidden;
+            position: relative;
+        }
+        .ai-progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #6a5acd, #a78bfa, #ec4899);
+            background-size: 200% 100%;
+            animation: aiProgressShimmer 1.6s linear infinite;
+            transition: width 0.5s ease;
+        }
+        @keyframes aiProgressShimmer {
+            0% { background-position: 0% 0%; }
+            100% { background-position: -200% 0%; }
+        }
+        .ai-progress-eta {
+            font-size: 0.78rem;
+            opacity: 0.6;
+            margin-top: -8px;
+        }
+        .progress-step-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .progress-step-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            opacity: 0.5;
+            transition: opacity 0.3s ease, background 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+        }
+        .progress-step-item.step-processing {
+            opacity: 1;
+            background: rgba(106, 90, 205, 0.18);
+            border-color: rgba(167, 139, 250, 0.4);
+            transform: translateX(2px);
+        }
+        .progress-step-item.step-done {
+            opacity: 0.9;
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+        .step-status-icon {
+            font-size: 1rem;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .progress-step-item.step-processing .step-status-icon {
+            animation: aiLoaderSpin 1s linear infinite;
+        }
+        .step-label-text {
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+        @media (max-width: 480px) {
+            .ai-progress-loader-box { padding: 20px 16px; }
+            .step-label-text { font-size: 0.82rem; }
+        }
+
         /* ── Store Layout Engine Grid ── */
         .shop-grid {
             display: grid;
@@ -314,11 +422,12 @@
             justify-content: space-between;
             min-height: 280px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
         }
         .shop-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            transform: translateY(-6px);
+            box-shadow: 0 14px 30px rgba(106, 90, 205, 0.25);
+            border-color: #6a5acd !important;
         }
         .shop-card .shop-tag {
             font-size: 0.7rem;
@@ -346,16 +455,23 @@
             border: 1px solid #1e293b;
         }
         .slider-arrow-btn {
-            background: transparent;
+            background: rgba(167, 139, 250, 0.12);
             color: #a78bfa;
             border: none;
-            font-size: 1.2rem;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            font-size: 1.05rem;
             font-weight: 700;
             cursor: pointer;
-            padding: 0 8px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             user-select: none;
-            transition: transform 0.1s ease;
+            transition: transform 0.15s ease, background 0.15s ease;
         }
+        .slider-arrow-btn:hover { background: rgba(167, 139, 250, 0.28); transform: scale(1.08); }
         .slider-arrow-btn:active { transform: scale(0.85); }
         .slider-color-txt {
             font-size: 0.85rem;
@@ -541,11 +657,15 @@
             border: 2px solid #334155 !important;
             border-radius: 12px !important;
             cursor: pointer !important;
-            transition: all 0.2s ease !important;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease !important;
             width: 110px !important;  /* Strict compact button width */
             height: 46px !important;  /* Strict compact button height */
             box-sizing: border-box !important;
             padding: 6px !important;
+        }
+        .wireframe-tab-btn:hover {
+            transform: translateY(-3px) !important;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.18) !important;
         }
         body.dark-mode .wireframe-tab-btn {
             background: #0f172a !important;
@@ -561,6 +681,17 @@
             border-color: #a78bfa !important;
             box-shadow: 0 4px 12px rgba(167, 139, 250, 0.2) !important;
         }
+        /* 🎨 Brand-true accent colors on the active/hover state of each retailer tab */
+        .wireframe-tab-btn[data-tab="amazon"].tab-active,
+        .wireframe-tab-btn[data-tab="amazon"]:hover   { border-color: #ff9900 !important; box-shadow: 0 8px 18px rgba(255,153,0,0.3) !important; }
+        .wireframe-tab-btn[data-tab="asos"].tab-active,
+        .wireframe-tab-btn[data-tab="asos"]:hover      { border-color: #111111 !important; box-shadow: 0 8px 18px rgba(17,17,17,0.25) !important; }
+        .wireframe-tab-btn[data-tab="h&m"].tab-active,
+        .wireframe-tab-btn[data-tab="h&m"]:hover       { border-color: #e50010 !important; box-shadow: 0 8px 18px rgba(229,0,16,0.3) !important; }
+        .wireframe-tab-btn[data-tab="flipkart"].tab-active,
+        .wireframe-tab-btn[data-tab="flipkart"]:hover   { border-color: #2874f0 !important; box-shadow: 0 8px 18px rgba(40,116,240,0.3) !important; }
+        .wireframe-tab-btn[data-tab="myntra"].tab-active,
+        .wireframe-tab-btn[data-tab="myntra"]:hover     { border-color: #ff3f6c !important; box-shadow: 0 8px 18px rgba(255,63,108,0.3) !important; }
         .brand-tab-logo-img {
             max-height: 20px !important; /* Locks small image scale */
             max-width: 85px !important;  /* Locks small image scale */
@@ -586,6 +717,32 @@
         @media (max-width: 768px) {
             #glassesLiveMonitorBox {
                 aspect-ratio: 3 / 4 !important;
+            }
+            /* 📌 Keep the camera preview pinned at the top of the screen while
+               the user scrolls down through the frame list below it — fixes
+               the old "scroll down to pick a frame, scroll back up to see
+               yourself" back-and-forth on phones. Both cards live in the same
+               stacked grid column here, so the camera card has room below it
+               to stick within as the page scrolls past the frame list. */
+            .glasses-camera-card {
+                position: sticky !important;
+                top: 8px !important;
+                z-index: 30 !important;
+                padding: 14px !important;
+            }
+            /* Trims the outer padding on the frame-inventory card so the
+               list itself (which already has its own card padding) isn't
+               squeezed by three stacked layers of box padding. */
+            .glasses-inventory-card {
+                padding: 14px !important;
+            }
+            /* Let the frame list flow naturally with the page instead of
+               being boxed into its own tiny inner scrollbar — with the
+               camera now sticky, there's no need for a second, separate
+               scroll region. */
+            #glassesSelectionTray {
+                max-height: none !important;
+                padding: 4px !important;
             }
         }
         /* ── "How It Works" Steps Section (above upload section) ── */
@@ -619,7 +776,7 @@
         }
         .how-it-works-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 20px;
         }
         .how-it-works-step {
@@ -627,41 +784,67 @@
             background: var(--card-bg, #fff);
             border: 1px solid rgba(106, 90, 205, 0.14);
             border-radius: 16px;
-            padding: 18px;
+            padding: 22px 18px;
             box-shadow: 0 4px 14px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+            overflow: visible;
         }
-        .how-it-works-step-media {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 4 / 3;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #f3f4f6;
-            margin-bottom: 14px;
+        .how-it-works-step:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 32px rgba(106, 90, 205, 0.18);
+            border-color: rgba(106, 90, 205, 0.4);
         }
-        .how-it-works-step-media img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        .how-it-works-step-number {
+        /* Connector line linking each step's icon circle to the next (desktop only) */
+        .how-it-works-step:not(:last-child)::after {
+            content: "";
             position: absolute;
-            top: 10px;
-            left: 10px;
-            width: 30px;
-            height: 30px;
+            top: 46px;
+            left: 100%;
+            width: 20px;
+            height: 2px;
+            background: repeating-linear-gradient(90deg, rgba(106,90,205,0.45) 0 6px, transparent 6px 10px);
+            z-index: 2;
+        }
+        .how-it-works-icon-circle {
+            position: relative;
+            width: 68px;
+            height: 68px;
             border-radius: 50%;
-            background: var(--primary-color, #6a5acd);
-            color: #fff;
-            font-weight: 800;
-            font-size: 0.9rem;
+            background: linear-gradient(135deg, #6a5acd, #8b7ff0);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            margin-bottom: 14px;
+            box-shadow: 0 6px 16px rgba(106, 90, 205, 0.35);
+            transition: transform 0.25s ease;
+        }
+        .how-it-works-step:hover .how-it-works-icon-circle {
+            transform: scale(1.08) rotate(-4deg);
+        }
+        .how-it-works-emoji {
+            font-size: 1.8rem;
+            line-height: 1;
+        }
+        .how-it-works-step-number {
+            position: absolute;
+            bottom: -6px;
+            right: -6px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #1f2937;
+            color: #fff;
+            font-weight: 800;
+            font-size: 0.78rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 2px solid var(--card-bg, #fff);
         }
         .how-it-works-step h4 {
             margin: 0 0 6px 0;
@@ -680,8 +863,12 @@
             background: var(--card-bg, #1f2937);
             border-color: rgba(167, 139, 250, 0.2);
         }
-        body.dark-mode .how-it-works-step-media {
-            background: #111827;
+        body.dark-mode .how-it-works-icon-circle {
+            background: linear-gradient(135deg, #7c6ae8, #a78bfa);
+            box-shadow: 0 6px 16px rgba(167, 139, 250, 0.3);
+        }
+        body.dark-mode .how-it-works-step-number {
+            border-color: var(--card-bg, #1f2937);
         }
 
         /* Below 900px: instead of stacking cards and eating vertical space,
@@ -713,10 +900,13 @@
                 padding: 12px !important;
                 border-radius: 12px !important;
             }
-            /* Scales down images to keep aspect ratios flawless without breaking look-alikes */
-            .how-it-works-step-media {
-                margin-bottom: 8px !important;
-                aspect-ratio: 4 / 3 !important;
+            .how-it-works-icon-circle {
+                width: 54px !important;
+                height: 54px !important;
+                margin-bottom: 10px !important;
+            }
+            .how-it-works-emoji {
+                font-size: 1.5rem !important;
             }
             .how-it-works-step h4 {
                 font-size: 0.9rem !important;
@@ -727,9 +917,13 @@
                 line-height: 1.35 !important;
             }
             .how-it-works-step-number {
-                width: 24px !important;
-                height: 24px !important;
-                font-size: 0.78rem !important;
+                width: 20px !important;
+                height: 20px !important;
+                font-size: 0.68rem !important;
+            }
+            /* Connector lines don't make sense on the swipe carousel */
+            .how-it-works-step::after {
+                display: none !important;
             }
         }
         @media (max-width: 480px) {
@@ -774,11 +968,13 @@
                 gap: 16px !important;
             }
             .how-it-works-step {
-                padding: 14px !important;
+                padding: 20px 14px !important;
                 border-radius: 12px !important;
             }
-            .how-it-works-step-media {
-                margin-bottom: 10px !important;
+            .how-it-works-icon-circle {
+                width: 60px !important;
+                height: 60px !important;
+                margin-bottom: 12px !important;
             }
             /* 🧠 Calibrated to a balanced mid-tier scale */
             .how-it-works-step h4 {
@@ -791,9 +987,9 @@
                 line-height: 1.42 !important;
             }
             .how-it-works-step-number {
-                width: 26px !important;
-                height: 26px !important;
-                font-size: 0.8rem !important;
+                width: 24px !important;
+                height: 24px !important;
+                font-size: 0.72rem !important;
             }
 
             /* 2️⃣ Expands the 'Test a Product' dashboard by 30% for a roomy layout */
@@ -839,38 +1035,47 @@
     <div class="how-it-works-grid">
 
     <div class="how-it-works-step">
-        <div class="how-it-works-step-media">
+        <div class="how-it-works-icon-circle">
+            <span class="how-it-works-emoji">📸</span>
             <span class="how-it-works-step-number">1</span>
-            <img src="images/selfie.webp" alt="Step 1: your uploaded photo" loading="lazy">
         </div>
-        <h4>📸 Face-Mapping Scan</h4>
+        <h4>Face-Mapping Scan</h4>
         <p>Isolates skin pixel clusters across key diagnostic facial zones entirely in browser memory.</p>
     </div>
 
     <div class="how-it-works-step">
-        <div class="how-it-works-step-media">
+        <div class="how-it-works-icon-circle">
+            <span class="how-it-works-emoji">🎨</span>
             <span class="how-it-works-step-number">2</span>
-            <img src="images/card.webp" alt="Step 2: your color passport card" loading="lazy">
         </div>
-        <h4>🎨 12-Season Profile</h4>
+        <h4>12-Season Profile</h4>
         <p>Calculates your precise sub-season archetype to decode your exact tonal landscape.</p>
     </div>
 
     <div class="how-it-works-step">
-        <div class="how-it-works-step-media">
+        <div class="how-it-works-icon-circle">
+            <span class="how-it-works-emoji">👗</span>
             <span class="how-it-works-step-number">3</span>
-            <img src="images/cloth.webp" alt="Step 3: test a product before you buy" loading="lazy">
         </div>
-        <h4>👗 Garment Matching</h4>
+        <h4>Garment Matching</h4>
         <p>Check store snapshots against your color profile parameters instantly before purchasing.</p>
     </div>
 
     <div class="how-it-works-step">
-        <div class="how-it-works-step-media">
+        <div class="how-it-works-icon-circle">
+            <span class="how-it-works-emoji">🕶️</span>
             <span class="how-it-works-step-number">4</span>
-            <img src="images/shop.webp" alt="Step 4: shop your color matches" loading="lazy">
         </div>
-        <h4>🛍️ Wardrobe Filters</h4>
+        <h4>3D Glasses Try-On</h4>
+        <p>Try frames live on your face in 3D before you buy, matched to your face shape.</p>
+    </div>
+
+    <div class="how-it-works-step">
+        <div class="how-it-works-icon-circle">
+            <span class="how-it-works-emoji">🛍️</span>
+            <span class="how-it-works-step-number">5</span>
+        </div>
+        <h4>Wardrobe Filters</h4>
         <p>Instantly highlights verified clothing items across integrated retail search indexes.</p>
     </div>
 
@@ -939,17 +1144,34 @@
     </div>
 </section>
 
-<div class="privacy-notice-box" style="margin-top: -10px; margin-bottom: 40px;">
+<div class="privacy-notice-box" style="margin-top: -10px; margin-bottom: 40px; max-width: 760px;">
     <div class="privacy-header">
         <span class="privacy-icon">🔒</span>
         <h3>Photo Privacy & Data Security</h3>
     </div>
-    <p class="privacy-text">Your privacy is our highest priority. Everything runs locally inside your browser.</p>
-    <ul class="privacy-points">
-        <li><strong>On-Device Processing:</strong> Your image is processed entirely inside your own browser.</li>
-        <li><strong>No Server Uploads:</strong> Your photo is never transmitted, saved, or stored anywhere.</li>
-        <li><strong>100% Temporary:</strong> Closing or refreshing the tab completely clears all image data.</li>
-    </ul>
+    <p class="privacy-text">Your privacy is our highest priority. Everything runs locally inside your browser — nothing ever leaves your device.</p>
+    <div class="privacy-trust-grid">
+        <div class="privacy-trust-card">
+            <span class="privacy-trust-icon">🔐</span>
+            <strong>On-Device Processing</strong>
+            <span class="privacy-trust-desc">Your image is analyzed entirely inside your own browser.</span>
+        </div>
+        <div class="privacy-trust-card">
+            <span class="privacy-trust-icon">🚫</span>
+            <strong>No Server Uploads</strong>
+            <span class="privacy-trust-desc">Your photo is never transmitted, saved, or stored anywhere.</span>
+        </div>
+        <div class="privacy-trust-card">
+            <span class="privacy-trust-icon">⏱️</span>
+            <strong>100% Temporary</strong>
+            <span class="privacy-trust-desc">Closing or refreshing the tab instantly clears all image data.</span>
+        </div>
+        <div class="privacy-trust-card">
+            <span class="privacy-trust-icon">🛡️</span>
+            <strong>Secure Analysis</strong>
+            <span class="privacy-trust-desc">No permanent storage, no tracking of your facial data — ever.</span>
+        </div>
+    </div>
     <span class="privacy-tag">✓ Fully compliant with GDPR and modern data protection standards</span>
 </div>
 
@@ -971,6 +1193,43 @@
 
         <div id="faceStatusWarning" style="display: none; align-items: center; gap: 8px; margin: 10px 0; padding: 10px 16px; background: #fffbeb; border-radius: 10px; border-left: 4px solid #f59e0b; color: #b45309; font-size: 0.9rem; font-weight: 600;">
             ⚠️ No human face detected. Please use a clear portrait or selfie photo for an accurate color analysis.
+        </div>
+
+        <div id="aiProgressLoader" class="ai-progress-loader-box">
+            <div class="ai-progress-loader-header">
+                <span class="ai-progress-loader-title"><span class="spin-icon">✨</span> Analyzing Your Palette</span>
+                <span class="ai-progress-percent-label" id="aiProgressPercentLabel">0%</span>
+            </div>
+            <div class="ai-progress-bar-track">
+                <div class="ai-progress-bar-fill" id="aiProgressBarFill"></div>
+            </div>
+            <p class="ai-progress-eta">Usually takes just a few seconds…</p>
+            <div class="progress-step-list">
+                <div class="progress-step-item" id="step-upload">
+                    <span class="step-status-icon">⏳</span>
+                    <span class="step-label-text">Uploading Image</span>
+                </div>
+                <div class="progress-step-item" id="step-face">
+                    <span class="step-status-icon">⏳</span>
+                    <span class="step-label-text">Detecting Face</span>
+                </div>
+                <div class="progress-step-item" id="step-skintone">
+                    <span class="step-status-icon">⏳</span>
+                    <span class="step-label-text">Extracting Skin Tone</span>
+                </div>
+                <div class="progress-step-item" id="step-undertone">
+                    <span class="step-status-icon">⏳</span>
+                    <span class="step-label-text">Calculating Undertone</span>
+                </div>
+                <div class="progress-step-item" id="step-season">
+                    <span class="step-status-icon">⏳</span>
+                    <span class="step-label-text">Matching 12 Seasons</span>
+                </div>
+                <div class="progress-step-item" id="step-recommendations">
+                    <span class="step-status-icon">⏳</span>
+                    <span class="step-label-text">Preparing Recommendations</span>
+                </div>
+            </div>
         </div>
 
         <div id="skinTone">Waiting for analysis...</div>
@@ -1078,7 +1337,7 @@
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; width: 100%; align-items: stretch; margin-bottom: 20px; box-sizing: border-box;">
                     
-                    <div style="background: #111c44; border: 1px solid #1e295d; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-sizing: border-box;">
+                    <div class="glasses-camera-card" style="background: #111c44; border: 1px solid #1e295d; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-sizing: border-box;">
                         <div>
                             <span style="font-size: 0.72rem; font-weight: 800; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 12px;">📸 Live Try-On Monitor</span>
                         </div>
@@ -1098,17 +1357,15 @@
                         </div>
                     </div>
 
-                    <div style="background: #111c44; border: 1px solid #1e295d; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-sizing: border-box;">
+                    <div class="glasses-inventory-card" style="background: #111c44; border: 1px solid #1e295d; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-sizing: border-box;">
                         <div style="width: 100%; height: 100%; display: flex; flex-direction: column;">
                             <span style="font-size: 0.72rem; font-weight: 800; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 12px;">🕶️ Frame Inventory Curation</span>
-                            <div style="background: rgba(30, 41, 93, 0.3); border: 1px solid #2e3b85; border-radius: 12px; padding: 16px; box-sizing: border-box; flex: 1; display: flex; flex-direction: column;">
-                                <p style="font-size: 0.8rem; color: #94a3b8; margin: 0 0 14px 0; line-height: 1.4;">Select a frame from our inventory collection below to see it live on your face instantly:</p>
-                                <div id="glassesFaceShapeResultText" style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 12px; min-height: 1.2em;"></div>
-                                <div id="glassesSelectionTray" style="flex: 1;"></div>
-                                <button type="button" class="glasses-style-btn clear-btn" onclick="window.setActiveGlassesModel(null)" style="margin-top: 14px; background: #1f2937; color: #fca5a5; border: 1px solid #374151; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; width: 100%;">❌ Clear Frames</button>
-                                <div id="glassesAffiliatePanel" style="display: none; margin-top: 16px;">
-                                    <a id="glassesAffiliateLink" href="#" target="_blank" rel="noopener noreferrer" class="shop-link amazon" style="display: block; text-align: center;">Shop This Style on Amazon →</a>
-                                </div>
+                            <p style="font-size: 0.8rem; color: #94a3b8; margin: 0 0 14px 0; line-height: 1.4;">Select a frame from our inventory collection below to see it live on your face instantly:</p>
+                            <div id="glassesFaceShapeResultText" style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 12px; min-height: 1.2em;"></div>
+                            <div id="glassesSelectionTray" style="flex: 1;"></div>
+                            <button type="button" class="glasses-style-btn clear-btn" onclick="window.setActiveGlassesModel(null)" style="margin-top: 14px; background: #1f2937; color: #fca5a5; border: 1px solid #374151; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; width: 100%;">❌ Clear Frames</button>
+                            <div id="glassesAffiliatePanel" style="display: none; margin-top: 16px;">
+                                <a id="glassesAffiliateLink" href="#" target="_blank" rel="noopener noreferrer" class="shop-link amazon" style="display: block; text-align: center;">Shop This Style on Amazon →</a>
                             </div>
                         </div>
                     </div>
@@ -1189,42 +1446,72 @@
         <p>Everything you need to know about our AI Color Analysis technology.</p>
     </div>
     <div class="faq-list">
-        <details class="faq-item" open>
-            <summary class="faq-question">How accurate is the AI Color Analysis?</summary>
-            <div class="faq-answer">
-                <p>Our app achieves high accuracy by using client-side computer vision to track your facial structure and analyse pixel balances across your cheeks and forehead. For best results, use natural indirect daylight without makeup or tinted glasses.</p>
+        <div class="faq-accordion-item panel-opened" id="faqPanel1">
+            <button type="button" class="faq-accordion-trigger" onclick="toggleAccordionPanel('faqPanel1')">
+                <span class="faq-accordion-question">How accurate is the AI Color Analysis?</span>
+                <span class="faq-accordion-chevron">▼</span>
+            </button>
+            <div class="faq-accordion-panel">
+                <div class="faq-accordion-body">
+                    <p>Our app achieves high accuracy by using client-side computer vision to track your facial structure and analyse pixel balances across your cheeks and forehead. For best results, use natural indirect daylight without makeup or tinted glasses.</p>
+                </div>
             </div>
-        </details>
-        <details class="faq-item">
-            <summary class="faq-question">Are my photos or selfies saved on a server?</summary>
-            <div class="faq-answer">
-                <p>No. All face mapping and colour sampling happens directly in your browser's memory. Your photos are never uploaded to our servers, and all data is permanently cleared when you reload or close the page.</p>
+        </div>
+        <div class="faq-accordion-item" id="faqPanel2">
+            <button type="button" class="faq-accordion-trigger" onclick="toggleAccordionPanel('faqPanel2')">
+                <span class="faq-accordion-question">Are my photos or selfies saved on a server?</span>
+                <span class="faq-accordion-chevron">▼</span>
+            </button>
+            <div class="faq-accordion-panel">
+                <div class="faq-accordion-body">
+                    <p>No. All face mapping and colour sampling happens directly in your browser's memory. Your photos are never uploaded to our servers, and all data is permanently cleared when you reload or close the page.</p>
+                </div>
             </div>
-        </details>
-        <details class="faq-item">
-            <summary class="faq-question">How does gender detection work?</summary>
-            <div class="faq-answer">
-                <p>We use face-api.js, a privacy-first machine learning library that runs entirely in your browser. It estimates gender and approximate age from facial features locally on your device — nothing is sent anywhere. This helps us personalise clothing and accessory recommendations for you.</p>
+        </div>
+        <div class="faq-accordion-item" id="faqPanel3">
+            <button type="button" class="faq-accordion-trigger" onclick="toggleAccordionPanel('faqPanel3')">
+                <span class="faq-accordion-question">How does gender detection work?</span>
+                <span class="faq-accordion-chevron">▼</span>
+            </button>
+            <div class="faq-accordion-panel">
+                <div class="faq-accordion-body">
+                    <p>We use face-api.js, a privacy-first machine learning library that runs entirely in your browser. It estimates gender and approximate age from facial features locally on your device — nothing is sent anywhere. This helps us personalise clothing and accessory recommendations for you.</p>
+                </div>
             </div>
-        </details>
-        <details class="faq-item">
-            <summary class="faq-question">What is the difference between skin tone and undertone?</summary>
-            <div class="faq-answer">
-                <p>Your skin tone is the surface colour (fair, medium, tan, deep) which can change with sun exposure. Your undertone is the permanent biological colour beneath the skin surface (Warm, Cool, or Neutral) that never changes throughout your life.</p>
+        </div>
+        <div class="faq-accordion-item" id="faqPanel4">
+            <button type="button" class="faq-accordion-trigger" onclick="toggleAccordionPanel('faqPanel4')">
+                <span class="faq-accordion-question">What is the difference between skin tone and undertone?</span>
+                <span class="faq-accordion-chevron">▼</span>
+            </button>
+            <div class="faq-accordion-panel">
+                <div class="faq-accordion-body">
+                    <p>Your skin tone is the surface colour (fair, medium, tan, deep) which can change with sun exposure. Your undertone is the permanent biological colour beneath the skin surface (Warm, Cool, or Neutral) that never changes throughout your life.</p>
+                </div>
             </div>
-        </details>
-        <details class="faq-item">
-            <summary class="faq-question">Why does the analyser say it cannot detect clear skin pixels?</summary>
-            <div class="faq-answer">
-                <p>This usually means the lighting is too dark or the face is too far from the camera. Move closer to a window with natural light and try again without heavy filters.</p>
+        </div>
+        <div class="faq-accordion-item" id="faqPanel5">
+            <button type="button" class="faq-accordion-trigger" onclick="toggleAccordionPanel('faqPanel5')">
+                <span class="faq-accordion-question">Why does the analyser say it cannot detect clear skin pixels?</span>
+                <span class="faq-accordion-chevron">▼</span>
+            </button>
+            <div class="faq-accordion-panel">
+                <div class="faq-accordion-body">
+                    <p>This usually means the lighting is too dark or the face is too far from the camera. Move closer to a window with natural light and try again without heavy filters.</p>
+                </div>
             </div>
-        </details>
-        <details class="faq-item">
-            <summary class="faq-question">How should I use my seasonal colour results?</summary>
-            <div class="faq-answer">
-                <p>Your seasonal profile (like Deep Winter or Warm Spring) tells you which clothing colours, hair tones, makeup shades, and jewellery metals naturally complement your face. Use it as a guide when shopping to avoid colours that wash you out.</p>
+        </div>
+        <div class="faq-accordion-item" id="faqPanel6">
+            <button type="button" class="faq-accordion-trigger" onclick="toggleAccordionPanel('faqPanel6')">
+                <span class="faq-accordion-question">How should I use my seasonal colour results?</span>
+                <span class="faq-accordion-chevron">▼</span>
+            </button>
+            <div class="faq-accordion-panel">
+                <div class="faq-accordion-body">
+                    <p>Your seasonal profile (like Deep Winter or Warm Spring) tells you which clothing colours, hair tones, makeup shades, and jewellery metals naturally complement your face. Use it as a guide when shopping to avoid colours that wash you out.</p>
+                </div>
             </div>
-        </details>
+        </div>
     </div>
 </div>
 

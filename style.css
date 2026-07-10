@@ -56,18 +56,6 @@
     margin-bottom: 12px;
 }
 
-.privacy-points {
-    margin: 0 0 15px 20px;
-    padding: 0;
-}
-
-.privacy-points li {
-    font-size: 0.9rem;
-    color: #4a5568;
-    margin-bottom: 6px;
-    line-height: 1.5;
-}
-
 .privacy-tag {
     display: inline-block;
     font-size: 0.8rem;
@@ -76,6 +64,61 @@
     background-color: #e6fffa;
     padding: 4px 10px;
     border-radius: 6px;
+}
+
+/* ── Premium Trust Card Grid (replaces plain bullet list) ── */
+.privacy-trust-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 0 0 15px 0;
+}
+@media (min-width: 700px) {
+    .privacy-trust-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.privacy-trust-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.privacy-trust-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(45, 55, 72, 0.1);
+    border-color: #a0aec0;
+}
+.privacy-trust-icon {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 6px;
+}
+.privacy-trust-card strong {
+    display: block;
+    font-size: 0.82rem;
+    color: #2d3748;
+    margin-bottom: 3px;
+}
+.privacy-trust-card span.privacy-trust-desc {
+    font-size: 0.74rem;
+    color: #4a5568;
+    line-height: 1.35;
+    display: block;
+}
+body.dark-mode .privacy-trust-card {
+    background: #111827;
+    border-color: #2d3748;
+}
+body.dark-mode .privacy-trust-card:hover {
+    border-color: #4b5563;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+body.dark-mode .privacy-trust-card strong {
+    color: #f7fafc;
+}
+body.dark-mode .privacy-trust-card span.privacy-trust-desc {
+    color: #cbd5e0;
 }
 
 /* Automatic Adaptability for Dark Mode profiles */
@@ -89,8 +132,7 @@ body.dark-mode .privacy-header h3 {
     color: #f7fafc;
 }
 
-body.dark-mode .privacy-text,
-body.dark-mode .privacy-points li {
+body.dark-mode .privacy-text {
     color: #cbd5e0;
 }
 
@@ -144,87 +186,104 @@ body.dark-mode {
 .faq-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
 }
 
-/* Native Accordion Item styling */
-.faq-item {
-    background-color: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 14px 18px;
-    transition: all 0.2s ease;
-}
-
-.faq-item[open] {
+/* ── Premium FAQ Accordion (Stripe / Notion / Linear style cards) ── */
+.faq-accordion-item {
     background-color: #ffffff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+}
+.faq-accordion-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
     border-color: #cbd5e1;
 }
-
-/* Question Trigger Style */
-.faq-question {
-    font-weight: 600;
-    font-size: 1.05rem;
-    color: #1e293b;
-    cursor: pointer;
-    list-style: none; /* Hide default native arrow */
+.faq-accordion-item.panel-opened {
+    border-color: #6a5acd;
+    box-shadow: 0 10px 24px rgba(106, 90, 205, 0.12);
+}
+.faq-accordion-trigger {
+    width: 100%;
+    padding: 18px 22px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    user-select: none;
+    text-align: left;
 }
-
-/* Custom CSS dynamic toggle arrow indicator */
-.faq-question::after {
-    content: "＋";
-    font-size: 0.9rem;
-    color: #64748b;
-    transition: transform 0.2s ease;
+.faq-accordion-question {
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: #1e293b;
+    line-height: 1.4;
 }
-
-.faq-item[open] .faq-question::after {
-    content: "✕";
-    font-size: 0.8rem;
+.faq-accordion-item.panel-opened .faq-accordion-question {
+    color: #6a5acd;
 }
-
-.faq-question::-webkit-details-marker {
-    display: none; /* Safely clears default Safari marker tracks */
+.faq-accordion-chevron {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s ease;
 }
-
-/* Answer Body Styling */
-.faq-answer {
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px dashed #e2e8f0;
+.faq-accordion-item.panel-opened .faq-accordion-chevron {
+    transform: rotate(180deg);
+    color: #6a5acd;
+}
+.faq-accordion-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.faq-accordion-item.panel-opened .faq-accordion-panel {
+    max-height: 400px;
+}
+.faq-accordion-body {
+    padding: 0 22px 20px 22px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 12px;
     font-size: 0.95rem;
     color: #475569;
-    line-height: 1.6;
+    line-height: 1.65;
 }
+.faq-accordion-body p { margin: 0; }
 
-.faq-answer p {
-    margin: 0;
-}
-
-/* --- Dark Mode Adaptation Layouts --- */
-body.dark-mode .faq-item {
+body.dark-mode .faq-accordion-item {
     background-color: #1e293b;
     border-color: #334155;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
-
-body.dark-mode .faq-item[open] {
-    background-color: #0f172a;
+body.dark-mode .faq-accordion-item:hover {
     border-color: #475569;
+    box-shadow: 0 10px 22px rgba(0,0,0,0.3);
 }
-
-body.dark-mode .faq-question {
+body.dark-mode .faq-accordion-item.panel-opened {
+    border-color: #a78bfa;
+    box-shadow: 0 10px 24px rgba(167, 139, 250, 0.15);
+}
+body.dark-mode .faq-accordion-question {
     color: #f1f5f9;
 }
-
-body.dark-mode .faq-question::after {
-    color: #94a3b8;
+body.dark-mode .faq-accordion-item.panel-opened .faq-accordion-question {
+    color: #a78bfa;
 }
-
-body.dark-mode .faq-answer {
+body.dark-mode .faq-accordion-chevron {
+    color: #64748b;
+}
+body.dark-mode .faq-accordion-item.panel-opened .faq-accordion-chevron {
+    color: #a78bfa;
+}
+body.dark-mode .faq-accordion-body {
     border-top-color: #334155;
     color: #cbd5e1;
 }

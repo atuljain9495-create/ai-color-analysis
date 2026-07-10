@@ -525,7 +525,7 @@ if (analyzeBtn) {
         }
 
         if (!uploadedImage) { setStatus("Please upload or capture a photo first.", "error"); return; }
-        setStatus("Analysing your photo...", "info");
+        setStatus("", "info"); // Clear old status text — the premium progress loader now shows analysis state
         skinToneDiv.innerHTML = "🔍 Detecting skin tone & features...";
         hexColorDiv.innerHTML=undertoneDiv.innerHTML=seasonalTypeDiv.innerHTML=confidenceScore.innerHTML="";
         clearRecommendations();
@@ -626,6 +626,8 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         if (shareSeasonBtn) shareSeasonBtn.style.display = "none";
 
         // Show progress box matrix wrapper
+        const percentLabel = document.getElementById("aiProgressPercentLabel");
+        const progressBarFill = document.getElementById("aiProgressBarFill");
         if (progressLoader) {
             progressLoader.style.display = "flex";
             // Reset items to inactive resting state metrics
@@ -633,7 +635,23 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
                 el.className = "progress-step-item";
                 el.querySelector(".step-status-icon").textContent = "⏳";
             });
+            if (percentLabel) percentLabel.textContent = "0%";
+            if (progressBarFill) progressBarFill.style.width = "0%";
+            // Bring the premium loader into view — it lives inside the
+            // Results card further down the page, so without this the user
+            // never scrolls far enough to see it and only notices the old
+            // plain status line next to the button instead.
+            progressLoader.scrollIntoView({ behavior: "smooth", block: "center" });
         }
+
+        // 6-stage sequence powering both the step list and the percentage bar
+        const STEP_SEQUENCE = ["upload", "face", "skintone", "undertone", "season", "recommendations"];
+        let completedSteps = 0;
+        const updateOverallProgress = () => {
+            const pct = Math.round((completedSteps / STEP_SEQUENCE.length) * 100);
+            if (percentLabel) percentLabel.textContent = `${pct}%`;
+            if (progressBarFill) progressBarFill.style.width = `${pct}%`;
+        };
 
         // Helper framework function to chain step states sequentially
         const setStepState = (id, state) => {
@@ -646,6 +664,8 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
                 target.classList.remove("step-processing");
                 target.classList.add("step-done");
                 target.querySelector(".step-status-icon").textContent = "✓";
+                completedSteps++;
+                updateOverallProgress();
             }
         };
 
@@ -657,9 +677,17 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
         // ── STEP TIMELINE SEQUENCE RUNNER ──
+        setStepState("upload", "processing");
+        await wait(400); // Local image hand-off into the analysis pipeline
+        setStepState("upload", "done");
+
         setStepState("face", "processing");
         await wait(600); // Initial face-tracking system calculation interval
         setStepState("face", "done");
+
+        setStepState("skintone", "processing");
+        await wait(500); // Skin pixel cluster sampling pass
+        setStepState("skintone", "done");
 
         setStepState("undertone", "processing");
         await wait(500); // Undertone color matrix isolation loop
@@ -669,15 +697,12 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         await wait(600); // Season matching timeline block
         setStepState("season", "done");
 
-        setStepState("wardrobe", "processing");
-        await wait(500); // Wardrobe creation step
-        setStepState("wardrobe", "done");
-
-        setStepState("products", "processing");
-        await wait(600); // Sizing catalog delay bounds
-        setStepState("products", "done");
+        setStepState("recommendations", "processing");
+        await wait(500); // Wardrobe + sizing catalog preparation
+        setStepState("recommendations", "done");
 
         // ── 🎉 PROCESSING CONCLUDED: REVEAL PREMIUM COMPUTED RESULTS MATRIX ──
+        await wait(250); // Brief pause at 100% so the bar visibly completes
         if (progressLoader) progressLoader.style.display = "none";
 
         skinToneDiv.style.display = "block";
@@ -702,7 +727,6 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         seasonalTypeDiv.innerHTML=`<strong>Seasonal Type:</strong> ${seasonalType}`;
         confidenceScore.innerHTML=`<strong>Skin Detection:</strong> ${skinRatio}% skin pixels found ✓`;
 
-        setStatus("Analysis complete.","success");
         setValidationMessage("Your personalised colour palette is ready below.","success");
 
         if (typeof gtag === "function") {
@@ -865,19 +889,19 @@ function buildSliderCards(prefix) {
     // Injects your local asset routes with un-bypassable micro button dimensions inline
     // Update the button row contents with custom individual image scaling to normalize sizes
     brandHeaderRow.innerHTML = `
-        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'amazon' ? 'tab-active' : ''}" data-tab="amazon" onclick="setRetailerTabFilter('amazon', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'amazon' ? '#6a5acd' : '#334155'} !important; cursor: pointer !important; overflow: hidden !important;">
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'amazon' ? 'tab-active' : ''}" data-tab="amazon" onclick="setRetailerTabFilter('amazon', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'amazon' ? '#ff9900' : '#334155'} !important; box-shadow: ${window._currentRetailerTab === 'amazon' ? '0 6px 16px rgba(255,153,0,0.3)' : 'none'} !important; cursor: pointer !important; overflow: hidden !important;">
             <img src="logos/amazon.png" style="height: auto !important; width: 95% !important; object-fit: contain !important; box-sizing: border-box !important;" alt="Amazon">
         </button>
-        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'asos' ? 'tab-active' : ''}" data-tab="asos" onclick="setRetailerTabFilter('asos', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'asos' ? '#6a5acd' : '#334155'} !important; cursor: pointer !important; overflow: hidden !important;">
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'asos' ? 'tab-active' : ''}" data-tab="asos" onclick="setRetailerTabFilter('asos', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'asos' ? '#111111' : '#334155'} !important; box-shadow: ${window._currentRetailerTab === 'asos' ? '0 6px 16px rgba(17,17,17,0.25)' : 'none'} !important; cursor: pointer !important; overflow: hidden !important;">
             <img src="logos/asos.png" style="height: 100% !important; width: 100% !important; object-fit: contain !important; box-sizing: border-box !important;" alt="ASOS">
         </button>
-        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'h&m' ? 'tab-active' : ''}" data-tab="h&m" onclick="setRetailerTabFilter('h&m', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'h&m' ? '#6a5acd' : '#334155'} !important; cursor: pointer !important; overflow: hidden !important;">
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'h&m' ? 'tab-active' : ''}" data-tab="h&m" onclick="setRetailerTabFilter('h&m', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'h&m' ? '#e50010' : '#334155'} !important; box-shadow: ${window._currentRetailerTab === 'h&m' ? '0 6px 16px rgba(229,0,16,0.3)' : 'none'} !important; cursor: pointer !important; overflow: hidden !important;">
             <img src="logos/hm.png" style="height: 100% !important; width: 100% !important; object-fit: contain !important; box-sizing: border-box !important;" alt="H&M">
         </button>
-        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'flipkart' ? 'tab-active' : ''}" data-tab="flipkart" onclick="setRetailerTabFilter('flipkart', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'flipkart' ? '#6a5acd' : '#334155'} !important; cursor: pointer !important; overflow: hidden !important;">
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'flipkart' ? 'tab-active' : ''}" data-tab="flipkart" onclick="setRetailerTabFilter('flipkart', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'flipkart' ? '#2874f0' : '#334155'} !important; box-shadow: ${window._currentRetailerTab === 'flipkart' ? '0 6px 16px rgba(40,116,240,0.3)' : 'none'} !important; cursor: pointer !important; overflow: hidden !important;">
             <img src="logos/flipkart.png" style="height: auto !important; width: 90% !important; object-fit: contain !important; box-sizing: border-box !important;" alt="Flipkart">
         </button>
-        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'myntra' ? 'tab-active' : ''}" data-tab="myntra" onclick="setRetailerTabFilter('myntra', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'myntra' ? '#6a5acd' : '#334155'} !important; cursor: pointer !important; overflow: hidden !important;">
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'myntra' ? 'tab-active' : ''}" data-tab="myntra" onclick="setRetailerTabFilter('myntra', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'myntra' ? '#ff3f6c' : '#334155'} !important; box-shadow: ${window._currentRetailerTab === 'myntra' ? '0 6px 16px rgba(255,63,108,0.3)' : 'none'} !important; cursor: pointer !important; overflow: hidden !important;">
             <img src="logos/myntra.png" style="height: 100% !important; width: 100% !important; object-fit: contain !important; box-sizing: border-box !important;" alt="Myntra">
         </button>
     `;
@@ -2166,6 +2190,7 @@ window.setActiveGlassesModel = function(glassesId) {
 // ============================================================================
 
 let threeScene, threeCamera, threeRenderer, threeGlassesModel;
+let glassesLoadRequestId = 0; // increments per load() call so stale async callbacks can be ignored
 const GLASSES_MODEL_FOLDER = "assets/3d-glasses/";
 
 function initThreeJSScene(videoElement, canvasElement) {
@@ -2231,11 +2256,21 @@ function loadGlassesModel(glassesId) {
     const loader = new THREE.GLTFLoader();
     const modelPath = GLASSES_MODEL_FOLDER + frame.modelFile;
 
+    // Snapshot the request counter. If the user clicks "Try On" again (same
+    // frame or a different one) before this load finishes, that click bumps
+    // glassesLoadRequestId, so this stale callback can tell it's no longer
+    // the latest request and bail out — without this, two quick clicks could
+    // both finish loading and both call threeScene.add(), leaving two glasses
+    // models rendered on the face at once.
+    const requestId = ++glassesLoadRequestId;
+
     loader.load(
         modelPath,
         (gltf) => {
-            // Only apply if this is still the selected frame (guards against
-            // a slow load finishing after the user picked something else).
+            // Only apply if this is still the most recent load request AND
+            // still the selected frame (guards against a slow load finishing
+            // after the user picked something else, or double-clicked).
+            if (requestId !== glassesLoadRequestId) return;
             if (activeGlassesStyleId !== glassesId) return;
 
             const rawModel = gltf.scene;
