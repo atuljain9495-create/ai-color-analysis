@@ -1976,7 +1976,7 @@ window.openGlassesCamera = async function() {
         if (glassesStreamInstance) glassesStreamInstance.getTracks().forEach(t => t.stop());
         
         glassesStreamInstance = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "user" }, 
+            video: { facingMode: { ideal: currentGlassesFacingMode } }, 
             audio: false 
         });
 
