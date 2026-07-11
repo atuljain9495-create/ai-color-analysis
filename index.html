@@ -710,40 +710,17 @@
         }
         }
 
-        /* ── 📱 Live Try-On Monitor: taller box on mobile so the camera view
-           fills more of the phone's screen height (not just its width).
-           object-fit: cover on both the video and canvas crops them
-           identically, so the 3D glasses render stays aligned with the
-           face and is never stretched/distorted by the new box shape. */
+        /* ── 📱 Live Try-On stage: taller on mobile so the camera view fills
+           more of the phone's screen height (not just its width) — closer to
+           the full-bleed feel of a native camera app. object-fit: cover on
+           both the video and canvas crops them identically, so the 3D
+           glasses render stays aligned with the face and is never
+           stretched/distorted by the taller box shape. The frame tray and
+           Buy Now bar live inside the same viewport now (see .glasses-sheet
+           in style.css), so there's no second card to reposition here. */
         @media (max-width: 768px) {
-            #glassesLiveMonitorBox {
+            .glasses-viewport {
                 aspect-ratio: 3 / 4 !important;
-            }
-            /* 📌 Keep the camera preview pinned at the top of the screen while
-               the user scrolls down through the frame list below it — fixes
-               the old "scroll down to pick a frame, scroll back up to see
-               yourself" back-and-forth on phones. Both cards live in the same
-               stacked grid column here, so the camera card has room below it
-               to stick within as the page scrolls past the frame list. */
-            .glasses-camera-card {
-                position: sticky !important;
-                top: 8px !important;
-                z-index: 30 !important;
-                padding: 14px !important;
-            }
-            /* Trims the outer padding on the frame-inventory card so the
-               list itself (which already has its own card padding) isn't
-               squeezed by three stacked layers of box padding. */
-            .glasses-inventory-card {
-                padding: 14px !important;
-            }
-            /* Let the frame list flow naturally with the page instead of
-               being boxed into its own tiny inner scrollbar — with the
-               camera now sticky, there's no need for a second, separate
-               scroll region. */
-            #glassesSelectionTray {
-                max-height: none !important;
-                padding: 4px !important;
             }
         }
         /* ── "How It Works" Steps Section (above upload section) ── */
@@ -1265,7 +1242,7 @@
             Screenshot any clothing item from Amazon, ASOS or H&M, or snap a live picture of a garment. We'll instantly tell you if that colour suits your personal palette.
         </p>
 
-        <div style="width: 100%; padding: 12px 16px; background: #fff3cd; border: 1px solid #ffeba2; border-radius: 10px; margin-bottom: 24px; box-sizing: border-box; display: flex; align-items: center; gap: 8px;">
+        <div id="sandboxWarningBanner" style="width: 100%; padding: 12px 16px; background: #fff3cd; border: 1px solid #ffeba2; border-radius: 10px; margin-bottom: 24px; box-sizing: border-box; display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 1.1rem;">⚠️</span>
             <strong id="sandboxWarningText" style="font-size: 0.82rem; color: #856404; font-family: system-ui, sans-serif;">IMPORTANT: Click pictures under clear, proper lighting to get highly accurate results.</strong>
         </div>
@@ -1328,50 +1305,66 @@
             </div>
 
             <div id="glassesTryOnActive" style="display: none; width: 100%;">
-                <div style="border-radius: 14px; padding: 5px; margin-bottom: 20px; width: 100%; box-sizing: border-box; background-image: repeating-linear-gradient(135deg, #111111, #111111 10px, #f7c600 10px, #f7c600 20px); box-shadow: 0 4px 14px rgba(0,0,0,0.3);">
-                    <div style="background: #ffffff; border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; box-sizing: border-box;">
-                        <span style="font-size: 1.6rem; flex-shrink: 0;">⚠️</span>
-                        <span style="font-size: 0.82rem; color: #111111; font-weight: 700; line-height: 1.4; font-family: system-ui, -apple-system, sans-serif;">
-                            WORK IN PROGRESS — Our 3D glasses try-on is still being fine-tuned. Frame fit and placement may not be fully accurate yet, so treat results as a preview rather than a final fit.
-                        </span>
-                    </div>
+
+                <div class="glasses-wip-pill">
+                    <span class="glasses-wip-icon">⚠️</span>
+                    <span>Work in progress — frame fit and placement is still being tuned, so treat this as a preview rather than a final fit.</span>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; width: 100%; align-items: stretch; margin-bottom: 20px; box-sizing: border-box;">
-                    
-                    <div class="glasses-camera-card" style="background: #111c44; border: 1px solid #1e295d; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-sizing: border-box;">
-                        <div>
-                            <span style="font-size: 0.72rem; font-weight: 800; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 12px;">📸 Live Try-On Monitor</span>
+
+                <div class="glasses-stage">
+                    <div id="glassesLiveMonitorBox" class="glasses-viewport">
+
+                        <!-- Background layer: camera feed + 3D overlay canvas. This layer
+                             always fills the entire viewport box, full-bleed, no matter
+                             what's happening in the foreground below. -->
+                        <div class="glasses-camera-layer">
+                            <video id="glassesVideo" autoplay playsinline muted class="glasses-video"></video>
+                            <canvas id="glassesTryOnCanvas" class="glasses-canvas"></canvas>
                         </div>
 
-                        <div id="glassesLiveMonitorBox" style="width: 100%; border-radius: 12px; overflow: hidden; background: #090d22; position: relative; aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; border: 1px solid #1e295d; box-sizing: border-box; margin-bottom: 16px;">
-                            <video id="glassesVideo" autoplay playsinline muted style="display: none; width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;"></video>
-                            <canvas id="glassesTryOnCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; z-index: 10; display: none;"></canvas>
-                            <div id="glassesPlaceholderText" style="color: #475569; font-size: 0.8rem; font-weight: 600; text-align: center; padding: 16px; z-index: 1; line-height: 1.4;">
-                                Camera feed closed.<br><span style="font-weight: normal; opacity: 0.7;">Tap "Start Try-on Camera" to begin.</span>
+                        <!-- Foreground layer: a real flex column, so the center content
+                             and the bottom sheet are stacked siblings that split the
+                             available height between them. This makes it structurally
+                             impossible for the sheet to cover the power button/placeholder,
+                             however tall the sheet grows (e.g. once the Buy Now bar shows). -->
+                        <div class="glasses-foreground">
+                            <div class="glasses-center-stack">
+                                <div id="glassesPlaceholderText" class="glasses-empty-state">
+                                    <span class="glasses-empty-icon">🕶️</span>
+                                    <span class="glasses-empty-title">Camera's off</span>
+                                    <span class="glasses-empty-sub">Start the camera to see frames live on your face.</span>
+                                </div>
+
+                                <button type="button" id="glassesCameraOpenBtn" class="glasses-power-btn" onclick="openGlassesCamera()">📷 Start Camera</button>
+                            </div>
+
+                            <div class="glasses-sheet">
+                                <div class="glasses-sheet-header">
+                                    <div class="glasses-sheet-heading">
+                                        <span class="glasses-sheet-title">🕶️ Frame Inventory Curation</span>
+                                        <div id="glassesFaceShapeResultText" class="glasses-sheet-sub"></div>
+                                    </div>
+                                    <button type="button" class="glasses-clear-btn" onclick="window.setActiveGlassesModel(null)" title="Clear selected frame">✕ Clear</button>
+                                </div>
+
+                                <div id="glassesSelectionTray" class="glasses-tray-scroll"></div>
+
+                                <div id="glassesAffiliatePanel" class="glasses-buy-bar">
+                                    <a id="glassesAffiliateLink" href="#" target="_blank" rel="noopener noreferrer" class="glasses-buy-btn" onclick="trackShoppingClick('AMAZON', 'Glasses')">🛒 Buy Now</a>
+                                </div>
                             </div>
                         </div>
 
-                        <div style="display: flex; gap: 8px; width: 100%; box-sizing: border-box; margin-top: auto;">
-                            <button type="button" id="glassesCameraOpenBtn" onclick="openGlassesCamera()" style="flex: 2; background: #1e295d; color: #ffffff; border: 1px solid #312e81; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box;">📷 Start Try-on Camera</button>
-                            <button type="button" id="glassesCaptureBtn" onclick="window.captureGlassesSnapshot()" style="display: none; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; width: 44px; box-sizing: border-box; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);" title="Capture & Download">📸</button>
-                            <button type="button" id="glassesCameraFlipBtn" onclick="toggleGlassesCameraLens()" style="display: none; background: #1f2937; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; width: 44px; box-sizing: border-box;" title="Flip Camera">🔄</button>
+                        <!-- Floating icon controls sit above both layers, pinned to the
+                             viewport itself so they're never affected by sheet height. -->
+                        <div class="glasses-float-controls">
+                            <button type="button" id="glassesCaptureBtn" class="glasses-fab" onclick="window.captureGlassesSnapshot()" title="Capture &amp; download">📸</button>
+                            <button type="button" id="glassesCameraFlipBtn" class="glasses-fab" onclick="toggleGlassesCameraLens()" title="Flip camera">🔄</button>
                         </div>
-                    </div>
 
-                    <div class="glasses-inventory-card" style="background: #111c44; border: 1px solid #1e295d; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-sizing: border-box;">
-                        <div style="width: 100%; height: 100%; display: flex; flex-direction: column;">
-                            <span style="font-size: 0.72rem; font-weight: 800; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 12px;">🕶️ Frame Inventory Curation</span>
-                            <p style="font-size: 0.8rem; color: #94a3b8; margin: 0 0 14px 0; line-height: 1.4;">Select a frame from our inventory collection below to see it live on your face instantly:</p>
-                            <div id="glassesFaceShapeResultText" style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 12px; min-height: 1.2em;"></div>
-                            <div id="glassesSelectionTray" style="flex: 1;"></div>
-                            <button type="button" class="glasses-style-btn clear-btn" onclick="window.setActiveGlassesModel(null)" style="margin-top: 14px; background: #1f2937; color: #fca5a5; border: 1px solid #374151; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; width: 100%;">❌ Clear Frames</button>
-                            <div id="glassesAffiliatePanel" style="display: none; margin-top: 16px;">
-                                <a id="glassesAffiliateLink" href="#" target="_blank" rel="noopener noreferrer" class="shop-link amazon" style="display: block; text-align: center;">Shop This Style on Amazon →</a>
-                            </div>
-                        </div>
                     </div>
-
                 </div>
+
             </div>
 
         </div>
@@ -1588,6 +1581,7 @@ window.switchSandboxTab = function(activeTab) {
     const btnClothes = document.getElementById("tabBtnClothes");
     const btnGlasses = document.getElementById("tabBtnGlasses");
     const subhead = document.getElementById("testProductSubhead");
+    const warnBanner = document.getElementById("sandboxWarningBanner");
     const warnText = document.getElementById("sandboxWarningText");
     
     const clothesPanel = document.getElementById("dressCheckerActive");
@@ -1598,6 +1592,7 @@ window.switchSandboxTab = function(activeTab) {
         if(btnGlasses) { btnGlasses.style.background = "#1e295d"; btnGlasses.style.color = "#ffffff"; }
         if(subhead) subhead.textContent = "Screenshot any clothing item from Amazon, ASOS or H&M, or snap a live picture of a garment. We'll instantly tell you if that colour suits your personal palette.";
         if(warnText) warnText.textContent = "IMPORTANT: Click pictures under clear, proper lighting to get highly accurate results.";
+        if(warnBanner) warnBanner.style.display = "flex";
         
         if(clothesPanel) clothesPanel.style.display = "block";
         if(glassesPanel) glassesPanel.style.display = "none";
@@ -1606,7 +1601,10 @@ window.switchSandboxTab = function(activeTab) {
         if(btnClothes) { btnClothes.style.background = "#1e295d"; btnClothes.style.color = "#ffffff"; }
         if(btnGlasses) { btnGlasses.style.background = "#ffffff"; btnGlasses.style.color = "#111111"; }
         if(subhead) subhead.textContent = "Virtually try on sunglasses and eyewear directly over your face canvas model. Toggle frames from our curation library to find your perfect fit.";
-        if(warnText) warnText.textContent = "IMPORTANT: Align your profile photo horizontally or face the camera directly for precision landmark tracking stability.";
+        // No warning banner here — it ate into the vertical space the
+        // camera box gets, and the glasses tab already has its own
+        // work-in-progress pill doing similar messaging duty.
+        if(warnBanner) warnBanner.style.display = "none";
         
         if(clothesPanel) clothesPanel.style.display = "none";
         if(glassesPanel) glassesPanel.style.display = "block";

@@ -26,13 +26,13 @@ const shopSection    = document.getElementById("shopSection");
 const shopGrid       = document.getElementById("shopGrid");
 const shareSeasonBtn = document.getElementById("shareSeasonBtn");
 const faceStatusWarning = document.getElementById("faceStatusWarning");
-// Styles for the 3D Goggles "Frame Inventory Curation" panel live in
-// style.css (.glasses-item-card and related classes) — this used to also be
-// injected here at runtime as a duplicate, conflicting stylesheet, which is
-// what caused the mobile layout to break (the injected version loaded after
-// style.css and silently won on cascade order, and it had no mobile
-// breakpoint at all). Removed in favor of style.css being the one source of
-// truth.
+// Styles for the 3D glasses "Frame Inventory Curation" stage live in
+// style.css (.glasses-stage, .glasses-card and related classes) — this used
+// to also be injected here at runtime as a duplicate, conflicting
+// stylesheet, which is what caused the mobile layout to break (the injected
+// version loaded after style.css and silently won on cascade order, and it
+// had no mobile breakpoint at all). Removed in favor of style.css being the
+// one source of truth.
 
 let uploadedImage     = null;
 let stream            = null;
@@ -2248,13 +2248,16 @@ window.openGlassesCamera = async function() {
         gPlaceholder.style.display = "none";
 
         const gFlipBtn = document.getElementById("glassesCameraFlipBtn");
-        if (gFlipBtn) gFlipBtn.style.display = "inline-block";
+        if (gFlipBtn) gFlipBtn.style.display = "flex";
 
         const gCaptureBtn = document.getElementById("glassesCaptureBtn");
-        if (gCaptureBtn) gCaptureBtn.style.display = "inline-block";
+        if (gCaptureBtn) gCaptureBtn.style.display = "flex";
         
-        gOpenBtn.textContent = "📷 Close 3D Try-on Camera";
+        gOpenBtn.textContent = "✕ Close";
         gOpenBtn.onclick = window.closeGlassesCamera;
+
+        const gMonitorBox = document.getElementById("glassesLiveMonitorBox");
+        if (gMonitorBox) gMonitorBox.classList.add("glasses-active");
 
         gVideo.onloadedmetadata = () => {
             // Set the canvas's actual render resolution before Three.js reads
@@ -2368,6 +2371,16 @@ async function runInstantFaceStructureScan() {
     }
 }
 
+// Shared by the tray cards and the persistent Buy Now bar so the affiliate
+// link logic only lives in one place.
+function buildGlassesAmazonBuyUrl(frame) {
+    const isIndia = isUserInIndia();
+    const affiliateId = isIndia ? 'aicoloronline-21' : 'aicolor-20';
+    const amazonDomain = isIndia ? 'amazon.in' : 'amazon.com';
+    const searchTerm = encodeURIComponent(`${frame.name} glasses`);
+    return `https://www.${amazonDomain}/s?k=${searchTerm}&tag=${affiliateId}`;
+}
+
 function renderCuratedGlassesSelectionTray() {
     const trayContainer = document.getElementById("glassesSelectionTray");
     const faceShape = (window.getFaceShape(window._storedTryOnLandmarks) || "oval").toLowerCase();
@@ -2386,55 +2399,40 @@ function renderCuratedGlassesSelectionTray() {
         curatedFrames = curatedFrames.concat(versatile);
     }
 
-    // Group by frame structure: Full-Rim / Semi-Rimless / Rimless
-    const groupedFrames = curatedFrames.reduce((acc, frame) => {
-        const key = frame.structure || 'Full-Rim';
-        if (!acc[key]) acc[key] = [];
-        acc[key].push(frame);
-        return acc;
-    }, {});
-
-    const isIndia = isUserInIndia();
-    const affiliateId = isIndia ? 'aicoloronline-21' : 'aicolor-20';
-    const amazonDomain = isIndia ? 'amazon.in' : 'amazon.com';
-
-    let trayHtml = `<div class="glasses-shape-banner">Curated for your <strong>${faceShape.toUpperCase()}</strong> face shape</div>`;
-
+    // Flat, ordered strip (Full-Rim → Semi-Rimless → Rimless) rather than
+    // grouped sections — this renders as a single horizontally-scrollable
+    // row of cards (see .glasses-tray-scroll), so section headers would just
+    // break up the scroll rather than organize it. Each card's structure tag
+    // still shows on the card itself.
     const structureOrder = ["Full-Rim", "Semi-Rimless", "Rimless"];
-    const orderedGroupNames = Object.keys(groupedFrames).sort(
-        (a, b) => structureOrder.indexOf(a) - structureOrder.indexOf(b)
+    curatedFrames = curatedFrames.slice().sort(
+        (a, b) => structureOrder.indexOf(a.structure) - structureOrder.indexOf(b.structure)
     );
 
-    orderedGroupNames.forEach(groupName => {
-        trayHtml += `<h4 class="glasses-group-heading">${groupName}</h4><div class="glasses-group-grid">`;
+    let trayHtml = "";
 
-        groupedFrames[groupName].forEach(frame => {
-            const searchTerm = encodeURIComponent(`${frame.name} glasses`);
-            const buyUrl = `https://www.${amazonDomain}/s?k=${searchTerm}&tag=${affiliateId}`;
-            const isActive = activeGlassesStyleId === frame.id;
+    curatedFrames.forEach(frame => {
+        const isActive = activeGlassesStyleId === frame.id;
+        const safeWhy = (frame.why || frame.name).replace(/"/g, '&quot;');
 
-            // No external thumbnail image — those files don't ship with this
-            // build, which is what was causing the broken-image icons. A CSS
-            // swatch + icon carries the same info without a missing asset.
-            trayHtml += `
-                <div class="glasses-item-card${isActive ? ' glasses-item-active' : ''}">
-                    <div class="glasses-item-swatch" style="background:#${frame.color.toString(16).padStart(6, '0')};"></div>
-                    <div class="glasses-item-info">
-                        <span class="glasses-item-name">${frame.name}</span>
-                        ${frame.why ? `<span class="glasses-item-why">${frame.why}</span>` : ''}
-                    </div>
-                    <div class="glasses-item-actions">
-                        <button class="tryon-btn" onclick="window.setActiveGlassesModel('${frame.id}')">Try On</button>
-                        <a href="${buyUrl}" target="_blank" class="buy-btn" onclick="trackShoppingClick('AMAZON', 'Glasses')">Buy Now</a>
-                    </div>
-                </div>
-            `;
-        });
-
-        trayHtml += `</div>`;
+        // No external thumbnail image — those files don't ship with this
+        // build, which is what was causing the broken-image icons. A CSS
+        // swatch + icon carries the same info without a missing asset.
+        // The whole card is a button: tapping it previews the frame live on
+        // camera immediately (window.setActiveGlassesModel below also drives
+        // the persistent Buy Now bar), so trying a look never requires more
+        // than one tap.
+        trayHtml += `
+            <button type="button" class="glasses-card${isActive ? ' glasses-card-active' : ''}"
+                    onclick="window.setActiveGlassesModel('${frame.id}')" title="${safeWhy}">
+                <span class="glasses-card-swatch" style="background:#${frame.color.toString(16).padStart(6, '0')};">🕶️</span>
+                <span class="glasses-card-name">${frame.name}</span>
+                <span class="glasses-card-structure">${frame.structure}</span>
+            </button>
+        `;
     });
 
-    trayContainer.innerHTML = trayHtml || "<p>No recommended frames found for your face shape.</p>";
+    trayContainer.innerHTML = trayHtml || `<p class="glasses-tray-empty">No recommended frames found for your face shape.</p>`;
 }
 
 // Stub function to be called by the try-on buttons
@@ -2444,6 +2442,22 @@ window.setActiveGlassesModel = function(glassesId) {
     // Re-render so the selected card gets the active highlight.
     renderCuratedGlassesSelectionTray();
     loadGlassesModel(glassesId);
+
+    // Drive the persistent bottom Buy Now bar off the same selection — it
+    // only appears once a frame is actually being previewed, and always
+    // points at whichever frame is currently on-screen.
+    const buyPanel = document.getElementById("glassesAffiliatePanel");
+    const buyLink = document.getElementById("glassesAffiliateLink");
+    if (buyPanel && buyLink) {
+        const frame = glassesId ? catalog3DDatabase.find(f => f.id === glassesId) : null;
+        if (frame) {
+            buyLink.href = buildGlassesAmazonBuyUrl(frame);
+            buyLink.textContent = `🛒 Buy "${frame.name}"`;
+            buyPanel.style.display = "block";
+        } else {
+            buyPanel.style.display = "none";
+        }
+    }
 };
 
 // ============================================================================
@@ -2816,6 +2830,18 @@ window.closeGlassesCamera = function() {
     const gOpenBtn = document.getElementById("glassesCameraOpenBtn");
     const gFlipBtn = document.getElementById("glassesCameraFlipBtn");
 
+    // Closing the camera should reset the whole try-on session, not just the
+    // video feed — otherwise the previously selected frame stays "active" on
+    // the tray, the Buy Now bar stays visible pointing at a frame that's no
+    // longer on anyone's face, and the AI STRUCTURE line still shows the old
+    // scan result. Reusing setActiveGlassesModel(null) clears the tray
+    // highlight, unloads the 3D model, and hides the Buy Now bar in one go —
+    // the same path the "✕ Clear" button already uses.
+    window.setActiveGlassesModel(null);
+
+    const statusText = document.getElementById("glassesFaceShapeResultText");
+    if (statusText) statusText.innerHTML = "";
+
     if (glassesLoopRequestId) cancelAnimationFrame(glassesLoopRequestId);
     glassesLoopRequestId = null;
     if (glassesStreamInstance) {
@@ -2834,9 +2860,12 @@ window.closeGlassesCamera = function() {
     if (gCaptureBtn) gCaptureBtn.style.display = "none";
 
     if (gOpenBtn) {
-        gOpenBtn.textContent = "📷 Start 3D Try-on Camera";
+        gOpenBtn.textContent = "📷 Start Camera";
         gOpenBtn.onclick = window.openGlassesCamera;
     }
+
+    const gMonitorBox = document.getElementById("glassesLiveMonitorBox");
+    if (gMonitorBox) gMonitorBox.classList.remove("glasses-active");
 };
 
 window.toggleGlassesCameraLens = function() {

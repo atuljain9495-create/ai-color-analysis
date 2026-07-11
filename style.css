@@ -1709,175 +1709,401 @@ body.dark-mode .blog-filter-btn.is-active {
 
 /* ==========================================================================
    GLASSES 3D TRY-ON TAB STYLES
+   Full-bleed camera stage with floating controls and a bottom curation
+   sheet — one selection previews live on camera immediately, and a single
+   persistent Buy Now bar tracks whatever is currently on-screen.
    ========================================================================== */
 
-#glassesSelectionTray {
-    padding: 15px;
-    background: #111827; /* Dark background for the tray */
-    border-radius: 12px;
-    max-height: 450px;
-    overflow-y: auto;
-    border: 1px solid #374151;
-}
-
-#glassesSelectionTray {
-    padding: 15px;
-    background: #111827; /* Dark background for the tray */
-    border-radius: 12px;
-    max-height: 450px;
-    overflow-y: auto;
-    border: 1px solid #374151;
-}
-
-.glasses-shape-banner {
-    font-size: 0.8rem;
-    color: #a5b4fc;
-    background: rgba(79, 70, 229, 0.12);
-    border: 1px solid rgba(79, 70, 229, 0.35);
-    border-radius: 8px;
-    padding: 8px 12px;
-    margin-bottom: 14px;
-}
-
-.glasses-group-heading {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #a78bfa; /* Purple accent for headings */
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 10px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid #374151;
-}
-
-.glasses-group-grid {
+.glasses-wip-pill {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.glasses-item-card {
-    background: #1f2937;
-    border: 1px solid #374151;
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 10px;
-    display: flex;
-    flex-wrap: wrap; /* lets the actions row drop below the info on narrow cards instead of crushing it */
     align-items: center;
     gap: 10px;
-    transition: background 0.2s ease;
+    background: rgba(247, 198, 0, 0.1);
+    border: 1px solid rgba(247, 198, 0, 0.35);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #fde68a;
+    line-height: 1.4;
 }
 
-.glasses-item-card:hover {
-    background: #374151;
-}
-
-.glasses-item-card.glasses-item-active {
-    border-color: #10b981;
-    background: rgba(16, 185, 129, 0.08);
-}
-
-.glasses-item-swatch {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
+.glasses-wip-icon {
+    font-size: 1.1rem;
     flex-shrink: 0;
-    border: 2px solid rgba(255, 255, 255, 0.25);
 }
 
-.glasses-item-info {
+.glasses-stage {
+    width: 100%;
+    max-width: 420px; /* keeps the phone-camera proportions on wide screens instead of stretching edge to edge */
+    margin: 0 auto;
+}
+
+.glasses-viewport {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    min-height: 480px; /* floor so the empty-state copy + power button always has clear room above the bottom sheet */
+    border-radius: 22px;
+    overflow: hidden;
+    background: #090d22;
+    border: 1px solid #1e295d;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+    box-sizing: border-box;
+}
+
+/* ── Background layer: camera feed + tracking canvas. Always fills the
+   ENTIRE viewport box edge-to-edge, full-bleed — nothing in the
+   foreground ever changes its size, only how much of it is visible. ── */
+.glasses-camera-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+.glasses-video,
+.glasses-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.glasses-canvas {
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* ── Foreground layer: a real flex column laid on top of the camera feed.
+   The center-stack and the bottom sheet are FLOW siblings here (not two
+   independently-positioned absolute elements guessing each other's size),
+   so the sheet growing taller (e.g. once the Buy Now bar appears) simply
+   shrinks the center-stack's available space — it can never cover or hide
+   the power button/placeholder, on any screen size. ── */
+.glasses-foreground {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
     display: flex;
     flex-direction: column;
-    flex: 1 1 160px; /* allowed to wrap onto its own line below ~160px rather than being crushed to nothing */
-    min-width: 0;
+    pointer-events: none; /* clicks pass through empty space; children opt back in below */
 }
 
-.glasses-item-name {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #f1f5f9;
+.glasses-foreground > * {
+    pointer-events: auto;
 }
 
-.glasses-item-why {
-    font-size: 0.75rem;
-    color: #9ca3af;
-    margin-top: 2px;
-    line-height: 1.35;
-}
-
-.glasses-item-actions {
+/* ── Center stack: holds the empty-state copy AND the power button as
+   normal flow siblings (not two independently-centered absolute elements),
+   so they can never land on top of each other. flex: 1 means it simply
+   absorbs whatever height the sheet below doesn't need. ── */
+.glasses-center-stack {
+    flex: 1 1 auto;
+    min-height: 110px; /* floor so the copy/button never get squeezed to nothing on a very short screen */
     display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-    margin-left: auto; /* hugs the right edge on wide cards, drops to its own full-width row on narrow ones via flex-wrap above */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 56px 24px 20px;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
-.glasses-item-actions .tryon-btn,
-.glasses-item-actions .buy-btn {
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 8px 14px;
-    border-radius: 8px;
-    text-decoration: none;
+.glasses-center-stack > * {
+    pointer-events: auto;
+}
+
+.glasses-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: transform 0.2s ease, filter 0.2s ease;
+    gap: 4px;
+    min-height: 0; /* lets it shrink instead of forcing extra height on short viewports */
 }
 
-.glasses-item-actions .tryon-btn {
-    background: #4f46e5;
+.glasses-empty-icon {
+    font-size: 2.2rem;
+    opacity: 0.5;
+    line-height: 1;
+}
+
+.glasses-empty-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #cbd5e1;
+}
+
+.glasses-empty-sub {
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: #64748b;
+    line-height: 1.4;
+    max-width: 240px;
+}
+
+/* ── Power button: sits centered with the empty-state copy (as a normal
+   flex-stack sibling) while the camera is off, then becomes a compact
+   floating pill pinned top-left once it's running. ── */
+.glasses-power-btn {
+    flex-shrink: 0;
+    z-index: 6;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
     color: #fff;
     border: none;
+    padding: 13px 26px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
+    transition: padding 0.2s ease, font-size 0.2s ease, box-shadow 0.2s ease;
+    white-space: nowrap;
 }
 
-.glasses-item-actions .tryon-btn:hover {
-    filter: brightness(1.15);
+.glasses-viewport.glasses-active .glasses-power-btn {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    padding: 7px 13px;
+    font-size: 0.7rem;
+    background: rgba(9, 13, 34, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: none;
 }
 
-.glasses-item-actions .buy-btn {
+/* ── Floating icon controls (capture / flip camera), top-right. Pinned
+   directly to the viewport (not the foreground flex flow) so their
+   position never shifts as the sheet grows or shrinks. ── */
+.glasses-float-controls {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.glasses-fab {
+    display: none; /* app.js flips this to inline-block once the camera opens */
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(9, 13, 34, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #fff;
+    font-size: 1.05rem;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.glasses-fab:hover {
+    background: rgba(9, 13, 34, 0.85);
+    transform: translateY(-1px);
+}
+
+/* ── Bottom curation sheet ── */
+.glasses-sheet {
+    position: relative; /* normal flow flex item now — see .glasses-foreground above */
+    flex: 0 0 auto;
+    z-index: 2;
+    max-height: 62%; /* safety cap so the sheet can never squeeze the center-stack below its floor on a short screen */
+    overflow-y: auto;
+    background: linear-gradient(to top, rgba(9, 13, 34, 0.97) 65%, rgba(9, 13, 34, 0.88) 90%, rgba(9, 13, 34, 0.7));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px 20px 0 0;
+    padding: 14px 14px 16px;
+    box-sizing: border-box;
+}
+
+.glasses-sheet-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.glasses-sheet-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #34d399;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+}
+
+.glasses-sheet-sub {
+    font-size: 0.72rem;
+    color: #a5b4fc;
+    margin-top: 4px;
+    min-height: 1.1em;
+}
+
+.glasses-clear-btn {
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fca5a5;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.7rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.glasses-clear-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Horizontally-scrolling frame tray ── */
+.glasses-tray-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 2px 2px 6px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+}
+
+.glasses-tray-scroll::-webkit-scrollbar {
+    height: 5px;
+}
+
+.glasses-tray-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+
+.glasses-tray-empty {
+    font-size: 0.8rem;
+    color: #64748b;
+    padding: 10px 2px;
+    margin: 0;
+}
+
+.glasses-card {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+    width: 78px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 8px 6px 10px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+    font-family: inherit;
+}
+
+.glasses-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+}
+
+.glasses-card.glasses-card-active {
+    border-color: #4f46e5;
+    background: rgba(79, 70, 229, 0.18);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.22);
+}
+
+.glasses-card-swatch {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glasses-card-name {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    text-align: center;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.glasses-card-structure {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #7c86a3;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* ── Persistent Buy Now bar — only shown once a frame is being previewed ── */
+.glasses-buy-bar {
+    display: none; /* app.js switches this to block once a frame is active */
+    margin-top: 12px;
+}
+
+.glasses-buy-btn {
+    display: block;
+    width: 100%;
+    text-align: center;
     background: linear-gradient(135deg, #10b981, #059669);
-    color: white !important;
+    color: #fff !important;
     border: none;
+    padding: 13px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+    box-sizing: border-box;
+    transition: filter 0.15s ease;
 }
 
-.glasses-item-actions .buy-btn:hover {
-    filter: brightness(1.1);
+.glasses-buy-btn:hover {
+    filter: brightness(1.08);
 }
 
-/* On narrow phone screens, stop trying to fit swatch + text + two buttons
-   into one row entirely — stack the card so every part gets full width and
-   the description can wrap normally instead of being crushed to a sliver. */
 @media (max-width: 480px) {
-    #glassesSelectionTray {
-        max-height: 380px;
-        padding: 10px;
+    .glasses-stage {
+        max-width: none;
     }
 
-    .glasses-item-card {
-        flex-direction: column;
-        align-items: stretch;
-        text-align: left;
+    .glasses-viewport {
+        border-radius: 18px;
+        /* Full-bleed, near-full-screen height on phones instead of the fixed
+           3:4 box — plenty of room for the sheet to grow without eating
+           into the camera preview's usable area. */
+        aspect-ratio: auto;
+        height: min(78dvh, 700px);
+        min-height: 520px;
     }
 
-    .glasses-item-card > .glasses-item-swatch {
-        align-self: flex-start;
+    .glasses-center-stack {
+        padding: 48px 20px 16px;
     }
 
-    .glasses-item-info {
-        flex-basis: auto;
-        width: 100%;
-    }
-
-    .glasses-item-actions {
-        width: 100%;
-        margin-left: 0;
-    }
-
-    .glasses-item-actions .tryon-btn,
-    .glasses-item-actions .buy-btn {
-        flex: 1;
+    .glasses-card {
+        width: 70px;
     }
 }
 
