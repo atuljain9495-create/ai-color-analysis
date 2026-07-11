@@ -48,6 +48,117 @@ window._currentRetailerTab = "amazon"; // Default active retailer tab state anch
 
 const FACE_API_MODEL_URL = "https://cdn.jsdelivr.net/gh/cgarciagl/face-api.js/weights/";
 
+// ── 🧠 MEDIAPIPE FACE LANDMARKER (glasses try-on only) ──
+// face-api.js's 68-point landmarks are flat 2D image points — no real depth,
+// so glasses could only roll (tilt) with the eye-line. Turning your head
+// just slid the frame sideways while it stayed facing the camera flat-on,
+// which read as "floating in front of the face" instead of resting on it.
+// MediaPipe Face Landmarker returns 478 points with real (x, y, z) 3D
+// positions, so we can build the face's actual rotation (roll + yaw + pitch
+// together) from real geometry instead of a 2D guess. This is used ONLY for
+// the glasses try-on — the age/gender scan above still uses face-api.js.
+const MEDIAPIPE_VISION_MODULE_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+const MEDIAPIPE_WASM_URL  = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
+const MEDIAPIPE_MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
+
+let mediaPipeVisionModule = null;
+let faceLandmarkerVideo   = null; // runningMode "VIDEO" — live try-on tracking loop
+let faceLandmarkerImage   = null; // runningMode "IMAGE" — one-shot structure scan
+let faceLandmarkerFailed  = false;
+
+async function ensureFaceLandmarkerModule() {
+    if (mediaPipeVisionModule) return mediaPipeVisionModule;
+    mediaPipeVisionModule = await import(MEDIAPIPE_VISION_MODULE_URL);
+    return mediaPipeVisionModule;
+}
+
+async function createFaceLandmarker(FaceLandmarker, filesetResolver, mode) {
+    const baseOptions = { modelAssetPath: MEDIAPIPE_MODEL_URL };
+    const commonOptions = {
+        outputFaceBlendshapes: false,
+        outputFacialTransformationMatrixes: false,
+        runningMode: mode,
+        numFaces: 1
+    };
+    try {
+        return await FaceLandmarker.createFromOptions(filesetResolver, {
+            ...commonOptions,
+            baseOptions: { ...baseOptions, delegate: "GPU" }
+        });
+    } catch (gpuErr) {
+        console.warn("Face Landmarker GPU delegate failed, falling back to CPU:", gpuErr);
+        return await FaceLandmarker.createFromOptions(filesetResolver, {
+            ...commonOptions,
+            baseOptions: { ...baseOptions, delegate: "CPU" }
+        });
+    }
+}
+
+async function ensureFaceLandmarker(mode) {
+    if (mode === "VIDEO" && faceLandmarkerVideo) return faceLandmarkerVideo;
+    if (mode === "IMAGE" && faceLandmarkerImage) return faceLandmarkerImage;
+    if (faceLandmarkerFailed) return null;
+
+    try {
+        const { FaceLandmarker, FilesetResolver } = await ensureFaceLandmarkerModule();
+        const filesetResolver = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_URL);
+        const landmarker = await createFaceLandmarker(FaceLandmarker, filesetResolver, mode);
+        if (mode === "VIDEO") faceLandmarkerVideo = landmarker;
+        else faceLandmarkerImage = landmarker;
+        return landmarker;
+    } catch (err) {
+        console.warn("MediaPipe Face Landmarker failed to load — glasses try-on will be unavailable:", err);
+        faceLandmarkerFailed = true;
+        return null;
+    }
+}
+
+// Canonical MediaPipe Face Mesh indices (confirmed against the official
+// topology — these are stable across the 468/478-point model, unlike the
+// jaw/eyebrow ones flagged as approximate further down).
+const MP_NOSE_TIP        = 1;
+const MP_FOREHEAD        = 10;
+const MP_CHIN            = 152;
+const MP_RIGHT_EYE_OUTER = 33;
+const MP_RIGHT_EYE_INNER = 133;
+const MP_LEFT_EYE_INNER  = 362;
+const MP_LEFT_EYE_OUTER  = 263;
+const MP_RIGHT_CHEEK     = 234;
+const MP_LEFT_CHEEK      = 454;
+// Community-sourced approximations (not officially documented as precisely
+// as the points above) — used only for the face-shape recommendation
+// heuristic, not for glasses positioning, so any imprecision here affects
+// which frames get *recommended*, not how a selected frame actually sits.
+const MP_RIGHT_EYEBROW_OUTER = 70;
+const MP_LEFT_EYEBROW_OUTER  = 300;
+const MP_RIGHT_JAW           = 172;
+const MP_LEFT_JAW            = 397;
+// Right eye / left eye contour rings, used to average a stable "eye center"
+// point per side (mirrors the multi-point averaging face-api's
+// getLeftEye()/getRightEye() used to do, so scale/calibration constants
+// tuned against that behave similarly).
+const MP_RIGHT_EYE_RING = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
+const MP_LEFT_EYE_RING  = [263, 249, 390, 373, 374, 380, 381, 382, 362, 398, 384, 385, 386, 387, 388, 466];
+
+function averageMpPoints(landmarks, indices) {
+    let x = 0, y = 0, z = 0;
+    for (const i of indices) { x += landmarks[i].x; y += landmarks[i].y; z += landmarks[i].z; }
+    const n = indices.length;
+    return { x: x / n, y: y / n, z: z / n };
+}
+
+// Converts a normalized MediaPipe landmark (x,y in [0,1], z depth-ish, with
+// smaller/negative z = closer to camera) into our Three.js world convention:
+// pixel-scaled, Y-up, and Z-positive-toward-camera (matches threeCamera
+// sitting at +Z looking at the origin).
+function mpToWorldVector(point, videoW, videoH) {
+    return new THREE.Vector3(
+        point.x * videoW,
+        -point.y * videoH,
+        -point.z * videoW
+    );
+}
+
 // 📊 Helper function to safely track shopping channel exit conversions
 window.trackShoppingClick = function(platform, itemType) {
     if (typeof gtag === "function") {
@@ -2209,20 +2320,20 @@ let glassesLoopRequestId = null;
 // to console, doesn't break anything else).
 const catalog3DDatabase = [
     // --- FULL-RIM ---
-    { id: "fr_rect_black",  name: "Classic Rectangular", structure: "Full-Rim",     faceMatches: ["round", "oblong"],                why: "Adds angles and length to soften a curved face.",        color: 0x111111, widthMult: 2.1,  yOff: -0.05, modelFile: "fr_rect_black.glb" },
-    { id: "fr_geo_square",  name: "Geometric Square",    structure: "Full-Rim",     faceMatches: ["round", "oval"],                  why: "Sharp lines balance rounder or softer features.",        color: 0x263238, widthMult: 2.15, yOff: -0.05, modelFile: "fr_geo_square.glb" },
-    { id: "fr_round_tort",  name: "Round Tortoiseshell", structure: "Full-Rim",     faceMatches: ["square", "diamond"],              why: "Rounded curves soften a strong jawline or angular cheekbones.", color: 0x6B4F35, widthMult: 2.0,  yOff: -0.06, modelFile: "fr_round_tort.glb" },
-    { id: "fr_cateye_purp", name: "Vintage Cat-Eye",     structure: "Full-Rim",     faceMatches: ["heart", "diamond"],               why: "Upswept corners echo and highlight high cheekbones.",    color: 0x4c1d95, widthMult: 2.1,  yOff: -0.10, modelFile: "fr_cateye_purp.glb" },
-    { id: "fr_wayfarer_blk",name: "Iconic Wayfarer",     structure: "Full-Rim",     faceMatches: ["oval", "round"],                  why: "A versatile trapezoidal shape that suits most faces.",   color: 0x000000, widthMult: 2.1,  yOff: -0.08, modelFile: "fr_wayfarer_blk.glb" },
-    { id: "fr_oversized_sq",name: "Oversized Square",    structure: "Full-Rim",     faceMatches: ["oblong", "round"],                why: "Extra depth shortens and balances a longer face.",       color: 0x1E3A5F, widthMult: 2.3,  yOff: -0.05, modelFile: "fr_oversized_sq.glb" },
+    { id: "fr_rect_black",  name: "Classic Rectangular", structure: "Full-Rim",     faceMatches: ["round", "oblong"],                why: "Adds angles and length to soften a curved face.",        color: 0x111111, widthMult: 2.1,  yOff: -0.025, modelFile: "fr_rect_black.glb" },
+    { id: "fr_geo_square",  name: "Geometric Square",    structure: "Full-Rim",     faceMatches: ["round", "oval"],                  why: "Sharp lines balance rounder or softer features.",        color: 0x263238, widthMult: 2.15, yOff: -0.025, modelFile: "fr_geo_square.glb" },
+    { id: "fr_round_tort",  name: "Round Tortoiseshell", structure: "Full-Rim",     faceMatches: ["square", "diamond"],              why: "Rounded curves soften a strong jawline or angular cheekbones.", color: 0x6B4F35, widthMult: 2.0,  yOff: -0.03, modelFile: "fr_round_tort.glb" },
+    { id: "fr_cateye_purp", name: "Vintage Cat-Eye",     structure: "Full-Rim",     faceMatches: ["heart", "diamond"],               why: "Upswept corners echo and highlight high cheekbones.",    color: 0x4c1d95, widthMult: 2.1,  yOff: -0.05, modelFile: "fr_cateye_purp.glb" },
+    { id: "fr_wayfarer_blk",name: "Iconic Wayfarer",     structure: "Full-Rim",     faceMatches: ["oval", "round"],                  why: "A versatile trapezoidal shape that suits most faces.",   color: 0x000000, widthMult: 2.1,  yOff: -0.04, modelFile: "fr_wayfarer_blk.glb" },
+    { id: "fr_oversized_sq",name: "Oversized Square",    structure: "Full-Rim",     faceMatches: ["oblong", "round"],                why: "Extra depth shortens and balances a longer face.",       color: 0x1E3A5F, widthMult: 2.3,  yOff: -0.025, modelFile: "fr_oversized_sq.glb" },
 
     // --- SEMI-RIMLESS ---
-    { id: "sr_browline_brn",name: "Browline Retro",      structure: "Semi-Rimless", faceMatches: ["triangle", "oblong", "oval"],     why: "Bold brow line widens the upper face to balance a wider jaw.", color: 0x5A3A22, widthMult: 2.15, yOff: -0.12, modelFile: "sr_browline_brn.glb" },
-    { id: "sr_rect_gun",    name: "Modern Rectangular",  structure: "Semi-Rimless", faceMatches: ["round", "oval"],                  why: "Clean straight lines add gentle structure.",             color: 0x414A4C, widthMult: 2.2,  yOff: -0.05, modelFile: "sr_rect_gun.glb" },
+    { id: "sr_browline_brn",name: "Browline Retro",      structure: "Semi-Rimless", faceMatches: ["triangle", "oblong", "oval"],     why: "Bold brow line widens the upper face to balance a wider jaw.", color: 0x5A3A22, widthMult: 2.15, yOff: -0.06, modelFile: "sr_browline_brn.glb" },
+    { id: "sr_rect_gun",    name: "Modern Rectangular",  structure: "Semi-Rimless", faceMatches: ["round", "oval"],                  why: "Clean straight lines add gentle structure.",             color: 0x414A4C, widthMult: 2.2,  yOff: -0.025, modelFile: "sr_rect_gun.glb" },
 
     // --- RIMLESS ---
-    { id: "rl_aviator_gld", name: "Classic Aviator",     structure: "Rimless",      faceMatches: ["triangle", "oblong", "square"],   why: "Wide top bar adds width up top, balancing a narrower or angular jaw.", color: 0xc0a000, widthMult: 2.4, yOff: -0.12, modelFile: "rl_aviator_gld.glb" },
-    { id: "rl_oval_silv",   name: "Lightweight Oval",    structure: "Rimless",      faceMatches: ["heart", "diamond", "oval"],       why: "Soft, near-invisible edge that doesn't compete with delicate features.", color: 0xAAAAAA, widthMult: 2.0, yOff: -0.06, modelFile: "rl_oval_silv.glb" }
+    { id: "rl_aviator_gld", name: "Classic Aviator",     structure: "Rimless",      faceMatches: ["triangle", "oblong", "square"],   why: "Wide top bar adds width up top, balancing a narrower or angular jaw.", color: 0xc0a000, widthMult: 2.4, yOff: -0.06, modelFile: "rl_aviator_gld.glb" },
+    { id: "rl_oval_silv",   name: "Lightweight Oval",    structure: "Rimless",      faceMatches: ["heart", "diamond", "oval"],       why: "Soft, near-invisible edge that doesn't compete with delicate features.", color: 0xAAAAAA, widthMult: 2.0, yOff: -0.03, modelFile: "rl_oval_silv.glb" }
 ];
 
 window.openGlassesCamera = async function() {
@@ -2241,6 +2352,12 @@ window.openGlassesCamera = async function() {
             video: { facingMode: { ideal: currentGlassesFacingMode } }, 
             audio: false 
         });
+
+        // Kick off both Face Landmarker instances now (fire-and-forget) so
+        // the ~model download + WASM init is already underway by the time
+        // the structure scan and tracking loop actually need them.
+        ensureFaceLandmarker("IMAGE");
+        ensureFaceLandmarker("VIDEO");
 
         gVideo.srcObject = glassesStreamInstance;
         gVideo.style.display = "block";
@@ -2277,21 +2394,34 @@ window.openGlassesCamera = async function() {
     }
 };
 
-// Upgraded 7-Shape Geometric Face Analysis Logic
+// Upgraded 7-Shape Geometric Face Analysis Logic — rewritten for MediaPipe's
+// 478-point landmark array (was face-api's 68-point .positions format).
+// Landmarks are normalized [0,1] coordinates, so every measurement below is
+// a ratio (width/height relative to other face measurements) rather than a
+// raw pixel distance — that keeps it working the same regardless of video
+// resolution or how close the face is to the camera.
 window.getFaceShape = function(landmarks) {
-    if (!landmarks || !landmarks.positions || landmarks.positions.length !== 68) return 'oval';
-    
+    // Defensive: only handle the MediaPipe array format. Any other shape
+    // (e.g. a leftover object from an unrelated flow) safely falls back
+    // instead of throwing.
+    if (!Array.isArray(landmarks) || landmarks.length < 400) return 'oval';
+
     try {
-        const p = landmarks.positions;
+        const p = landmarks;
 
-        // Widths
-        const faceWidth = p[16].x - p[0].x;
-        const jawWidth = p[12].x - p[4].x;
-        const foreheadWidth = p[26].x - p[17].x;
+        // Widths (forehead/jaw indices here are community-sourced
+        // approximations, not officially documented as precisely as the
+        // eye/nose/chin/cheek points — fine for a recommendation heuristic,
+        // just don't rely on them for anything pixel-precise).
+        const faceWidth = Math.abs(p[MP_LEFT_CHEEK].x - p[MP_RIGHT_CHEEK].x);
+        const jawWidth = Math.abs(p[MP_LEFT_JAW].x - p[MP_RIGHT_JAW].x);
+        const foreheadWidth = Math.abs(p[MP_LEFT_EYEBROW_OUTER].x - p[MP_RIGHT_EYEBROW_OUTER].x);
+        const cheekWidth = faceWidth; // cheek landmarks ARE the face-width landmarks in this topology
 
-        // Heights
-        const faceHeight = p[8].y - ((p[19].y + p[24].y) / 2); // Chin to mid-eyebrow
-        const midFaceHeight = p[33].y - ((p[19].y + p[24].y) / 2); // Nose-bridge to mid-eyebrow
+        // Heights — mid-eyebrow approximated as directly between the brows.
+        const midBrowY = (p[MP_RIGHT_EYEBROW_OUTER].y + p[MP_LEFT_EYEBROW_OUTER].y) / 2 - 0.02;
+        const faceHeight = p[MP_CHIN].y - midBrowY; // chin to mid-eyebrow
+        const midFaceHeight = p[MP_NOSE_TIP].y - midBrowY; // nose-tip to mid-eyebrow
 
         const heightToWidthRatio = faceHeight / faceWidth;
 
@@ -2301,24 +2431,26 @@ window.getFaceShape = function(landmarks) {
         if (heightToWidthRatio > 1.4) return 'oblong';
 
         // Heart: Forehead is widest, chin is pointed.
-        if (foreheadWidth > jawWidth && (p[8].y - p[5].y) > midFaceHeight * 0.5) {
+        const chinPointiness = p[MP_CHIN].y - p[MP_LEFT_JAW].y;
+        if (foreheadWidth > jawWidth && chinPointiness > midFaceHeight * 0.5) {
             return 'heart';
         }
 
-        // Square: Jaw and forehead are similar widths, angular jaw.
-        const jawAngleYDiff = p[4].y - p[2].y;
-        if (Math.abs(jawWidth - foreheadWidth) < faceWidth * 0.1 && jawAngleYDiff < 10) {
+        // Square: Jaw and forehead are similar widths, angular (not sloped) jaw.
+        // Relative threshold (proportion of face width) instead of a fixed
+        // pixel value, since these are normalized 0..1 coordinates now.
+        const jawAngleYDiff = Math.abs(p[MP_RIGHT_JAW].y - p[MP_CHIN].y);
+        if (Math.abs(jawWidth - foreheadWidth) < faceWidth * 0.1 && jawAngleYDiff < faceWidth * 0.15) {
             return 'square';
         }
 
         // Round: Face is nearly as wide as it is tall, soft jawline.
-        if (heightToWidthRatio < 1.05 && jawAngleYDiff > 15) {
+        if (heightToWidthRatio < 1.05 && jawAngleYDiff > faceWidth * 0.22) {
             return 'round';
         }
-        
-        // Diamond: Widest at the cheeks (p[1] and p[15]), narrow forehead and jaw.
-        const cheekWidth = p[15].x - p[1].x;
-        if (cheekWidth > foreheadWidth && cheekWidth > jawWidth) {
+
+        // Diamond: Widest at the cheeks, narrow forehead and jaw.
+        if (cheekWidth > foreheadWidth * 1.15 && cheekWidth > jawWidth * 1.15) {
             return 'diamond';
         }
 
@@ -2328,9 +2460,9 @@ window.getFaceShape = function(landmarks) {
         }
 
         return 'oval'; // Default balanced
-    } catch(e) { 
+    } catch(e) {
         console.warn("Face shape detection failed, defaulting to oval.", e);
-        return 'oval'; 
+        return 'oval';
     }
 };
 
@@ -2341,24 +2473,26 @@ async function runInstantFaceStructureScan() {
 
     statusText.textContent = "🧬 Scanning bone structure...";
 
-    // Same tuned, more lighting-tolerant settings used elsewhere in this file
-    // (the previous default TinyFaceDetectorOptions() was noticeably
-    // stricter and would miss faces in dim/warm indoor lighting).
-    const detectorOptions = new window.faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.3 });
+    const landmarker = await ensureFaceLandmarker("IMAGE");
+    if (!landmarker) {
+        statusText.textContent = "🧬 Face scan unavailable right now.";
+        return;
+    }
 
     try {
-        let detection = null;
+        let result = null;
         // The very first attempt can fire before the video frame is fully
         // painted, so retry a few times with a short pause rather than
         // giving up after a single try.
-        for (let attempt = 0; attempt < 4 && !detection; attempt++) {
+        for (let attempt = 0; attempt < 4 && (!result || !result.faceLandmarks || !result.faceLandmarks.length); attempt++) {
             if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 350));
-            detection = await window.faceapi.detectSingleFace(gVideo, detectorOptions).withFaceLandmarks();
+            result = landmarker.detect(gVideo);
         }
 
-        if (detection) {
-            window._storedTryOnLandmarks = detection.landmarks;
-            const faceShape = window.getFaceShape(detection.landmarks);
+        if (result && result.faceLandmarks && result.faceLandmarks.length) {
+            const landmarks = result.faceLandmarks[0];
+            window._storedTryOnLandmarks = landmarks;
+            const faceShape = window.getFaceShape(landmarks);
             statusText.innerHTML = `🧬 AI STRUCTURE: <span style="color:#34d399;">${faceShape.toUpperCase()} FACE</span>`;
             // Immediately load the curated tray based on this scan
             renderCuratedGlassesSelectionTray();
@@ -2477,7 +2611,30 @@ function initThreeJSScene(videoElement, canvasElement) {
 
     threeScene = new THREE.Scene();
 
-    threeCamera = new THREE.PerspectiveCamera(35, canvasElement.width / canvasElement.height || 1, 0.1, 1000);
+    // ── Orthographic camera (was Perspective) ──
+    // With a perspective camera, the depth (Z) correction we apply below to
+    // close the visual "gap" between the lenses and the face — pulling the
+    // model's pivot closer to the camera — *also* shifts its apparent X/Y
+    // screen position, because perspective projection divides by distance.
+    // Since faces are rarely dead-center in frame, that coupling nudged the
+    // glasses up and off-axis unpredictably (worse the bigger the depth
+    // correction), which is why frames kept landing high on the forehead
+    // instead of at eye level. An orthographic camera has no perspective
+    // divide, so moving something along Z can never move it sideways or up —
+    // position and depth become fully independent, which is what a flat
+    // "billboard on the face" overlay like this actually needs.
+    const ORTHO_CALIBRATION_DISTANCE = 5;
+    const ORTHO_CALIBRATION_FOV_DEG = 35; // kept numerically equal to the old perspective FOV/distance so every existing widthMult/yOff tuning value still means the same thing
+    const calibVFOV = (ORTHO_CALIBRATION_FOV_DEG * Math.PI) / 180;
+    const orthoViewHeight = 2 * Math.tan(calibVFOV / 2) * ORTHO_CALIBRATION_DISTANCE;
+    const aspect = canvasElement.width / canvasElement.height || 1;
+    const orthoViewWidth = orthoViewHeight * aspect;
+
+    threeCamera = new THREE.OrthographicCamera(
+        -orthoViewWidth / 2, orthoViewWidth / 2,
+        orthoViewHeight / 2, -orthoViewHeight / 2,
+        0.1, 1000
+    );
     threeCamera.position.set(0, 0, 5);
     threeCamera.lookAt(0, 0, 0);
 
@@ -2585,6 +2742,13 @@ function loadGlassesModel(glassesId) {
             const nativeWidth = size.x || 1;
             const baseScale = REFERENCE_WIDTH / nativeWidth;
             wrapper.userData.baseScale = baseScale;
+            // Depth (front-to-back, lens-to-temple-tip) relative to width, in
+            // the same normalized reference-width-1 space as baseScale. Used
+            // in positionGlassesModel to pull the frame back so its LENS
+            // FRONT sits at the eye line, instead of its bounding-box center
+            // (which is roughly halfway back toward the temple tips) —
+            // otherwise the lenses float a visible gap in front of the face.
+            wrapper.userData.depthRatio = (size.z || 0) / nativeWidth;
 
             // Apply a sensible default scale/position immediately, so the
             // model is visible right away instead of only appearing once
@@ -2621,31 +2785,43 @@ async function render3DTrackingFrameLoopTick() {
             gCanvas.width = gVideo.videoWidth;
             gCanvas.height = gVideo.videoHeight;
             threeRenderer.setSize(gCanvas.width, gCanvas.height, false);
-            threeCamera.aspect = gCanvas.width / gCanvas.height;
-            threeCamera.updateProjectionMatrix();
+            // OrthographicCamera has no .aspect property — resize its frustum
+            // directly instead, keeping the same calibrated view height so
+            // existing scale/offset tuning values stay meaningful.
+            if (threeCamera && threeCamera.isOrthographicCamera) {
+                const currentHeight = threeCamera.top - threeCamera.bottom;
+                const newAspect = gCanvas.width / gCanvas.height;
+                const newWidth = currentHeight * newAspect;
+                threeCamera.left = -newWidth / 2;
+                threeCamera.right = newWidth / 2;
+                threeCamera.updateProjectionMatrix();
+            }
         }
 
-        if (threeGlassesModel && window.faceapi) {
-            const now = performance.now();
-            if (now - lastGlassesDetectionTime > GLASSES_DETECTION_INTERVAL_MS) {
-                lastGlassesDetectionTime = now;
-                try {
-                    const detection = await window.faceapi
-                        .detectSingleFace(gVideo, new window.faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.3 }))
-                        .withFaceLandmarks();
-                    if (detection) lastKnownLandmarks = detection.landmarks;
-                } catch (e) {
-                    // Detection can transiently fail between frames (e.g. face briefly out of view) — reuse last known position.
+        if (threeGlassesModel) {
+            const landmarker = await ensureFaceLandmarker("VIDEO");
+            if (landmarker) {
+                const now = performance.now();
+                if (now - lastGlassesDetectionTime > GLASSES_DETECTION_INTERVAL_MS) {
+                    lastGlassesDetectionTime = now;
+                    try {
+                        const result = landmarker.detectForVideo(gVideo, now);
+                        if (result && result.faceLandmarks && result.faceLandmarks.length) {
+                            lastKnownLandmarks = result.faceLandmarks[0];
+                        }
+                    } catch (e) {
+                        // Detection can transiently fail between frames (e.g. face briefly out of view) — reuse last known position.
+                    }
                 }
-            }
 
-            // Re-check threeGlassesModel here (not just lastKnownLandmarks) —
-            // the await above can take long enough for the user to switch or
-            // clear the selected frame mid-flight, which nulls threeGlassesModel.
-            // Without this guard, positionGlassesModel would run against a
-            // model that no longer exists and throw.
-            if (threeGlassesModel && lastKnownLandmarks) {
-                positionGlassesModel(lastKnownLandmarks, gVideo, gCanvas);
+                // Re-check threeGlassesModel here (not just lastKnownLandmarks) —
+                // the detection above can take long enough for the user to switch
+                // or clear the selected frame mid-flight, which nulls threeGlassesModel.
+                // Without this guard, positionGlassesModel would run against a
+                // model that no longer exists and throw.
+                if (threeGlassesModel && lastKnownLandmarks) {
+                    positionGlassesModel(lastKnownLandmarks, gVideo, gCanvas);
+                }
             }
         }
 
@@ -2655,39 +2831,63 @@ async function render3DTrackingFrameLoopTick() {
     glassesLoopRequestId = requestAnimationFrame(render3DTrackingFrameLoopTick);
 }
 
-// NOTE: face-api's 68-point landmarks are 2D image-space points only — there's
-// no real depth or head-pose (pitch/yaw) data, so this positions and scales
-// the model from eye position/distance and rolls it to match the eye-line
-// angle. It will not convincingly follow head turns/nods the way true 3D
-// face-mesh tracking (e.g. MediaPipe Face Landmarker, which gives 3D points)
-// would. A yaw-rotation approximation was tried here previously, but it
-// rotates the model around the pivot baked into the .glb's own bounding box
-// — which isn't guaranteed to sit exactly at the optical center between the
-// lenses — so any rotation visibly dragged the lenses away from the eyes
-// instead of swinging just the temple arms. Fixing that properly needs
-// either a corrected pivot/anchor point authored into the model itself, or
-// real 3D head-pose data (e.g. MediaPipe Face Landmarker) instead of this
-// 2D-landmark estimate. Until then this stays flat/roll-only, which keeps
-// the frame accurately centered on the face at all times.
+// Positions and orients the glasses model using MediaPipe's real 3D
+// landmarks. Unlike the old face-api-based version, this builds an actual
+// orthonormal rotation basis from real (x, y, z) geometry — the eye-line for
+// "right", the forehead-to-chin line (orthogonalized) for "up", and their
+// cross product for "forward" — so the frame genuinely rotates in 3D as the
+// head turns (yaw) or nods (pitch), not just tilts (roll) in the image plane.
+// This is what actually fixes the "floating flat in front of the face" look:
+// previously the model only ever rolled while staying face-on to the camera.
 function positionGlassesModel(landmarks, videoEl, canvasEl) {
     if (!threeGlassesModel) return; // model may have been cleared/swapped since this call was scheduled
 
-    const leftEye = averagePoint(landmarks.getLeftEye());
-    const rightEye = averagePoint(landmarks.getRightEye());
-    const eyeDist = Math.hypot(rightEye.x - leftEye.x, rightEye.y - leftEye.y);
-    const midX = (leftEye.x + rightEye.x) / 2;
-    const midY = (leftEye.y + rightEye.y) / 2;
-    const roll = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x);
+    const videoW = videoEl.videoWidth;
+    const videoH = videoEl.videoHeight;
+
+    const rightEyeOuter = mpToWorldVector(landmarks[MP_RIGHT_EYE_OUTER], videoW, videoH);
+    const leftEyeOuter  = mpToWorldVector(landmarks[MP_LEFT_EYE_OUTER], videoW, videoH);
+    const forehead      = mpToWorldVector(landmarks[MP_FOREHEAD], videoW, videoH);
+    const chin           = mpToWorldVector(landmarks[MP_CHIN], videoW, videoH);
+
+    // If turning your head right visually swings the temples the wrong way
+    // for your camera setup, the video feed is mirrored differently than
+    // assumed here — flip this to -1 to correct it.
+    const MIRROR_SIGN = 1;
+
+    const rightVec = leftEyeOuter.clone().sub(rightEyeOuter).multiplyScalar(MIRROR_SIGN).normalize();
+    const upRef = forehead.clone().sub(chin).normalize();
+    // Gram-Schmidt: remove any component of upRef that isn't perpendicular
+    // to rightVec, so the two form a clean orthonormal pair.
+    const upVec = upRef.clone().sub(rightVec.clone().multiplyScalar(upRef.dot(rightVec))).normalize();
+    const forwardVec = new THREE.Vector3().crossVectors(rightVec, upVec).normalize();
+
+    const rotationMatrix = new THREE.Matrix4().makeBasis(rightVec, upVec, forwardVec);
+    const faceQuaternion = new THREE.Quaternion().setFromRotationMatrix(rotationMatrix);
+
+    // Eye-ring averages (mirrors the multi-point averaging face-api's
+    // getLeftEye()/getRightEye() did) for a stable center + scale reference.
+    const rightEyeCenter = averageMpPoints(landmarks, MP_RIGHT_EYE_RING);
+    const leftEyeCenter  = averageMpPoints(landmarks, MP_LEFT_EYE_RING);
+    const rightEyeWorld = mpToWorldVector(rightEyeCenter, videoW, videoH);
+    const leftEyeWorld  = mpToWorldVector(leftEyeCenter, videoW, videoH);
+    const eyeDist = rightEyeWorld.distanceTo(leftEyeWorld); // real 3D distance, so foreshortening under head turns scales it down naturally
+    const midX = (rightEyeCenter.x + leftEyeCenter.x) / 2 * videoW;
+    const midY = (rightEyeCenter.y + leftEyeCenter.y) / 2 * videoH;
 
     // Map 2D video pixel coords -> normalized device coords -> a world-space
-    // plane in front of the camera at a fixed distance.
-    const ndcX = (midX / videoEl.videoWidth) * 2 - 1;
-    const ndcY = -((midY / videoEl.videoHeight) * 2 - 1);
+    // plane in front of the camera at a fixed distance. (Position is still
+    // billboard-style on this plane — only rotation is truly 3D — which
+    // matches how the rest of the try-on scene is set up.)
+    const ndcX = (midX / videoW) * 2 - 1;
+    const ndcY = -((midY / videoH) * 2 - 1);
 
-    const distance = 5; // matches threeCamera.position.z
-    const vFOV = (threeCamera.fov * Math.PI) / 180;
-    const viewHeight = 2 * Math.tan(vFOV / 2) * distance;
-    const viewWidth = viewHeight * threeCamera.aspect;
+    // With the orthographic camera, the world-space size of the visible
+    // frame is just its frustum's own width/height — no distance/FOV math
+    // needed, and (unlike perspective) this stays valid regardless of how
+    // far along Z a point later gets nudged by worldDepthOffset below.
+    const viewWidth = threeCamera.right - threeCamera.left;
+    const viewHeight = threeCamera.top - threeCamera.bottom;
 
     const frame = catalog3DDatabase.find(f => f.id === activeGlassesStyleId);
     const widthMult = (frame && frame.widthMult) || 2.1;
@@ -2696,34 +2896,45 @@ function positionGlassesModel(landmarks, videoEl, canvasEl) {
 
     // A real pair of glasses (temple to temple) is noticeably wider than the
     // pupil-to-pupil distance the landmarks give us — this ratio calibrates
-    // eyeDist up to an actual glasses width. If sizing still looks off for a
-    // particular model, this constant is the one to tune.
-    const GLASSES_WIDTH_TO_EYE_DIST_RATIO = 2.2;
+    // eyeDist up to an actual glasses width. Bumped up from 2.2 — frames were
+    // consistently coming in a bit small/"poking" across multiple styles. If
+    // sizing still looks off for a particular model, this constant is the
+    // one to tune (or that model's own widthMult in catalog3DDatabase).
+    const GLASSES_WIDTH_TO_EYE_DIST_RATIO = 2.5;
 
-    const dynamicScale = (eyeDist / videoEl.videoWidth) * viewWidth * GLASSES_WIDTH_TO_EYE_DIST_RATIO * (widthMult / 2.1);
+    const dynamicScale = (eyeDist / videoW) * viewWidth * GLASSES_WIDTH_TO_EYE_DIST_RATIO * (widthMult / 2.1);
     const finalScale = baseScale * dynamicScale;
     threeGlassesModel.scale.set(finalScale, finalScale, finalScale);
 
-    // NOTE: catalog3DDatabase defines a per-frame `yOff` meant to nudge each
-    // style down toward the nose bridge/ear line (styles with deeper temple
-    // arms or a contoured brow bar — cat-eye, aviator, browline — need a
-    // bigger downward nudge than a plain rectangular frame). That value was
-    // previously defined but never applied anywhere, so every model sat at
-    // raw eye-line height, which pushed the temple arms/hinges up across the
-    // eyes instead of resting back at the ears. yOff is expressed in the
-    // model's own normalized units (its width == 1 before final scaling), so
-    // it's converted through the same finalScale the model is drawn at —
-    // that keeps the downward nudge proportionally correct at any face
-    // distance/zoom instead of being a fixed on-screen pixel offset.
+    // yOff nudges each style down toward the nose bridge/ear line (styles
+    // with deeper temple arms or a contoured brow bar — cat-eye, aviator,
+    // browline — need a bigger downward nudge than a plain rectangular
+    // frame). It's applied along the face's own real "up" direction (not
+    // just world-Y), so the nudge still points toward the nose correctly
+    // even when the head is tilted or turned.
     const worldYOffset = yOff * finalScale;
 
-    threeGlassesModel.position.set(
-        (ndcX * viewWidth) / 2,
-        (ndcY * viewHeight) / 2 + worldYOffset,
-        0
-    );
-    threeGlassesModel.rotation.z = -roll;
+    // The model's pivot sits at its own bounding-box center (set at load
+    // time), which is roughly HALFWAY between the lens front and the temple
+    // tips — not at the lens front where it should visually anchor to the
+    // eye line. Left uncorrected, that pushes the visible lenses forward of
+    // the true eye plane by about half the model's depth, which is exactly
+    // the visible "gap" between the glasses and the face. Pulling the pivot
+    // back along the face's own forward axis by that same half-depth closes it.
+    // If this makes the gap worse instead of better, this model's front
+    // faces its local -Z rather than +Z — flip the sign here to fix it.
+    const MODEL_FRONT_SIGN = 1;
+    const depthRatio = threeGlassesModel.userData.depthRatio || 0;
+    const worldDepthOffset = (depthRatio / 2) * finalScale * MODEL_FRONT_SIGN;
+
+    const basePosition = new THREE.Vector3((ndcX * viewWidth) / 2, (ndcY * viewHeight) / 2, 0);
+    basePosition.add(upVec.clone().multiplyScalar(worldYOffset));
+    basePosition.sub(forwardVec.clone().multiplyScalar(worldDepthOffset));
+
+    threeGlassesModel.position.copy(basePosition);
+    threeGlassesModel.quaternion.copy(faceQuaternion);
 }
+
 
 function averagePoint(points) {
     const x = points.reduce((sum, p) => sum + p.x, 0) / points.length;

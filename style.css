@@ -1736,7 +1736,7 @@ body.dark-mode .blog-filter-btn.is-active {
 
 .glasses-stage {
     width: 100%;
-    max-width: 420px; /* keeps the phone-camera proportions on wide screens instead of stretching edge to edge */
+    max-width: 480px; /* was 420px — now using the space freed up by removing the warning banner */
     margin: 0 auto;
 }
 
@@ -1744,7 +1744,7 @@ body.dark-mode .blog-filter-btn.is-active {
     position: relative;
     width: 100%;
     aspect-ratio: 3 / 4;
-    min-height: 480px; /* floor so the empty-state copy + power button always has clear room above the bottom sheet */
+    min-height: 560px; /* was 480px — grows along with the wider stage above */
     border-radius: 22px;
     overflow: hidden;
     background: #090d22;
@@ -2094,8 +2094,8 @@ body.dark-mode .blog-filter-btn.is-active {
            3:4 box — plenty of room for the sheet to grow without eating
            into the camera preview's usable area. */
         aspect-ratio: auto;
-        height: min(78dvh, 700px);
-        min-height: 520px;
+        height: min(84dvh, 760px);
+        min-height: 560px;
     }
 
     .glasses-center-stack {
