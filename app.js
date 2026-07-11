@@ -915,7 +915,7 @@ function buildSliderCards(prefix) {
         <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'amazon' ? 'tab-active' : ''}" data-tab="amazon" onclick="setRetailerTabFilter('amazon', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'amazon' ? '#ff9900' : '#334155'} !important; box-shadow: ${window._currentRetailerTab === 'amazon' ? '0 6px 16px rgba(255,153,0,0.3)' : 'none'} !important; cursor: pointer !important; overflow: hidden !important;">
             <img src="logos/amazon.png" style="height: auto !important; width: 95% !important; object-fit: contain !important; box-sizing: border-box !important;" alt="Amazon">
         </button>
-        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'asos' ? 'tab-active' : ''}" data-tab="asos" onclick="setRetailerTabFilter('asos', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'asos' ? '#111111' : '#334155'} !important; box-shadow: ${window._currentRetailerTab === 'asos' ? '0 6px 16px rgba(17,17,17,0.25)' : 'none'} !important; cursor: pointer !important; overflow: hidden !important;">
+        <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'asos' ? 'tab-active' : ''}" data-tab="asos" onclick="setRetailerTabFilter('asos', '${prefix}')" onmouseenter="if(window._currentRetailerTab !== 'asos'){ this.style.setProperty('border', '2px solid #111111', 'important'); this.style.setProperty('box-shadow', '0 6px 16px rgba(17,17,17,0.25)', 'important'); this.style.setProperty('transform', 'translateY(-2px)', 'important'); }" onmouseleave="if(window._currentRetailerTab !== 'asos'){ this.style.setProperty('border', '2px solid #334155', 'important'); this.style.setProperty('box-shadow', 'none', 'important'); this.style.setProperty('transform', 'translateY(0)', 'important'); }" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'asos' ? '#111111' : '#334155'} !important; box-shadow: ${window._currentRetailerTab === 'asos' ? '0 6px 16px rgba(17,17,17,0.25)' : 'none'} !important; cursor: pointer !important; overflow: hidden !important; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;">
             <img src="logos/asos.png" style="height: 100% !important; width: 100% !important; object-fit: contain !important; box-sizing: border-box !important;" alt="ASOS">
         </button>
         <button type="button" class="wireframe-tab-btn ${window._currentRetailerTab === 'h&m' ? 'tab-active' : ''}" data-tab="h&m" onclick="setRetailerTabFilter('h&m', '${prefix}')" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 120px !important; height: 48px !important; padding: 0 !important; box-sizing: border-box !important; flex: none !important; background: #ffffff !important; border-radius: 8px !important; border: 2px solid ${window._currentRetailerTab === 'h&m' ? '#e50010' : '#334155'} !important; box-shadow: ${window._currentRetailerTab === 'h&m' ? '0 6px 16px rgba(229,0,16,0.3)' : 'none'} !important; cursor: pointer !important; overflow: hidden !important;">
@@ -984,9 +984,12 @@ function buildSliderCards(prefix) {
 
         const cardElement = document.createElement("div");
         cardElement.className = "shop-card dynamic-premium-product-card";
+        const productTitleText = `${capitalise(currentColor)} ${card.type}`;
+        const productImageUrl = buildProductImageUrl(currentColor, card.type);
         cardElement.innerHTML = `
-            <div class="product-illustration-preview-box" style="background: ${getSoftColorHex(currentColor)}22; min-height: 120px; border-radius: 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; position: relative;">
-                <span class="product-avatar-emoji" style="font-size: 3rem;">${card.icon}</span>
+            <div class="product-illustration-preview-box" style="background: ${getSoftColorHex(currentColor)}22; min-height: 120px; border-radius: 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+                <img class="product-title-matched-photo" src="${productImageUrl}" alt="${productTitleText}" style="width: 78%; height: 120px; object-fit: contain; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <span class="product-avatar-emoji" style="font-size: 3rem; display: none; width: 100%; height: 120px; align-items: center; justify-content: center;">${card.icon}</span>
                 <div class="product-palette-color-tag-pill" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; color: #fff;">${capitalise(currentColor)}</div>
             </div>
             <div class="product-details-content-wrapper" style="padding: 0 4px; margin-bottom: 12px;">
@@ -1010,8 +1013,37 @@ function buildSliderCards(prefix) {
     });
 }
 
+// ── 🖼️ TITLE-MATCHED PRODUCT IMAGE RESOLVER ──
+// Builds a photo URL whose search keywords are derived directly from the
+// product title (color + item type) so the picture shown always matches
+// what the card says, e.g. "Olive Green Oxford Shirt" -> an olive green
+// oxford shirt photo, not a generic/unrelated image.
+function slugifyImageKeyword(str) {
+    return String(str)
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s]/g, "")
+        .replace(/\s+/g, "+");
+}
+
+function stableSeedFromString(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return Math.abs(hash) % 100000;
+}
+
+// ── 🎨 DYNAMIC SVG WARDROBE SYSTEM ──
+// Instead of fetching random stock photos per color/item (unreliable,
+// slow, and often doesn't match the title at all), we keep a small set
+// of hand-drawn SVG garment templates and recolor them on the fly to
+// match the analyzed palette. Same template, any color, instant render,
+// no network request, works fully offline on GitHub Pages.
+
 function getSoftColorHex(colorName) {
-    const map = {
+    const exact = {
         "peach": "#ffb09c", "coral": "#ff6b6b", "warm ivory": "#fffdd0", "golden yellow": "#ffd700",
         "burnt orange": "#cc5500", "rust": "#b83b1d", "olive green": "#606c38", "deep teal": "#006666",
         "mustard yellow": "#e1ad01", "warm brown": "#964b00", "terracotta": "#e2725b", "forest green": "#228b22",
@@ -1019,7 +1051,269 @@ function getSoftColorHex(colorName) {
         "hot pink": "#ff69b4", "fuchsia": "#ff00ff", "true red": "#ff0000", "emerald green": "#50c878",
         "navy": "#000080", "grey": "#808080", "beige": "#f5f5dc", "charcoal": "#36454f"
     };
-    return map[colorName.toLowerCase()] || "#6a5acd";
+    const key = colorName.toLowerCase().trim();
+    if (exact[key]) return exact[key];
+
+    // Fuzzy keyword fallback — handles dynamic palette names like
+    // "Rose Gold", "Nude Pink", "Spiced Honey", "Sunkissed Amber" that
+    // won't ever be exact matches above.
+    const keywordMap = [
+        ["rose gold", "#b76e79"], ["gold", "#d4af37"], ["silver", "#c0c0c0"], ["bronze", "#8c7853"],
+        ["copper", "#b87333"], ["pearl", "#f2f0e6"], ["sapphire", "#0f52ba"], ["ruby", "#9b111e"],
+        ["emerald", "#50c878"], ["amber", "#ffbf00"], ["honey", "#e8a317"], ["apricot", "#fbceb1"],
+        ["sunkissed", "#f4a460"], ["spice", "#b4530a"], ["terracotta", "#e2725b"], ["taupe", "#8b8589"],
+        ["nude", "#e3bc9a"], ["mauve", "#b784a7"], ["plum", "#8e4585"], ["berry", "#8b1a4f"],
+        ["wine", "#722f37"], ["burgundy", "#800020"], ["maroon", "#800000"], ["crimson", "#dc143c"],
+        ["scarlet", "#ff2400"], ["red", "#d1373f"], ["pink", "#ff9fb2"], ["fuchsia", "#c2185b"],
+        ["magenta", "#c2185b"], ["lavender", "#b57edc"], ["lilac", "#c8a2c8"], ["purple", "#6a4c93"],
+        ["camel", "#c19a6b"], ["tan", "#d2b48c"], ["khaki", "#a49060"], ["olive", "#6b7a3a"],
+        ["sage", "#9caf88"], ["mint", "#a8d5ba"], ["teal", "#2f8f8f"], ["cobalt", "#0047ab"],
+        ["sky", "#87ceeb"], ["icy", "#dceefc"], ["royal", "#4169e1"], ["navy", "#1b1f3b"],
+        ["cream", "#fdf6e3"], ["ivory", "#fffff0"], ["mustard", "#d9a441"], ["yellow", "#f2c14e"],
+        ["orange", "#e07a3e"], ["rust", "#b7410e"], ["brown", "#6b4226"], ["chestnut", "#954535"],
+        ["green", "#4c7a51"], ["forest", "#2e5339"], ["blue", "#3a6ea5"], ["grey", "#8a8f98"],
+        ["gray", "#8a8f98"], ["charcoal", "#3b3f45"], ["black", "#1a1a1a"], ["white", "#f7f7f5"],
+        ["beige", "#e8dcc8"], ["coral", "#f08a5d"], ["peach", "#ffb09c"]
+    ];
+    for (const [kw, hex] of keywordMap) {
+        if (key.includes(kw)) return hex;
+    }
+    return "#8a8f98"; // neutral fallback instead of an odd random purple
+}
+
+// Lighten (positive percent 0-1) or darken (negative percent) a hex color.
+function shadeHexColor(hex, percent) {
+    const f = parseInt(hex.slice(1), 16);
+    const t = percent < 0 ? 0 : 255;
+    const p = Math.abs(percent);
+    const R = f >> 16, G = (f >> 8) & 0x00FF, B = f & 0x0000FF;
+    return "#" + (0x1000000 +
+        (Math.round((t - R) * p) + R) * 0x10000 +
+        (Math.round((t - G) * p) + G) * 0x100 +
+        (Math.round((t - B) * p) + B)
+    ).toString(16).slice(1);
+}
+
+// Maps a free-form product type string (e.g. "Tailored Jacket",
+// "Crystal Earrings") to one of our reusable SVG templates.
+function getGarmentCategory(typeName) {
+    const t = typeName.toLowerCase();
+    if (/skirt/.test(t)) return "skirt";
+    if (/trouser|pant|jean|chino/.test(t)) return "pants";
+    if (/shirt|blouse|top|polo/.test(t)) return "shirt";
+    if (/jacket|blazer|hoodie|coat/.test(t)) return "jacket";
+    if (/belt/.test(t)) return "belt";
+    if (/scarf/.test(t)) return "scarf";
+    if (/bag|backpack|handbag/.test(t)) return "bag";
+    if (/shoe|sneaker|boot|loafer/.test(t)) return "shoe";
+    if (/necklace|earring|jewel|pendant/.test(t)) return "jewelry";
+    if (/lipstick|eyeshadow|blush|makeup|cosmetic|palette/.test(t)) return "cosmetic";
+    if (/hair/.test(t)) return "hair";
+    return "shirt";
+}
+
+// Shared <defs> block: a diagonal light→base→dark gradient (fabric/material
+// shading) plus a soft radial sheen (glossy highlight) and a drop-shadow
+// filter, all keyed off the runtime color so every category gets consistent,
+// realistic-looking lighting instead of flat single-tone fills.
+function buildShadingDefs(id, fill, shade, light) {
+    return `
+        <defs>
+            <linearGradient id="${id}-fabric" x1="15%" y1="0%" x2="85%" y2="100%">
+                <stop offset="0%" stop-color="${light}"/>
+                <stop offset="45%" stop-color="${fill}"/>
+                <stop offset="100%" stop-color="${shade}"/>
+            </linearGradient>
+            <radialGradient id="${id}-sheen" cx="32%" cy="18%" r="75%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
+                <stop offset="35%" stop-color="#ffffff" stop-opacity="0.12"/>
+                <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="${id}-metal" cx="35%" cy="25%" r="80%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+                <stop offset="30%" stop-color="${light}"/>
+                <stop offset="65%" stop-color="${fill}"/>
+                <stop offset="100%" stop-color="${shade}"/>
+            </radialGradient>
+            <filter id="${id}-shadow" x="-40%" y="-40%" width="180%" height="180%">
+                <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000000" flood-opacity="0.28"/>
+            </filter>
+        </defs>`;
+}
+
+// Each template is a function(fill, shade, light, id) -> SVG markup string.
+// fill = base color, shade = darker tone (folds/shadow), light = lighter tone (highlight).
+// "id" namespaces the gradient/filter ids so each generated icon is self-contained.
+const SVG_WARDROBE_TEMPLATES = {
+    shirt: (fill, shade, light, id) => `
+        <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            ${buildShadingDefs(id, fill, shade, light)}
+            <ellipse cx="80" cy="146" rx="46" ry="7" fill="#000000" opacity="0.18"/>
+            <g filter="url(#${id}-shadow)">
+                <path d="M55,28 L80,44 L105,28 L132,50 L116,72 L108,62 L108,142 L52,142 L52,62 L44,72 L28,50 Z"
+                      fill="url(#${id}-fabric)" stroke="${shade}" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M55,28 L80,44 L105,28 L132,50 L116,72 L108,62 L108,142 L52,142 L52,62 L44,72 L28,50 Z"
+                      fill="url(#${id}-sheen)"/>
+            </g>
+            <path d="M67,29 L80,44 L93,29 L93,40 L80,53 L67,40 Z" fill="${shade}" opacity="0.9"/>
+            <line x1="80" y1="53" x2="80" y2="140" stroke="${shade}" stroke-width="1.5" opacity="0.55"/>
+            <circle cx="80" cy="70" r="2" fill="${shade}" opacity="0.6"/>
+            <circle cx="80" cy="90" r="2" fill="${shade}" opacity="0.6"/>
+            <circle cx="80" cy="110" r="2" fill="${shade}" opacity="0.6"/>
+            <path d="M60,68 L72,68 L72,86 L60,86 Z" fill="none" stroke="${shade}" stroke-width="1.2" opacity="0.4"/>
+        </svg>`,
+    pants: (fill, shade, light, id) => `
+        <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            ${buildShadingDefs(id, fill, shade, light)}
+            <ellipse cx="80" cy="146" rx="42" ry="6" fill="#000000" opacity="0.18"/>
+            <g filter="url(#${id}-shadow)">
+                <path d="M48,22 L112,22 L116,142 L92,142 L80,72 L68,142 L44,142 Z"
+                      fill="url(#${id}-fabric)" stroke="${shade}" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M48,22 L112,22 L116,142 L92,142 L80,72 L68,142 L44,142 Z" fill="url(#${id}-sheen)"/>
+            </g>
+            <rect x="48" y="22" width="64" height="10" fill="${shade}" opacity="0.35"/>
+            <line x1="80" y1="32" x2="80" y2="68" stroke="${shade}" stroke-width="1.5" opacity="0.5"/>
+            <line x1="52" y1="35" x2="60" y2="140" stroke="${shade}" stroke-width="1" opacity="0.35"/>
+            <line x1="108" y1="35" x2="100" y2="140" stroke="${shade}" stroke-width="1" opacity="0.35"/>
+        </svg>`,
+    skirt: (fill, shade, light, id) => `
+        <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            ${buildShadingDefs(id, fill, shade, light)}
+            <ellipse cx="80" cy="128" rx="46" ry="7" fill="#000000" opacity="0.18"/>
+            <g filter="url(#${id}-shadow)">
+                <path d="M58,28 L102,28 L126,122 L34,122 Z"
+                      fill="url(#${id}-fabric)" stroke="${shade}" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M58,28 L102,28 L126,122 L34,122 Z" fill="url(#${id}-sheen)"/>
+            </g>
+            <rect x="58" y="28" width="44" height="8" fill="${shade}" opacity="0.35"/>
+            <line x1="66" y1="30" x2="52" y2="120" stroke="${shade}" stroke-width="1" opacity="0.35"/>
+            <line x1="80" y1="28" x2="80" y2="122" stroke="${shade}" stroke-width="1" opacity="0.3"/>
+            <line x1="94" y1="30" x2="108" y2="120" stroke="${shade}" stroke-width="1" opacity="0.35"/>
+        </svg>`,
+    jacket: (fill, shade, light, id) => `
+        <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            ${buildShadingDefs(id, fill, shade, light)}
+            <ellipse cx="80" cy="146" rx="48" ry="7" fill="#000000" opacity="0.2"/>
+            <g filter="url(#${id}-shadow)">
+                <path d="M50,30 L80,46 L110,30 L138,54 L122,80 L112,68 L116,142 L44,142 L48,68 L38,80 L22,54 Z"
+                      fill="url(#${id}-fabric)" stroke="${shade}" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M50,30 L80,46 L110,30 L138,54 L122,80 L112,68 L116,142 L44,142 L48,68 L38,80 L22,54 Z"
+                      fill="url(#${id}-sheen)"/>
+            </g>
+            <path d="M62,32 L80,46 L66,72 L58,58 Z" fill="${shade}" opacity="0.55"/>
+            <path d="M98,32 L80,46 L94,72 L102,58 Z" fill="${shade}" opacity="0.55"/>
+            <path d="M74,80 L74,50 L70,110" fill="none" stroke="#f5f5f0" stroke-width="4" opacity="0.85"/>
+            <circle cx="80" cy="88" r="2" fill="${shade}" opacity="0.7"/>
+            <circle cx="80" cy="104" r="2" fill="${shade}" opacity="0.7"/>
+        </svg>`,
+    belt: (fill, shade, light, id) => `
+        <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            ${buildShadingDefs(id, fill, shade, light)}
+            <ellipse cx="80" cy="102" rx="62" ry="8" fill="#000000" opacity="0.18"/>
+            <g filter="url(#${id}-shadow)">
+                <rect x="18" y="70" width="124" height="22" rx="6" fill="url(#${id}-fabric)" stroke="${shade}" stroke-width="2"/>
+                <rect x="18" y="70" width="124" height="22" rx="6" fill="url(#${id}-sheen)"/>
+            </g>
+            <rect x="64" y="62" width="32" height="38" rx="5" fill="url(#${id}-metal)" stroke="${shade}" stroke-width="1.5"/>
+            <rect x="72" y="78" width="16" height="6" rx="2" fill="#ffffff" opacity="0.5"/>
+            <circle cx="80" cy="81" r="3" fill="${shade}"/>
+        </svg>`,
+    scarf: (fill, shade, light, id) => `
+        <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            ${buildShadingDefs(id, fill, shade, light)}
+            <g filter="url(#${id}-shadow)">
+                <path d="M28,38 Q80,16 132,38 Q122,60 82,54 Q94,92 72,132 Q54,98 64,58 Q40,60 28,38 Z"
+                      fill="url(#${id}-fabric)" stroke="${shade}" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M28,38 Q80,16 132,38 Q122,60 82,54 Q94,92 72,132 Q54,98 64,58 Q40,60 28,38 Z"
+                      fill="url(#${id}-sheen)"/>
+            </g>
+            <path d="M66,120 L64,132 M72,124 L70,136 M78,122 L77,134" stroke="${shade}" stroke-width="1.4" opacity="0.6"/>
+        </svg>`,
+    bag: (fill, shade, light, id) => `
+        <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            ${buildShadingDefs(id, fill, shade, light)}
+            <ellipse cx="80" cy="134" rx="44" ry="7" fill="#000000" opacity="0.2"/>
+            <path d="M58,58 Q58,26 80,26 Q102,26 102,58" fill="none" stroke="${shade}" stroke-width="6"/>
+            <path d="M58,58 Q58,26 80,26 Q102,26 102,58" fill="none" stroke="url(#${id}-metal)" stroke-width="3"/>
+            <g filter="url(#${id}-shadow)">
+                <rect x="36" y="58" width="88" height="76" rx="12" fill="url(#${id}-fabric)" stroke="${shade}" stroke-width="2"/>
+                <rect x="36" y="58" width="88" height="76" rx="12" fill="url(#${id}-sheen)"/>
+            </g>
+            <rect x="68" y="82" width="24" height="16" rx="3" fill="${shade}" opacity="0.55"/>
+            <rect x="76" y="86" width="8" height="8" rx="2" fill="url(#${id}-metal)"/>
+        </svg>`,
+    shoe: (fill, shade, light, id) => `
+        <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            ${buildShadingDefs(id, fill, shade, light)}
+            <ellipse cx="82" cy="128" rx="58" ry="8" fill="#000000" opacity="0.22"/>
+            <g filter="url(#${id}-shadow)">
+                <path d="M22,112 Q22,96 34,92 L52,86 Q62,74 78,66 Q92,60 104,66 L122,76 Q136,80 142,94 Q146,104 140,112 Z"
+                      fill="url(#${id}-fabric)" stroke="${shade}" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M22,112 Q22,96 34,92 L52,86 Q62,74 78,66 Q92,60 104,66 L122,76 Q136,80 142,94 Q146,104 140,112 Z"
+                      fill="url(#${id}-sheen)"/>
+                <path d="M20,112 L142,112 Q146,118 140,124 Q90,132 20,124 Q16,118 20,112 Z"
+                      fill="#f2f2ee" stroke="${shade}" stroke-width="1.5"/>
+            </g>
+            <path d="M56,86 L64,68 M66,84 L76,66 M76,82 L88,66 M88,80 L100,68" stroke="${shade}" stroke-width="1.6" opacity="0.7" fill="none"/>
+            <path d="M112,80 Q120,76 130,84" stroke="#ffffff" stroke-width="2" opacity="0.4" fill="none"/>
+        </svg>`,
+    jewelry: (fill, shade, light, id) => `
+        <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            ${buildShadingDefs(id, fill, shade, light)}
+            <ellipse cx="80" cy="120" rx="26" ry="6" fill="#000000" opacity="0.15"/>
+            <path d="M38,32 Q80,72 122,32" fill="none" stroke="url(#${id}-metal)" stroke-width="4"/>
+            <path d="M38,32 Q80,72 122,32" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.4"/>
+            <g filter="url(#${id}-shadow)">
+                <circle cx="80" cy="92" r="24" fill="url(#${id}-metal)" stroke="${shade}" stroke-width="2"/>
+            </g>
+            <circle cx="72" cy="82" r="7" fill="#ffffff" opacity="0.55"/>
+            <circle cx="80" cy="92" r="24" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.3"/>
+        </svg>`,
+    cosmetic: (fill, shade, light, id) => `
+        <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            ${buildShadingDefs(id, fill, shade, light)}
+            <ellipse cx="80" cy="134" rx="26" ry="6" fill="#000000" opacity="0.2"/>
+            <g filter="url(#${id}-shadow)">
+                <rect x="60" y="68" width="40" height="64" rx="7" fill="#26282c" stroke="#111" stroke-width="1.5"/>
+                <rect x="60" y="68" width="16" height="64" fill="#ffffff" opacity="0.08"/>
+                <path d="M64,68 Q80,26 96,68 Q90,58 80,58 Q70,58 64,68 Z"
+                      fill="url(#${id}-fabric)" stroke="${shade}" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M64,68 Q80,26 96,68 Q90,58 80,58 Q70,58 64,68 Z" fill="url(#${id}-sheen)"/>
+            </g>
+            <ellipse cx="72" cy="42" rx="4" ry="9" fill="#ffffff" opacity="0.5"/>
+        </svg>`,
+    hair: (fill, shade, light, id) => `
+        <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            ${buildShadingDefs(id, fill, shade, light)}
+            <ellipse cx="80" cy="128" rx="28" ry="6" fill="#000000" opacity="0.18"/>
+            <g filter="url(#${id}-shadow)">
+                <rect x="56" y="48" width="48" height="80" rx="9" fill="#f4f4f2" stroke="${shade}" stroke-width="1.5"/>
+                <rect x="60" y="66" width="40" height="46" rx="4" fill="url(#${id}-fabric)"/>
+                <rect x="60" y="66" width="40" height="46" rx="4" fill="url(#${id}-sheen)"/>
+                <rect x="66" y="30" width="28" height="20" rx="4" fill="${shade}"/>
+            </g>
+            <rect x="63" y="70" width="34" height="9" fill="#ffffff" opacity="0.85"/>
+        </svg>`
+};
+
+function buildProductSVG(colorName, typeName) {
+    const fill = getSoftColorHex(colorName);
+    const shade = shadeHexColor(fill, -0.3);
+    const light = shadeHexColor(fill, 0.45);
+    const category = getGarmentCategory(typeName);
+    const template = SVG_WARDROBE_TEMPLATES[category] || SVG_WARDROBE_TEMPLATES.shirt;
+    // Namespace gradient/filter ids per category so multiple cards on the
+    // same page never clash if a browser ever inlines these (each is
+    // rendered as a separate <img data-uri>, but this keeps it safe).
+    return template(fill, shade, light, category).trim();
+}
+
+function buildProductImageUrl(colorName, typeName) {
+    // Generated locally as a data URI — no network request, no mismatched
+    // stock photos, renders instantly and works on static hosting like
+    // GitHub Pages.
+    const svg = buildProductSVG(colorName, typeName);
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
 window.slideCardColor = function(cardId, offset, prefix) {
@@ -1915,20 +2209,20 @@ let glassesLoopRequestId = null;
 // to console, doesn't break anything else).
 const catalog3DDatabase = [
     // --- FULL-RIM ---
-    { id: "fr_rect_black",  name: "Classic Rectangular", structure: "Full-Rim",     faceMatches: ["round", "oblong"],                why: "Adds angles and length to soften a curved face.",        color: 0x111111, widthMult: 2.1,  yOff: -0.05, modelFile: "fr_rect_black.glb" },
-    { id: "fr_geo_square",  name: "Geometric Square",    structure: "Full-Rim",     faceMatches: ["round", "oval"],                  why: "Sharp lines balance rounder or softer features.",        color: 0x263238, widthMult: 2.15, yOff: -0.05, modelFile: "fr_geo_square.glb" },
-    { id: "fr_round_tort",  name: "Round Tortoiseshell", structure: "Full-Rim",     faceMatches: ["square", "diamond"],              why: "Rounded curves soften a strong jawline or angular cheekbones.", color: 0x6B4F35, widthMult: 2.0,  yOff: -0.06, modelFile: "fr_round_tort.glb" },
-    { id: "fr_cateye_purp", name: "Vintage Cat-Eye",     structure: "Full-Rim",     faceMatches: ["heart", "diamond"],               why: "Upswept corners echo and highlight high cheekbones.",    color: 0x4c1d95, widthMult: 2.1,  yOff: -0.10, modelFile: "fr_cateye_purp.glb" },
-    { id: "fr_wayfarer_blk",name: "Iconic Wayfarer",     structure: "Full-Rim",     faceMatches: ["oval", "round"],                  why: "A versatile trapezoidal shape that suits most faces.",   color: 0x000000, widthMult: 2.1,  yOff: -0.08, modelFile: "fr_wayfarer_blk.glb" },
-    { id: "fr_oversized_sq",name: "Oversized Square",    structure: "Full-Rim",     faceMatches: ["oblong", "round"],                why: "Extra depth shortens and balances a longer face.",       color: 0x1E3A5F, widthMult: 2.3,  yOff: -0.05, modelFile: "fr_oversized_sq.glb" },
+    { id: "fr_rect_black",  name: "Classic Rectangular", structure: "Full-Rim",     faceMatches: ["round", "oblong"],                why: "Adds angles and length to soften a curved face.",        color: 0x111111, widthMult: 2.1,  yOff: -0.025, modelFile: "fr_rect_black.glb" },
+    { id: "fr_geo_square",  name: "Geometric Square",    structure: "Full-Rim",     faceMatches: ["round", "oval"],                  why: "Sharp lines balance rounder or softer features.",        color: 0x263238, widthMult: 2.15, yOff: -0.025, modelFile: "fr_geo_square.glb" },
+    { id: "fr_round_tort",  name: "Round Tortoiseshell", structure: "Full-Rim",     faceMatches: ["square", "diamond"],              why: "Rounded curves soften a strong jawline or angular cheekbones.", color: 0x6B4F35, widthMult: 2.0,  yOff: -0.03, modelFile: "fr_round_tort.glb" },
+    { id: "fr_cateye_purp", name: "Vintage Cat-Eye",     structure: "Full-Rim",     faceMatches: ["heart", "diamond"],               why: "Upswept corners echo and highlight high cheekbones.",    color: 0x4c1d95, widthMult: 2.1,  yOff: -0.05, modelFile: "fr_cateye_purp.glb" },
+    { id: "fr_wayfarer_blk",name: "Iconic Wayfarer",     structure: "Full-Rim",     faceMatches: ["oval", "round"],                  why: "A versatile trapezoidal shape that suits most faces.",   color: 0x000000, widthMult: 2.1,  yOff: -0.04, modelFile: "fr_wayfarer_blk.glb" },
+    { id: "fr_oversized_sq",name: "Oversized Square",    structure: "Full-Rim",     faceMatches: ["oblong", "round"],                why: "Extra depth shortens and balances a longer face.",       color: 0x1E3A5F, widthMult: 2.3,  yOff: -0.025, modelFile: "fr_oversized_sq.glb" },
 
     // --- SEMI-RIMLESS ---
-    { id: "sr_browline_brn",name: "Browline Retro",      structure: "Semi-Rimless", faceMatches: ["triangle", "oblong", "oval"],     why: "Bold brow line widens the upper face to balance a wider jaw.", color: 0x5A3A22, widthMult: 2.15, yOff: -0.12, modelFile: "sr_browline_brn.glb" },
-    { id: "sr_rect_gun",    name: "Modern Rectangular",  structure: "Semi-Rimless", faceMatches: ["round", "oval"],                  why: "Clean straight lines add gentle structure.",             color: 0x414A4C, widthMult: 2.2,  yOff: -0.05, modelFile: "sr_rect_gun.glb" },
+    { id: "sr_browline_brn",name: "Browline Retro",      structure: "Semi-Rimless", faceMatches: ["triangle", "oblong", "oval"],     why: "Bold brow line widens the upper face to balance a wider jaw.", color: 0x5A3A22, widthMult: 2.15, yOff: -0.06, modelFile: "sr_browline_brn.glb" },
+    { id: "sr_rect_gun",    name: "Modern Rectangular",  structure: "Semi-Rimless", faceMatches: ["round", "oval"],                  why: "Clean straight lines add gentle structure.",             color: 0x414A4C, widthMult: 2.2,  yOff: -0.025, modelFile: "sr_rect_gun.glb" },
 
     // --- RIMLESS ---
-    { id: "rl_aviator_gld", name: "Classic Aviator",     structure: "Rimless",      faceMatches: ["triangle", "oblong", "square"],   why: "Wide top bar adds width up top, balancing a narrower or angular jaw.", color: 0xc0a000, widthMult: 2.4, yOff: -0.12, modelFile: "rl_aviator_gld.glb" },
-    { id: "rl_oval_silv",   name: "Lightweight Oval",    structure: "Rimless",      faceMatches: ["heart", "diamond", "oval"],       why: "Soft, near-invisible edge that doesn't compete with delicate features.", color: 0xAAAAAA, widthMult: 2.0, yOff: -0.06, modelFile: "rl_oval_silv.glb" }
+    { id: "rl_aviator_gld", name: "Classic Aviator",     structure: "Rimless",      faceMatches: ["triangle", "oblong", "square"],   why: "Wide top bar adds width up top, balancing a narrower or angular jaw.", color: 0xc0a000, widthMult: 2.4, yOff: -0.06, modelFile: "rl_aviator_gld.glb" },
+    { id: "rl_oval_silv",   name: "Lightweight Oval",    structure: "Rimless",      faceMatches: ["heart", "diamond", "oval"],       why: "Soft, near-invisible edge that doesn't compete with delicate features.", color: 0xAAAAAA, widthMult: 2.0, yOff: -0.03, modelFile: "rl_oval_silv.glb" }
 ];
 
 window.openGlassesCamera = async function() {
@@ -2348,11 +2642,33 @@ async function render3DTrackingFrameLoopTick() {
 }
 
 // NOTE: face-api's 68-point landmarks are 2D image-space points only — there's
-// no real depth or head-pose (pitch/yaw) data, so this positions and scales
+// no real depth or head-pose (pitch) data, so this positions and scales
 // the model from eye position/distance and rolls it to match the eye-line
-// angle. It will not convincingly follow head turns/nods the way true 3D
-// face-mesh tracking (e.g. MediaPipe Face Landmarker, which gives 3D points)
-// would. Swap the detection source later if you need full head-pose tracking.
+// angle. Yaw (head turning left/right) is *approximated* below from how
+// off-center the nose sits relative to the jaw outline — it's not as
+// accurate as true 3D face-mesh tracking (e.g. MediaPipe Face Landmarker,
+// which gives real 3D points), but it's enough to make the temple arms
+// swing back in 3D toward the ear as the head turns, instead of the frame
+// staying flat-on to the camera. Swap the detection source later if you
+// need frame-accurate head-pose tracking.
+function estimateYaw(landmarks) {
+    const jaw = landmarks.getJawOutline();
+    const leftJaw = jaw[0];
+    const rightJaw = jaw[16];
+    const nose = landmarks.getNose();
+    const noseTip = nose[3]; // roughly the tip of the nose bridge
+
+    const jawWidth = Math.hypot(rightJaw.x - leftJaw.x, rightJaw.y - leftJaw.y) || 1;
+    const distToLeft = Math.hypot(noseTip.x - leftJaw.x, noseTip.y - leftJaw.y);
+    const distToRight = Math.hypot(noseTip.x - rightJaw.x, noseTip.y - rightJaw.y);
+
+    // Positive when the nose sits closer to the right side of the jaw outline
+    // (head turned so the left side of the face is more toward camera), and
+    // vice versa. Normalized by jaw width so it stays consistent regardless
+    // of face size/distance from camera.
+    return (distToLeft - distToRight) / jawWidth;
+}
+
 function positionGlassesModel(landmarks, videoEl, canvasEl) {
     if (!threeGlassesModel) return; // model may have been cleared/swapped since this call was scheduled
 
@@ -2406,7 +2722,24 @@ function positionGlassesModel(landmarks, videoEl, canvasEl) {
         (ndcY * viewHeight) / 2 + worldYOffset,
         0
     );
+
+    // Roll (ear-to-shoulder tilt) — was already working correctly.
     threeGlassesModel.rotation.z = -roll;
+
+    // Yaw (head turning left/right) — this is what makes the temple arms
+    // swing back in 3D so the near-side temple points toward the visible
+    // ear instead of staying flat across the front of the face. The
+    // estimate is a 2D-landmark approximation (see estimateYaw above), so
+    // it's clamped to a believable range and smoothed slightly to avoid
+    // jitter from frame-to-frame landmark noise.
+    const MAX_YAW_RADIANS = 0.9; // ~52°, past this the 2D estimate gets unreliable
+    const YAW_SENSITIVITY = 2.6;
+    const rawYaw = estimateYaw(landmarks) * YAW_SENSITIVITY;
+    const clampedYaw = Math.max(-MAX_YAW_RADIANS, Math.min(MAX_YAW_RADIANS, rawYaw));
+    // If turning your head right visually swings the temples the wrong way
+    // for your camera setup, flip the sign here (negate clampedYaw) — the
+    // correct direction depends on whether the video feed is mirrored.
+    threeGlassesModel.rotation.y = clampedYaw;
 }
 
 function averagePoint(points) {

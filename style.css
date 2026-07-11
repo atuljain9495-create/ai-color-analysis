@@ -527,6 +527,160 @@ body.dark-mode .about-benefits li{
     border-color: #374151;
 }
 
+/* ==========================================================================
+   ABOUT PAGE — MODERN UI REFRESH
+   Everything below is scoped under .about-redesign (unique to About.html)
+   so it cannot affect .about-grid/.about-card usage on other pages (e.g.
+   blog.html), per the note above.
+   ========================================================================== */
+
+.about-redesign .about-badges span{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.about-redesign .about-highlight-card{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.about-redesign .about-highlight-card::before{
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, #4f46e5, #7c3aed, #a78bfa);
+}
+
+.about-redesign .about-highlight-card:hover{
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgba(79, 70, 229, 0.12);
+}
+
+.about-redesign .about-highlight-icon{
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    border-radius: 14px;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.14), rgba(124, 58, 237, 0.14));
+}
+
+.about-redesign .about-card{
+    position: relative;
+    overflow: hidden;
+}
+
+.about-redesign .about-card::before{
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(90deg, #4f46e5, #7c3aed, #a78bfa);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.about-redesign .about-card:hover::before{
+    opacity: 1;
+}
+
+.about-redesign .about-card-head{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    row-gap: 6px;
+    flex-wrap: wrap;
+}
+
+.about-redesign .about-card-icon{
+    flex: none;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.14), rgba(124, 58, 237, 0.14));
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.08);
+}
+
+.about-redesign .about-card-kicker{
+    display: inline-flex;
+    align-items: center;
+}
+
+.about-redesign .about-card-head h3{
+    flex-basis: 100%;
+}
+
+.about-redesign .about-card--centered .about-card-head{
+    justify-content: center;
+}
+
+.about-redesign .about-benefits{
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 12px;
+}
+
+.about-redesign .about-benefits li{
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: rgba(79, 70, 229, 0.04);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.about-redesign .about-benefits li:hover{
+    transform: translateY(-2px);
+    background: rgba(79, 70, 229, 0.08);
+}
+
+.about-benefit-icon{
+    flex: none;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    background: var(--card-bg);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+body.dark-mode .about-redesign .about-benefits li{
+    background: rgba(167, 139, 250, 0.06);
+}
+
+body.dark-mode .about-redesign .about-highlight-icon,
+body.dark-mode .about-redesign .about-card-icon{
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.22), rgba(167, 139, 250, 0.18));
+}
+
+@media (max-width: 480px) {
+    .about-redesign .about-card-head{
+        gap: 10px;
+    }
+    .about-redesign .about-card-icon{
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+}
+
 @media (max-width: 900px) {
     .about-highlights {
         grid-template-columns: 1fr;
@@ -1240,6 +1394,11 @@ footer {
 
 .footer-brand-link.pinterest-target:hover {
     color: #ef4444 !important; /* Pinterest Crimson Accent */
+    transform: translateY(-2px);
+}
+
+.footer-brand-link.facebook-target:hover {
+    color: #1877f2 !important; /* Facebook Blue Accent */
     transform: translateY(-2px);
 }
 
