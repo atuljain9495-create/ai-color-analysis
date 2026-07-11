@@ -2209,20 +2209,20 @@ let glassesLoopRequestId = null;
 // to console, doesn't break anything else).
 const catalog3DDatabase = [
     // --- FULL-RIM ---
-    { id: "fr_rect_black",  name: "Classic Rectangular", structure: "Full-Rim",     faceMatches: ["round", "oblong"],                why: "Adds angles and length to soften a curved face.",        color: 0x111111, widthMult: 2.1,  yOff: -0.025, modelFile: "fr_rect_black.glb" },
-    { id: "fr_geo_square",  name: "Geometric Square",    structure: "Full-Rim",     faceMatches: ["round", "oval"],                  why: "Sharp lines balance rounder or softer features.",        color: 0x263238, widthMult: 2.15, yOff: -0.025, modelFile: "fr_geo_square.glb" },
-    { id: "fr_round_tort",  name: "Round Tortoiseshell", structure: "Full-Rim",     faceMatches: ["square", "diamond"],              why: "Rounded curves soften a strong jawline or angular cheekbones.", color: 0x6B4F35, widthMult: 2.0,  yOff: -0.03, modelFile: "fr_round_tort.glb" },
-    { id: "fr_cateye_purp", name: "Vintage Cat-Eye",     structure: "Full-Rim",     faceMatches: ["heart", "diamond"],               why: "Upswept corners echo and highlight high cheekbones.",    color: 0x4c1d95, widthMult: 2.1,  yOff: -0.05, modelFile: "fr_cateye_purp.glb" },
-    { id: "fr_wayfarer_blk",name: "Iconic Wayfarer",     structure: "Full-Rim",     faceMatches: ["oval", "round"],                  why: "A versatile trapezoidal shape that suits most faces.",   color: 0x000000, widthMult: 2.1,  yOff: -0.04, modelFile: "fr_wayfarer_blk.glb" },
-    { id: "fr_oversized_sq",name: "Oversized Square",    structure: "Full-Rim",     faceMatches: ["oblong", "round"],                why: "Extra depth shortens and balances a longer face.",       color: 0x1E3A5F, widthMult: 2.3,  yOff: -0.025, modelFile: "fr_oversized_sq.glb" },
+    { id: "fr_rect_black",  name: "Classic Rectangular", structure: "Full-Rim",     faceMatches: ["round", "oblong"],                why: "Adds angles and length to soften a curved face.",        color: 0x111111, widthMult: 2.1,  yOff: -0.05, modelFile: "fr_rect_black.glb" },
+    { id: "fr_geo_square",  name: "Geometric Square",    structure: "Full-Rim",     faceMatches: ["round", "oval"],                  why: "Sharp lines balance rounder or softer features.",        color: 0x263238, widthMult: 2.15, yOff: -0.05, modelFile: "fr_geo_square.glb" },
+    { id: "fr_round_tort",  name: "Round Tortoiseshell", structure: "Full-Rim",     faceMatches: ["square", "diamond"],              why: "Rounded curves soften a strong jawline or angular cheekbones.", color: 0x6B4F35, widthMult: 2.0,  yOff: -0.06, modelFile: "fr_round_tort.glb" },
+    { id: "fr_cateye_purp", name: "Vintage Cat-Eye",     structure: "Full-Rim",     faceMatches: ["heart", "diamond"],               why: "Upswept corners echo and highlight high cheekbones.",    color: 0x4c1d95, widthMult: 2.1,  yOff: -0.10, modelFile: "fr_cateye_purp.glb" },
+    { id: "fr_wayfarer_blk",name: "Iconic Wayfarer",     structure: "Full-Rim",     faceMatches: ["oval", "round"],                  why: "A versatile trapezoidal shape that suits most faces.",   color: 0x000000, widthMult: 2.1,  yOff: -0.08, modelFile: "fr_wayfarer_blk.glb" },
+    { id: "fr_oversized_sq",name: "Oversized Square",    structure: "Full-Rim",     faceMatches: ["oblong", "round"],                why: "Extra depth shortens and balances a longer face.",       color: 0x1E3A5F, widthMult: 2.3,  yOff: -0.05, modelFile: "fr_oversized_sq.glb" },
 
     // --- SEMI-RIMLESS ---
-    { id: "sr_browline_brn",name: "Browline Retro",      structure: "Semi-Rimless", faceMatches: ["triangle", "oblong", "oval"],     why: "Bold brow line widens the upper face to balance a wider jaw.", color: 0x5A3A22, widthMult: 2.15, yOff: -0.06, modelFile: "sr_browline_brn.glb" },
-    { id: "sr_rect_gun",    name: "Modern Rectangular",  structure: "Semi-Rimless", faceMatches: ["round", "oval"],                  why: "Clean straight lines add gentle structure.",             color: 0x414A4C, widthMult: 2.2,  yOff: -0.025, modelFile: "sr_rect_gun.glb" },
+    { id: "sr_browline_brn",name: "Browline Retro",      structure: "Semi-Rimless", faceMatches: ["triangle", "oblong", "oval"],     why: "Bold brow line widens the upper face to balance a wider jaw.", color: 0x5A3A22, widthMult: 2.15, yOff: -0.12, modelFile: "sr_browline_brn.glb" },
+    { id: "sr_rect_gun",    name: "Modern Rectangular",  structure: "Semi-Rimless", faceMatches: ["round", "oval"],                  why: "Clean straight lines add gentle structure.",             color: 0x414A4C, widthMult: 2.2,  yOff: -0.05, modelFile: "sr_rect_gun.glb" },
 
     // --- RIMLESS ---
-    { id: "rl_aviator_gld", name: "Classic Aviator",     structure: "Rimless",      faceMatches: ["triangle", "oblong", "square"],   why: "Wide top bar adds width up top, balancing a narrower or angular jaw.", color: 0xc0a000, widthMult: 2.4, yOff: -0.06, modelFile: "rl_aviator_gld.glb" },
-    { id: "rl_oval_silv",   name: "Lightweight Oval",    structure: "Rimless",      faceMatches: ["heart", "diamond", "oval"],       why: "Soft, near-invisible edge that doesn't compete with delicate features.", color: 0xAAAAAA, widthMult: 2.0, yOff: -0.03, modelFile: "rl_oval_silv.glb" }
+    { id: "rl_aviator_gld", name: "Classic Aviator",     structure: "Rimless",      faceMatches: ["triangle", "oblong", "square"],   why: "Wide top bar adds width up top, balancing a narrower or angular jaw.", color: 0xc0a000, widthMult: 2.4, yOff: -0.12, modelFile: "rl_aviator_gld.glb" },
+    { id: "rl_oval_silv",   name: "Lightweight Oval",    structure: "Rimless",      faceMatches: ["heart", "diamond", "oval"],       why: "Soft, near-invisible edge that doesn't compete with delicate features.", color: 0xAAAAAA, widthMult: 2.0, yOff: -0.06, modelFile: "rl_oval_silv.glb" }
 ];
 
 window.openGlassesCamera = async function() {
@@ -2642,33 +2642,19 @@ async function render3DTrackingFrameLoopTick() {
 }
 
 // NOTE: face-api's 68-point landmarks are 2D image-space points only — there's
-// no real depth or head-pose (pitch) data, so this positions and scales
+// no real depth or head-pose (pitch/yaw) data, so this positions and scales
 // the model from eye position/distance and rolls it to match the eye-line
-// angle. Yaw (head turning left/right) is *approximated* below from how
-// off-center the nose sits relative to the jaw outline — it's not as
-// accurate as true 3D face-mesh tracking (e.g. MediaPipe Face Landmarker,
-// which gives real 3D points), but it's enough to make the temple arms
-// swing back in 3D toward the ear as the head turns, instead of the frame
-// staying flat-on to the camera. Swap the detection source later if you
-// need frame-accurate head-pose tracking.
-function estimateYaw(landmarks) {
-    const jaw = landmarks.getJawOutline();
-    const leftJaw = jaw[0];
-    const rightJaw = jaw[16];
-    const nose = landmarks.getNose();
-    const noseTip = nose[3]; // roughly the tip of the nose bridge
-
-    const jawWidth = Math.hypot(rightJaw.x - leftJaw.x, rightJaw.y - leftJaw.y) || 1;
-    const distToLeft = Math.hypot(noseTip.x - leftJaw.x, noseTip.y - leftJaw.y);
-    const distToRight = Math.hypot(noseTip.x - rightJaw.x, noseTip.y - rightJaw.y);
-
-    // Positive when the nose sits closer to the right side of the jaw outline
-    // (head turned so the left side of the face is more toward camera), and
-    // vice versa. Normalized by jaw width so it stays consistent regardless
-    // of face size/distance from camera.
-    return (distToLeft - distToRight) / jawWidth;
-}
-
+// angle. It will not convincingly follow head turns/nods the way true 3D
+// face-mesh tracking (e.g. MediaPipe Face Landmarker, which gives 3D points)
+// would. A yaw-rotation approximation was tried here previously, but it
+// rotates the model around the pivot baked into the .glb's own bounding box
+// — which isn't guaranteed to sit exactly at the optical center between the
+// lenses — so any rotation visibly dragged the lenses away from the eyes
+// instead of swinging just the temple arms. Fixing that properly needs
+// either a corrected pivot/anchor point authored into the model itself, or
+// real 3D head-pose data (e.g. MediaPipe Face Landmarker) instead of this
+// 2D-landmark estimate. Until then this stays flat/roll-only, which keeps
+// the frame accurately centered on the face at all times.
 function positionGlassesModel(landmarks, videoEl, canvasEl) {
     if (!threeGlassesModel) return; // model may have been cleared/swapped since this call was scheduled
 
@@ -2722,24 +2708,7 @@ function positionGlassesModel(landmarks, videoEl, canvasEl) {
         (ndcY * viewHeight) / 2 + worldYOffset,
         0
     );
-
-    // Roll (ear-to-shoulder tilt) — was already working correctly.
     threeGlassesModel.rotation.z = -roll;
-
-    // Yaw (head turning left/right) — this is what makes the temple arms
-    // swing back in 3D so the near-side temple points toward the visible
-    // ear instead of staying flat across the front of the face. The
-    // estimate is a 2D-landmark approximation (see estimateYaw above), so
-    // it's clamped to a believable range and smoothed slightly to avoid
-    // jitter from frame-to-frame landmark noise.
-    const MAX_YAW_RADIANS = 0.9; // ~52°, past this the 2D estimate gets unreliable
-    const YAW_SENSITIVITY = 2.6;
-    const rawYaw = estimateYaw(landmarks) * YAW_SENSITIVITY;
-    const clampedYaw = Math.max(-MAX_YAW_RADIANS, Math.min(MAX_YAW_RADIANS, rawYaw));
-    // If turning your head right visually swings the temples the wrong way
-    // for your camera setup, flip the sign here (negate clampedYaw) — the
-    // correct direction depends on whether the video feed is mirrored.
-    threeGlassesModel.rotation.y = clampedYaw;
 }
 
 function averagePoint(points) {
