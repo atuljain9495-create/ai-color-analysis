@@ -45,6 +45,7 @@
     <div class="post-container">
         <a href="blog.html" class="back-link">← Back to Blog Index</a>
         <h2>Behind the Pixels: How Our Privacy-First AI Analysis Works</h2>
+            <p class="post-byline">By <strong>AI Color Analysis Team</strong> <span class="byline-dot">&middot;</span> <time datetime="2026-06-20">June 20, 2026</time></p>
         <p>In an age of data breaches and privacy concerns, the idea of uploading a personal photo to an online tool can feel unsettling. Where does the photo go? Who sees it? How is it being used? We built our AI Color Analysis tool with these questions in mind, which is why we chose a "privacy-by-design" approach. Unlike many other online services, our entire analysis process happens **on your device**, within your browser. Your photo is never uploaded, stored, or seen by us.</p>
 
         <p>This is made possible by modern web technologies that allow for powerful computations to be run directly on the "client-side"—a technical term for your computer or phone. Here’s a step-by-step look at how it works.</p>
@@ -78,6 +79,59 @@
         </div>
     </div>
 </section>
+    <div class="faq-container">
+        <div class="faq-hero">
+            <h2>Frequently Asked Questions</h2>
+            <p>How the privacy-first, on-device analysis technology actually works.</p>
+        </div>
+        <div class="faq-list">
+        <div class="faq-accordion-item panel-opened" id="faqPanel1">
+            <button type="button" class="faq-accordion-trigger" onclick="toggleAccordionPanel('faqPanel1')">
+                <span class="faq-accordion-question">Does the AI color analysis tool upload my photo to a server?</span>
+                <span class="faq-accordion-chevron">▼</span>
+            </button>
+            <div class="faq-accordion-panel">
+                <div class="faq-accordion-body">
+                    <p>No. The entire analysis runs client-side in your browser using face-api.js — your photo is loaded into your browser's memory only and is never transmitted anywhere.</p>
+                </div>
+            </div>
+        </div>
+        <div class="faq-accordion-item" id="faqPanel2">
+            <button type="button" class="faq-accordion-trigger" onclick="toggleAccordionPanel('faqPanel2')">
+                <span class="faq-accordion-question">What happens to my photo after the analysis is complete?</span>
+                <span class="faq-accordion-chevron">▼</span>
+            </button>
+            <div class="faq-accordion-panel">
+                <div class="faq-accordion-body">
+                    <p>Once your results are generated, the image data has served its purpose. Closing the tab or refreshing the page clears the browser's memory, permanently deleting the photo.</p>
+                </div>
+            </div>
+        </div>
+        <div class="faq-accordion-item" id="faqPanel3">
+            <button type="button" class="faq-accordion-trigger" onclick="toggleAccordionPanel('faqPanel3')">
+                <span class="faq-accordion-question">How does the tool actually find my face in the photo?</span>
+                <span class="faq-accordion-chevron">▼</span>
+            </button>
+            <div class="faq-accordion-panel">
+                <div class="faq-accordion-body">
+                    <p>It uses a pre-trained machine learning model to detect facial landmarks like your eyes, nose, and jawline, which lets it isolate your face from the background before analyzing color.</p>
+                </div>
+            </div>
+        </div>
+        <div class="faq-accordion-item" id="faqPanel4">
+            <button type="button" class="faq-accordion-trigger" onclick="toggleAccordionPanel('faqPanel4')">
+                <span class="faq-accordion-question">Which facial areas does the tool analyze for skin tone?</span>
+                <span class="faq-accordion-chevron">▼</span>
+            </button>
+            <div class="faq-accordion-panel">
+                <div class="faq-accordion-body">
+                    <p>Primarily the forehead and cheeks, since these regions are the least likely to be distorted by shadows or makeup and give the clearest read of your natural skin color.</p>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
 
 <footer>
     <div class="footer-content">

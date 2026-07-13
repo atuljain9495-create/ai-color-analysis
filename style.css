@@ -1553,6 +1553,34 @@ footer {
     opacity: 0.75;
 }
 
+.blog-date {
+    font-size: 0.78rem;
+    color: var(--muted-color);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* ── Article byline (author + publish date) shown on individual blog posts ── */
+.post-byline {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--muted-color);
+    margin: -6px 0 20px;
+}
+.post-byline strong {
+    color: inherit;
+    font-weight: 700;
+}
+.post-byline .byline-dot {
+    opacity: 0.5;
+}
+body.dark-mode .post-byline {
+    color: #94a3b8;
+}
+
 /* Category color groups — lets readers visually scan by topic type */
 .blog-pill[data-group="indigo"] { background: rgba(79, 70, 229, 0.1); color: #4338ca; }
 .blog-pill[data-group="blue"]   { background: rgba(37, 99, 235, 0.1); color: #1d4ed8; }
