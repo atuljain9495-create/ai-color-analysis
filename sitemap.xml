@@ -4,25 +4,25 @@
     <!-- Core Application Routes -->
     <url>
         <loc>https://aicoloranalysis.online/index.html</loc>
-        <lastmod>2026-06-25</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.00</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.80</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/About.html</loc>
-        <lastmod>2026-06-25</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.50</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/contact.html</loc>
-        <lastmod>2026-06-25</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.50</priority>
     </url>
@@ -30,205 +30,218 @@
     <!-- SEO Optimized Standalone Blog Pages -->
     <url>
         <loc>https://aicoloranalysis.online/blog-skin-undertone.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-warm-undertones.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-cool-undertones.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-seasonal-analysis-explained.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-how-ai-color-analysis-works.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-hair-color-skin-tones.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-gold-vs-silver-jewelry.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-common-color-mistakes.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-why-lighting-matters.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-building-a-color-wardrobe.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-first-date-attraction-shades.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-quiet-luxury-jewel-tones.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-seasonal-sub-season-breakdown.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-fabric-textures-by-season.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-color-analysis-and-aging.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-breaking-color-rules.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-colors-that-look-expensive.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-colors-that-look-cheap.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-avoid-top-wardrobe-pitfalls.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-ai-vs-human-color-analysis.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-accessorizing-with-accents.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-universal-flattering-colors.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-why-celebrities-use-color-analysis.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-dress-to-impress-capsule.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-makeup-matchmaker-tricks.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-mens-color-analysis-guide.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-prom-wedding-guest-etiquette.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-foundation-undertone-match.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-why-black-doesnt-suit-everyone.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-interview-wardrobe-psychology.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-lighting-matters-for-selfies.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-dark-academia-palette.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-30-day-ai-challenge.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/blog-behind-scenes-vision-tech.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-13</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.70</priority>
+    </url>
+
+    <url>
+        <loc>https://aicoloranalysis.online/blog-find-your-power-color.html</loc>
+        <lastmod>2026-07-13</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.70</priority>
+    </url>
+    <url>
+        <loc>https://aicoloranalysis.online/blog-stop-matching-your-eyes.html</loc>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.70</priority>
     </url>
@@ -236,13 +249,13 @@
     <!-- Platform Legal Requirements -->
     <url>
         <loc>https://aicoloranalysis.online/privacy.html</loc>
-        <lastmod>2026-06-25</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.30</priority>
     </url>
     <url>
         <loc>https://aicoloranalysis.online/terms.html</loc>
-        <lastmod>2026-06-25</lastmod>
+        <lastmod>2026-07-13</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.30</priority>
     </url>

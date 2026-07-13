@@ -688,6 +688,60 @@ if (analyzeBtn) {
 
 let currentAnalyzedPersonType = "woman";
 
+// ── 🎯 MULTI-ZONE SKIN SAMPLING ──
+// A single sample box under the face is easily skewed by local shadow,
+// blush, hair strands, or a stray highlight. Sampling several independent
+// zones (forehead, both cheeks, chin) and averaging their *skin-filtered*
+// pixels is far more robust to any one zone being unrepresentative — this
+// mirrors how real colorimetric skin analysis is done (multiple patch
+// readings, not one).
+function getSampleZones(box, imgWidth, imgHeight) {
+    if (box && typeof box.x !== "undefined" && box.width > 10) {
+        const zoneW = Math.floor(box.width * 0.16);
+        const zoneH = Math.floor(box.height * 0.14);
+        return [
+            // Forehead
+            { x: box.x + box.width * 0.5 - zoneW / 2, y: box.y + box.height * 0.14, w: zoneW, h: zoneH },
+            // Left cheek (viewer's left)
+            { x: box.x + box.width * 0.22 - zoneW / 2, y: box.y + box.height * 0.52, w: zoneW, h: zoneH },
+            // Right cheek
+            { x: box.x + box.width * 0.78 - zoneW / 2, y: box.y + box.height * 0.52, w: zoneW, h: zoneH },
+            // Chin / lower jaw
+            { x: box.x + box.width * 0.5 - zoneW / 2, y: box.y + box.height * 0.86, w: zoneW, h: zoneH },
+        ];
+    }
+    // No face box available — fall back to a center-weighted single zone
+    const w = Math.floor(imgWidth * 0.25), h = Math.floor(imgHeight * 0.25);
+    return [{ x: (imgWidth - w) / 2, y: (imgHeight - h) / 2, w, h }];
+}
+
+// ── 💡 GRAY-WORLD WHITE BALANCE CORRECTION ──
+// Warm indoor lighting (tungsten bulbs, sunset light, warm phone-camera
+// auto white balance) pushes every pixel in a photo toward red/orange —
+// including the background — which was previously read directly as "Warm
+// undertone" regardless of the person's actual skin. The gray-world
+// assumption (the average color of a natural scene should be roughly
+// neutral gray) lets us estimate the lighting's color cast from the whole
+// image and subtract it out before classifying undertone.
+function computeWhiteBalanceGains(ctx, imgWidth, imgHeight) {
+    const full = ctx.getImageData(0, 0, imgWidth, imgHeight).data;
+    let r = 0, g = 0, b = 0, n = 0;
+    // Sample every 8th pixel for speed on large images
+    for (let i = 0; i < full.length; i += 32) {
+        r += full[i]; g += full[i + 1]; b += full[i + 2]; n++;
+    }
+    r /= n; g /= n; b /= n;
+    const gray = (r + g + b) / 3;
+    // Clamp gains to a sane range so a genuinely monochrome/odd photo
+    // doesn't get wildly over-corrected
+    const clamp = (v) => Math.max(0.7, Math.min(1.4, v));
+    return {
+        rGain: clamp(gray / (r || 1)),
+        gGain: clamp(gray / (g || 1)),
+        bGain: clamp(gray / (b || 1)),
+    };
+}
+
 function analyzeSkinTone(imageSrc, validationResult = {}) {
     const img = new Image();
     img.onload = async function () {
@@ -697,33 +751,44 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         ctx.drawImage(img,0,0);
 
         const box=validationResult.faceBox;
-        let startX,startY,sampleWidth,sampleHeight;
+        const wbGains = computeWhiteBalanceGains(ctx, img.width, img.height);
+        const zones = getSampleZones(box, img.width, img.height);
 
-        if (box && typeof box.x !== "undefined" && box.width > 10) {
-            sampleWidth=Math.floor(box.width*0.25); sampleHeight=Math.floor(box.height*0.22);
-            startX=Math.floor(box.x+(box.width-sampleWidth)/2);
-            startY=Math.floor(box.y+(box.height*0.32));
-        } else {
-            sampleWidth=Math.floor(img.width*0.25); sampleHeight=Math.floor(img.height*0.25);
-            startX=Math.floor((img.width-sampleWidth)/2); startY=Math.floor((img.height-sampleHeight)/2);
+        let r=0,g=0,b=0,count=0,totalSampleArea=0;
+        for (const zone of zones) {
+            const sampleWidth = Math.max(4, Math.floor(zone.w));
+            const sampleHeight = Math.max(4, Math.floor(zone.h));
+            const startX = Math.max(0, Math.min(Math.floor(zone.x), img.width - sampleWidth));
+            const startY = Math.max(0, Math.min(Math.floor(zone.y), img.height - sampleHeight));
+            const data = ctx.getImageData(startX, startY, sampleWidth, sampleHeight).data;
+            totalSampleArea += sampleWidth * sampleHeight;
+            for (let i=0;i<data.length;i+=4) {
+                const red=data[i],green=data[i+1],blue=data[i+2];
+                if (red>45&&green>30&&red>blue&&red>green){r+=red;g+=green;b+=blue;count++;}
+            }
         }
-
-        startX=Math.max(0,Math.min(startX,img.width-sampleWidth));
-        startY=Math.max(0,Math.min(startY,img.height-sampleHeight));
-
-        const data=ctx.getImageData(startX,startY,sampleWidth,sampleHeight).data;
-        let r=0,g=0,b=0,count=0;
-        for (let i=0;i<data.length;i+=4) {
-            const red=data[i],green=data[i+1],blue=data[i+2];
-            if (red>45&&green>30&&red>blue&&red>green){r+=red;g+=green;b+=blue;count++;}
+        if (count<10){
+            // Fallback: no zone yielded enough skin-like pixels — average
+            // the first zone's raw pixels rather than guessing
+            r=0;g=0;b=0;count=0;totalSampleArea=0;
+            const zone = zones[0];
+            const sampleWidth = Math.max(4, Math.floor(zone.w));
+            const sampleHeight = Math.max(4, Math.floor(zone.h));
+            const startX = Math.max(0, Math.min(Math.floor(zone.x), img.width - sampleWidth));
+            const startY = Math.max(0, Math.min(Math.floor(zone.y), img.height - sampleHeight));
+            const data = ctx.getImageData(startX, startY, sampleWidth, sampleHeight).data;
+            totalSampleArea = sampleWidth * sampleHeight;
+            for(let i=0;i<data.length;i+=4){r+=data[i];g+=data[i+1];b+=data[i+2];count++;}
         }
-        if (count<10){r=0;g=0;b=0;count=0;for(let i=0;i<data.length;i+=4){r+=data[i];g+=data[i+1];b+=data[i+2];count++;}}
-        r=Math.round(r/count);g=Math.round(g/count);b=Math.round(b/count);
+        r=Math.round((r/count) * wbGains.rGain);
+        g=Math.round((g/count) * wbGains.gGain);
+        b=Math.round((b/count) * wbGains.bGain);
+        r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b));
 
         // ── 🧠 PRE-COMPUTE ALL RAW DATA INTERNALLY FIRST ──
         const hex=rgbToHex(r,g,b);
         const brightness=(r+g+b)/3;
-        const confidencePercent=Math.min(100,Math.max(55,Math.round((count/(sampleWidth*sampleHeight))*100)));
+        const confidencePercent=Math.min(100,Math.max(55,Math.round((count/(totalSampleArea||1))*100)));
         const skinRatio = validationResult.skinRatio || confidencePercent;
 
         let skinTone,skinToneCategory;
@@ -811,28 +876,35 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
         // ── STEP TIMELINE SEQUENCE RUNNER ──
+        // NOTE ON HONESTY: the actual pixel sampling, white-balance
+        // correction, and season classification below all complete in a
+        // few milliseconds. The waits here are a deliberate, paced UI
+        // reveal (so results don't just flash on screen) — not a
+        // simulation of multi-second "AI processing" per step. Keeping
+        // that distinction clear in the comments so this isn't mistaken
+        // for real per-stage compute time later.
         setStepState("upload", "processing");
-        await wait(400); // Local image hand-off into the analysis pipeline
+        await wait(400); // paced reveal — image already handed off to canvas
         setStepState("upload", "done");
 
         setStepState("face", "processing");
-        await wait(600); // Initial face-tracking system calculation interval
+        await wait(600); // paced reveal — face box already resolved earlier
         setStepState("face", "done");
 
         setStepState("skintone", "processing");
-        await wait(500); // Skin pixel cluster sampling pass
+        await wait(500); // paced reveal — multi-zone sampling already computed
         setStepState("skintone", "done");
 
         setStepState("undertone", "processing");
-        await wait(500); // Undertone color matrix isolation loop
+        await wait(500); // paced reveal — undertone score already computed
         setStepState("undertone", "done");
 
         setStepState("season", "processing");
-        await wait(600); // Season matching timeline block
+        await wait(600); // paced reveal — season lookup already resolved
         setStepState("season", "done");
 
         setStepState("recommendations", "processing");
-        await wait(500); // Wardrobe + sizing catalog preparation
+        await wait(500); // paced reveal — palette lookup already resolved
         setStepState("recommendations", "done");
 
         // ── 🎉 PROCESSING CONCLUDED: REVEAL PREMIUM COMPUTED RESULTS MATRIX ──
@@ -859,7 +931,7 @@ function analyzeSkinTone(imageSrc, validationResult = {}) {
         hexColorDiv.innerHTML    =`<strong>Detected HEX:</strong> ${hex}<div style="width:72px;height:72px;background:${hex};border-radius:10px;margin-top:8px;border:2px solid #ddd;"></div>`;
         undertoneDiv.innerHTML   =`<strong>Undertone:</strong> ${undertone}`;
         seasonalTypeDiv.innerHTML=`<strong>Seasonal Type:</strong> ${seasonalType}`;
-        confidenceScore.innerHTML=`<strong>Skin Detection:</strong> ${skinRatio}% skin pixels found ✓`;
+        confidenceScore.innerHTML=`<strong>Photo Quality:</strong> ${skinRatio}% of the sampled area was clearly skin ✓`;
 
         setValidationMessage("Your personalised colour palette is ready below.","success");
 
